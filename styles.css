@@ -56,6 +56,24 @@ canvas{display:block;}
 .eb:hover:not(:disabled){border-color:#ffb347;color:#ffb347;}
 .eb.fix{border-color:#4dff91;color:#4dff91;}.eb.skip{border-color:#ff4d6a;color:#ff4d6a;}
 .eb:disabled{opacity:.35;cursor:not-allowed;}
+#miniGame{position:absolute;inset:0;background:rgba(3,2,8,.88);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:18;}
+.mgBox{width:min(430px,92vw);background:#080614;border:3px solid #5bc8fa;padding:16px;text-align:center;box-shadow:0 0 36px rgba(91,200,250,.16);}
+.mgBox h2{color:#5bc8fa;font-size:13px;margin-bottom:5px;}
+.mgBox p{color:#aaa;font-size:11px;line-height:1.5;margin-bottom:10px;}
+.mgTimer{height:7px;background:#110d20;border:1px solid #2a2050;margin-bottom:12px;}
+#mgTimerFill{height:100%;background:linear-gradient(90deg,#4dff91,#ffb347,#ff4d6a);width:100%;}
+.mgGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
+.mgCorner{background:#0e0c1e;border:1px solid #2a2050;padding:9px;}
+.mgCorner.ok{border-color:#4dff91;box-shadow:inset 0 0 18px rgba(77,255,145,.08);}
+.mgCorner b{display:block;color:#9d7fe3;font-size:10px;margin-bottom:5px;}
+.mgVal{color:#eee;font-size:18px;font-weight:900;margin-bottom:6px;}
+.mgBar{height:5px;background:#120e20;border:1px solid #241a40;margin-bottom:7px;}
+.mgBar i{display:block;height:100%;background:#ff4d6a;width:50%;}
+.mgCorner.ok .mgBar i{background:#4dff91;}
+.mgBtns{display:flex;gap:6px;justify-content:center;}
+.mgBtns button{width:34px;height:28px;background:#0a0816;border:1px solid #2a2050;color:#ffb347;font-family:'Courier New',monospace;font-size:14px;font-weight:900;cursor:pointer;pointer-events:all;}
+.mgBtns button:hover{border-color:#ffb347;background:#160e18;}
+#mgHint{color:#ffb347;font-size:10px;margin:8px 0 11px;}
 #shop{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#080614;border:3px solid #9d7fe3;padding:15px;width:470px;max-height:70vh;overflow-y:auto;pointer-events:all;display:none;z-index:15;}
 #shop h2{color:#9d7fe3;font-size:13px;margin-bottom:9px;}
 .sts{display:flex;margin-bottom:9px;}

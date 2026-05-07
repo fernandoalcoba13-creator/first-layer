@@ -174,7 +174,9 @@ class NightScene extends Phaser.Scene{
     const auto=G.emp.rodri&&['jam','blob','humid'].includes(ev.id);
     document.getElementById('ebs').innerHTML=auto
       ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 Rodrigo repara solo</button>'
-      :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>'
+      :(ev.id==='bed'
+        ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startBedMini()">📐 Minijuego: nivelar cama'+(ev.g>0?' (-$'+ev.g+')':'')+'</button>'
+        :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
         +'<button class="eb skip" onclick="G.nSkip()">⏭ Ignorar (-'+ev.rp+' REP)</button>';
     document.getElementById('evp').style.display='block';
   }

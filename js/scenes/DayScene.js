@@ -4,7 +4,7 @@ class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
-    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFix=0;G.pActive=false;
+    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.cTimer=0;this.cInt=6500-(G.upg.ig?2000:0)-(G.emp.juli2?1500:0);

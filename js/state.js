@@ -6,7 +6,7 @@ function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):
 
 // ═══ GAME STATE ═══
 // Single global G. All gameplay reads/writes go through here.
-const G={gold:500,rep:50,day:1,phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:6,petg:3,resin:2,parts:3},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,nFix:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
+const G={gold:500,rep:50,day:1,phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:6,petg:3,resin:2,parts:3},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
   get pCount(){return this.upg.unlock4?4:this.upg.unlock3?3:this.upg.unlock2?2:1;},
   get sMult(){return 1+(this.upg.speed1?0.3:0)+(this.upg.speed2?0.3:0);},
   get pMult(){return 1+(this.upg.qual?0.25:0)+(this.emp.caro2?0.15:0);},
