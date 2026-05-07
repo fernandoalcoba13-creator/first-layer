@@ -5,40 +5,44 @@ G.bStk=function(k,c){if(G.gold<c){showNotif('💸 Sin fondos','error');return;}G
 G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 Sin fondos');return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 Sin repuestos');return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();showNotif('🔧 '+ev.ti+' reparado!','success');sLog('✅ '+ev.ti+' resuelto.');};
 G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
-G.startBedMini=function(){
-  const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='bed')return;
-  if(G.gold<ev.g){showNotif('💸 Sin fondos');return;}
+G.startNozzleMini=function(){
+  const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
+  if(G.stk.parts<ev.pts){showNotif('🔩 Sin repuestos');return;}
   document.getElementById('evp').style.display='none';
-  const vals=Array.from({length:4},()=>Phaser.Math.Between(18,82));
-  G._mini={ev,vals,time:10000,max:10000,tick:null,done:false};
+  G._mini={ev,time:9000,max:9000,heat:18,dir:1,hits:0,tick:null,done:false};
   document.getElementById('miniGame').style.display='flex';
-  document.getElementById('mgTitle').textContent='📐 Nivelar cama - P'+(ev.printer.id+1);
-  document.getElementById('mgDesc').textContent='Ajustá las cuatro esquinas. Verde = primera capa salvada.';
+  document.getElementById('mgTitle').textContent='🚫 Limpiar pico - P'+(ev.printer.id+1);
+  document.getElementById('mgDesc').textContent='Esperá la zona verde y limpiá el nozzle tres veces.';
   document.getElementById('mgTimerFill').style.width='100%';
-  G.renderBedMini();
+  G.renderNozzleMini();
   G._mini.tick=setInterval(()=>{
     if(!G._mini)return;
-    G._mini.time-=120;
-    document.getElementById('mgTimerFill').style.width=Math.max(0,G._mini.time/G._mini.max*100)+'%';
-    if(G._mini.time<=0)G.failBedMini();
-  },120);
+    const m=G._mini;
+    m.time-=80;m.heat+=m.dir*4.4;
+    if(m.heat>=96){m.heat=96;m.dir=-1;}
+    if(m.heat<=8){m.heat=8;m.dir=1;}
+    document.getElementById('mgTimerFill').style.width=Math.max(0,m.time/m.max*100)+'%';
+    G.renderNozzleMini();
+    if(m.time<=0)G.failNozzleMini();
+  },80);
   SFX.clk();
 };
-G.renderBedMini=function(){
+G.renderNozzleMini=function(){
   if(!G._mini)return;
-  const names=['Frente izq','Frente der','Fondo izq','Fondo der'];
-  document.getElementById('mgGrid').innerHTML=G._mini.vals.map((v,i)=>{
-    const ok=v>=45&&v<=55;
-    return '<div class="mgCorner '+(ok?'ok':'')+'"><b>'+names[i]+'</b><div class="mgVal">'+v+'</div><div class="mgBar"><i style="width:'+v+'%"></i></div><div class="mgBtns"><button onclick="G.tuneBed('+i+',-4)">-</button><button onclick="G.tuneBed('+i+',4)">+</button></div></div>';
-  }).join('');
-  const ready=G._mini.vals.every(v=>v>=45&&v<=55);
-  document.getElementById('mgHint').textContent=ready?'¡Cama nivelada! Cerrando falla...':'Objetivo: todas entre 45 y 55';
-  if(ready&&!G._mini.done){G._mini.done=true;setTimeout(()=>G.winBedMini(),220);}
+  const m=G._mini,ok=m.heat>=42&&m.heat<=58,heat=Math.round(m.heat);
+  document.getElementById('mgGrid').innerHTML='<div class="mgCorner '+(ok?'ok':'')+'" style="grid-column:1/-1"><b>Temperatura del pico</b><div class="mgVal">'+heat+'%</div><div class="mgBar"><i style="width:'+heat+'%"></i></div><div class="mgBtns"><button style="width:120px" onclick="G.scrapeNozzle()">Limpiar</button></div></div>';
+  document.getElementById('mgHint').textContent='Limpiezas buenas: '+m.hits+'/3 | Zona verde: 42 a 58';
 };
-G.tuneBed=function(i,d){if(!G._mini||G._mini.done)return;G._mini.vals[i]=Phaser.Math.Clamp(G._mini.vals[i]+d,0,100);SFX.clk();G.renderBedMini();};
-G.winBedMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';G.nFix();};
-G.failBedMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif('Primera capa perdida. La impresora queda fuera.','error');G.nSkip();};
-G.cancelMiniGame=function(){G.failBedMini();};
+G.scrapeNozzle=function(){
+  if(!G._mini||G._mini.done)return;
+  const ok=G._mini.heat>=42&&G._mini.heat<=58;
+  if(ok){G._mini.hits++;SFX.ok();showNotif('Limpieza perfecta '+G._mini.hits+'/3','success');}
+  else{G._mini.time=Math.max(0,G._mini.time-1500);SFX.err();shakeUI();showNotif('Rayaste el nozzle. -tiempo','error');}
+  if(G._mini.hits>=3){G._mini.done=true;setTimeout(()=>G.winNozzleMini(),180);}
+};
+G.winNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';G.nFix();};
+G.failNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif('El pico quedó obstruido. La impresora queda fuera.','error');G.nSkip();};
+G.cancelMiniGame=function(){G.failNozzleMini();};
 G._bk=function(seq){
   const ns=game.scene.getScene('Night');if(!ns)return;
   // Find position value for this button (bkOrd[seq])
