@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>KMORRA Print Shop — First Layer v6 PRO</title>
+<link rel="stylesheet" href="styles.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
+</head>
+<body>
+<div id="ui">
+
+  <div id="brand">KMORRA PRINT SHOP<small>FIRST LAYER — PROTOTYPE v6</small></div>
+  <div id="proPanel">
+    <h3>📋 TURNO ACTUAL</h3>
+    <p id="proText">Atendé clientes, comprá stock barato y prepará la noche.</p>
+    <div class="miniBar"><i id="proRisk"></i></div>
+    <p id="proTip">TIP: si hay urgentes, priorizalos antes del cierre.</p>
+  </div>
+  <div id="quickBtns"><button class="qbtn" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" onclick="document.getElementById('titleScreen').style.display='flex'">? Ayuda</button></div>
+  <div id="titleScreen">
+    <div class="tsBox">
+      <div class="tsK">KMORRA ORIGINAL GAME</div>
+      <h1 class="tsTitle">PRINT SHOP</h1>
+      <div class="tsSub">FIRST LAYER · 3D PRINT FARM SIMULATOR</div>
+      <div class="tsGrid">
+        <div class="tsCard"><b>☀️ DÍA</b><span>Atendé clientes, negociá pedidos y cargá trabajo para la noche.</span></div>
+        <div class="tsCard"><b>🌙 NOCHE</b><span>Supervisá impresoras, repará fallas y sobreviví cortes de luz.</span></div>
+        <div class="tsCard"><b>📈 ESCALÁ</b><span>Comprá upgrades, empleados, stock y más impresoras para crecer.</span></div>
+      </div>
+      <button class="tsBtn" onclick="document.getElementById('titleScreen').style.display='none';SFX.ok();">▶ EMPEZAR TURNO</button>
+      <button class="tsBtn alt" onclick="window.resetGame()">BORRAR PARTIDA</button>
+      <p style="font-size:10px;color:#5a4a80;margin-top:12px;line-height:1.6">WASD / Flechas = mover · E = interactuar · Click en 🧉 para boost<br>Objetivo: hacer crecer tu print shop sin fundirte ni quemar las máquinas.</p>
+    </div>
+  </div>
+
+  <div class="ht">
+    <span class="ptag day" id="ptag">☀️ DÍA 1</span>
+    <div class="pill g">🪙<span id="hg">500</span></div>
+    <div class="pill r">💬<span id="hr">50</span></div>
+    <div class="pill s">😰<span id="hs">0</span>%</div>
+    <div class="tw"><div class="tf" id="htf" style="width:100%"></div></div>
+    <span id="obj"></span>
+    <span id="hday">📅 Día 1</span>
+  </div>
+  <div class="hb"><span id="log">Bienvenido. WASD=mover, E=interactuar.</span><span id="hint">WASD | E</span></div>
+  <div id="pov"></div>
+  <div id="phud"><h2 id="pht">⚡ CORTE DE LUZ</h2><p id="phd">Bajón de tensión.</p><div class="ptw"><div class="ptf" id="ptf" style="width:100%"></div></div><div id="phint">Corré al tablero</div></div>
+  <div id="bkg"><h2>⚡ TABLERO ELÉCTRICO</h2><p id="bkd">Levantá los disyuntores en orden</p><div class="bks" id="bks"></div><div id="bhint">Orden: del 1 al 4</div></div>
+  <div id="dlg"><div class="dh"><div class="dav" id="dav"></div><div><div class="dn" id="dn"></div><div class="dm" id="dm"></div></div></div><div class="dt" id="dt"></div><div class="dbs" id="dbs"></div></div>
+  <div id="evp"><h2 id="et">⚠️ FALLA</h2><p id="ed"></p><div class="ebs" id="ebs"></div></div>
+  <div id="shop"><h2>🔧 TIENDA KMORRA</h2><div class="sts"><div class="st on" onclick="G.tab('up')">Upgrades</div><div class="st" onclick="G.tab('emp')">Empleados</div><div class="st" onclick="G.tab('stk')">Stock</div></div><div class="sg" id="sg"></div><div style="text-align:right;margin-top:9px;"><button class="eb" onclick="G.cShop()" style="pointer-events:all">✕ Cerrar</button></div></div>
+  <div id="sto"><h2 id="sh"></h2><p id="sp"></p><button class="eb fix" onclick="G.cSto()" style="pointer-events:all">▶ Continuar</button></div>
+  <div id="tr"><h1 id="trh"></h1><p id="trp"></p></div>
+  <div id="sv">💾 Guardado</div>
+  <!-- MATE BAR -->
+  <div id="mbar" onclick="G.tomarMate()">
+    <div class="mrow"><span class="mlbl">🧉 ENERGÍA</span><span class="mval" id="mval">100%</span></div>
+    <div class="mbg"><div class="mfill" id="mfill" style="width:100%"></div></div>
+    <div id="mhot">⚡ TURBO ACTIVO</div>
+  </div>
+  <!-- MERCADO -->
+  <div id="mkt">
+    <h3>📈 MERCADO HOY</h3>
+    <div class="mkrow"><span class="mkn">PLA</span><span class="mkp" id="mk_pla">$75</span><span class="mka" id="mkt_pla">→</span></div>
+    <div class="mkrow"><span class="mkn">PETG</span><span class="mkp" id="mk_petg">$100</span><span class="mka" id="mkt_petg">→</span></div>
+    <div class="mkrow"><span class="mkn">Resina</span><span class="mkp" id="mk_res">$140</span><span class="mka" id="mkt_res">→</span></div>
+    <div class="mkrow"><span class="mkn">Repuestos</span><span class="mkp" id="mk_pts">$55</span><span class="mka" id="mkt_pts">→</span></div>
+  </div>
+</div>
+
+<!-- Game scripts (orden de dependencias - NO cambiar) -->
+<script src="js/audio.js"></script>
+<script src="js/data.js"></script>
+<script src="js/state.js"></script>
+<script src="js/draw.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/g-methods.js"></script>
+<script src="js/pro-patch.js"></script>
+<script src="js/scenes/DayScene.js"></script>
+<script src="js/scenes/NightScene.js"></script>
+<script src="js/main.js"></script>
+
+</body>
+</html>

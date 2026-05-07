@@ -1,0 +1,245 @@
+// ═══ DAY SCENE ═══
+// Day phase: clients arrive, player accepts/negotiates/rejects orders, manages stock & shop.
+class DayScene extends Phaser.Scene{
+  constructor(){super({key:'Day'});}
+  create(){
+    this.W=this.scale.width;this.H=this.scale.height;
+    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFix=0;G.pActive=false;
+    G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
+    this.clients=[];this.cTimer=0;this.cInt=6500-(G.upg.ig?2000:0)-(G.emp.juli2?1500:0);
+    this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.dlgOpen=false;
+    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
+    this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
+    this.checkStory();this.updateHUD();
+    this.time.delayedCall(900,()=>this.spawn());
+    this.time.delayedCall(3000,()=>this.spawn());
+    document.getElementById('ptag').className='ptag day';
+    document.getElementById('ptag').textContent='☀️ DÍA '+G.day;
+    document.getElementById('hday').textContent='📅 Día '+G.day;
+    updateMarket();sLog('Día '+G.day+' — Atendé clientes y cargá pedidos para la noche.');
+    sHint('WASD | E=interactuar');
+    doSave(G);
+  }
+  initPrinters(){
+    G.printers=[];
+    for(let i=0;i<4;i++)G.printers.push({id:i,locked:i>=G.pCount,broken:false,busy:false,order:null,progress:0,_ev:null,_pau:false});
+  }
+  buildWorld(){
+    const W=this.W,H=this.H;
+    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,false);
+    const cY=H*.75,cg=this.add.graphics();
+    cg.fillStyle(0x28200e);cg.fillRect(W*.23,cY,W*.54,32);
+    cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
+    cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
+    this.add.text(W*.5,cY+9,'🖨️  KMORRA PRINT SHOP  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Courier New'}).setOrigin(.5,0);
+    this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'[E] Mostrador'});
+    const sx=W*.1,sy=H*.47,sg=this.add.graphics();
+    sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
+    sg.lineStyle(1,0x2a2040);sg.strokeRect(sx-44,sy-68,88,88);
+    [0x5bc8fa,0xff7eb3,0x4dff91,0xffe566,0x9d7fe3,0xff6644].forEach((c,i)=>{
+      const x=sx-28+i%3*28,y=sy-56+Math.floor(i/3)*30;
+      sg.fillStyle(c,.8);sg.fillCircle(x,y,9);sg.fillStyle(0x07060f);sg.fillCircle(x,y,4);
+    });
+    this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Courier New',align:'center'}).setOrigin(.5,0);
+    this.IA.push({x:sx,y:sy,type:'stock',lbl:'[E] Stock'});
+    const ux=W*.32,uy=H*.31,ug=this.add.graphics();
+    ug.fillStyle(0x0c180c);ug.fillRect(ux-40,uy-28,80,52);
+    ug.lineStyle(1,0x2a4a2a);ug.strokeRect(ux-40,uy-28,80,52);
+    this.add.text(ux,uy,'🔧\nTIENDA',{fontSize:'9px',color:'#4dff91',fontFamily:'Courier New',align:'center'}).setOrigin(.5);
+    this.IA.push({x:ux,y:uy,type:'shop',lbl:'[E] Tienda'});
+    const tx=W*.06,ty=H*.35;this.tblG=this.add.graphics();this.drawTbl(false);
+    this.IA.push({x:tx,y:ty,type:'tab',lbl:'[E] Tablero'});
+    const paG=this.add.graphics();
+    paG.fillStyle(0x0a0818);paG.fillRect(W*.56,H*.18,W*.43,H*.44);
+    paG.lineStyle(1,0x1a1628);paG.strokeRect(W*.56,H*.18,W*.43,H*.44);
+    this.add.text(W*.78,H*.2,'— ZONA IMPRESORAS —',{fontSize:'8px',color:'#1e1a30',fontFamily:'Courier New'}).setOrigin(.5);
+    this.pGfx=[];const psp=(W*.37)/4;
+    for(let i=0;i<4;i++){
+      const px=W*.6+i*psp+psp/2,py=H*.49;
+      const pg=this.add.graphics();pg.setPosition(px,py);drawPrinter(pg,false,false,0,0x5bc8fa);
+      const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Courier New'}).setOrigin(.5,0);
+      this.pGfx.push({g:pg,lt,px,py});
+    }
+    this.IA.push({x:W*.77,y:H*.38,type:'printers',lbl:'[E] Impresoras'});
+    this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Courier New',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
+  }
+  drawTbl(pwr){
+    const g=this.tblG,tx=this.W*.06,ty=this.H*.35;g.clear();
+    g.fillStyle(pwr?0x2a0808:0x1a1010);g.fillRect(tx-24,ty-33,48,66);
+    g.lineStyle(2,pwr?0xff3333:0x3a1a1a);g.strokeRect(tx-24,ty-33,48,66);
+    g.fillStyle(pwr?0x3a0808:0x2a0808);g.fillRect(tx-20,ty-29,40,12);
+    for(let i=0;i<4;i++){
+      g.fillStyle(!pwr?0x4dff91:0x330000,!pwr?.6:1);g.fillRect(tx-16+i*10,ty-27,6,8);
+      g.fillStyle(!pwr?0x4dff91:0x330000,!pwr?.3:.8);g.fillCircle(tx-13+i*10,ty-13,3);
+    }
+    this.tblG.setDepth(2);
+  }
+  stkTxt(){return 'PLA:'+G.stk.pla+'  PETG:'+G.stk.petg+'\nResina:'+G.stk.resin+'  Parts:'+G.stk.parts;}
+  createPlayer(){
+    this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
+    this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
+    this.player.add(this.pGr);
+  }
+  setupKeys(){
+    this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
+    this.input.keyboard.on('keydown-E',()=>{if(!this.dlgOpen&&this.near&&!G.block)this.interact(this.near);});
+  }
+  checkStory(){
+    const e=STORY.find(s=>s.day===G.day&&G.day>G.ss);
+    if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>G.showSto(e.ti,e.tx,e.ob));}
+    document.getElementById('obj').textContent=G.cObj?'🎯 '+G.cObj.ob:'';
+  }
+  spawn(){
+    if(this.clients.length>=5||G.phase!=='day')return;
+    const cl=CL[Math.floor(Math.random()*CL.length)];
+    const pr=PR[Math.floor(Math.random()*PR.length)];
+    const urg=cl.m==='Urgente'||Math.random()<.18;
+    let pay=Math.round(pr.p*G.pMult*cl.gr*(urg?1.5:1));
+    if(G.upg.ams&&(pr.cat==='fig'||pr.cat==='art'))pay=Math.round(pay*1.5);
+    const idx=this.clients.length;
+    const tX=this.W*.24+idx*86,yP=this.H*.71;
+    const pat=(cl.pat+(urg?-5:0))*1000;
+    const ct=this.add.container(-50,yP).setDepth(4);
+    const cg=this.add.graphics();drawClient(cg,cl,idx);ct.add(cg);
+    const bb=this.add.graphics();bb.fillStyle(0xf8f8f8,.97);bb.fillRoundedRect(-38,-60,76,32,4);bb.fillTriangle(-5,-28,5,-28,0,-20);ct.add(bb);
+    ct.add(this.add.text(0,-46,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Courier New'}).setOrigin(.5));
+    if(urg)ct.add(this.add.text(0,-64,'🔴 URGENTE',{fontSize:'8px',color:'#f22',fontFamily:'Courier New'}).setOrigin(.5));
+    const pbB=this.add.rectangle(0,-17,46,4,0x111122).setOrigin(.5);
+    const pbF=this.add.rectangle(-23,-17,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
+    ct.add(pbB);ct.add(pbF);
+    const co={ct,cg,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX};
+    this.tweens.add({targets:ct,x:tX,duration:480,ease:'Power2',onComplete:()=>co.walk=false});
+    this.clients.push(co);G.dayCli++;
+    if(G.emp.lucas&&this.clients.filter(c=>!c.served).length===1)
+      this.time.delayedCall(1800,()=>{if(!co.served)this.acceptOrd(co,'auto');});
+    sLog(cl.e+' '+cl.n+': "'+cl.d[Math.floor(Math.random()*cl.d.length)]+'" — '+pr.e+' $'+pay);
+  }
+  acceptOrd(c,mode){
+    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg});
+    G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
+    this.leaveClient(c,false);SFX.ok();
+    if(mode==='auto')showNotif('👦 Lucas aceptó: '+c.pr.e+' '+c.pr.n);
+    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — $'+c.pay+'. Cola: '+G.orders.length);
+  }
+  leaveClient(c,ang){
+    c.served=true;
+    if(ang){G.rep=Math.max(0,G.rep-5);G.stress=Math.min(100,G.stress+10);SFX.err();showNotif('😤 '+c.cl.n+' se fue. -5 REP','error');}
+    this.tweens.add({targets:c.ct,x:-80,duration:440,onComplete:()=>c.ct.destroy()});
+    this.clients=this.clients.filter(x=>x!==c);
+  }
+  interact(t){
+    SFX.step();
+    if(t.type==='counter')this.openCounter();
+    else if(t.type==='printers')this.openPrinters();
+    else if(t.type==='stock')this.openStock();
+    else if(t.type==='shop')G.openShop();
+    else if(t.type==='tab')this.openTab();
+  }
+  openCounter(){
+    const w=this.clients.filter(c=>!c.served);
+    if(!w.length){showNotif('No hay clientes esperando.');return;}
+    const c=w[0],dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
+    this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
+      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+(c.urg?'\n🔴 ¡URGENTE!':''),
+      [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{this.acceptOrd(c,'man');cDlg();}},
+       {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter();}},
+       {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
+       {lb:'Cerrar',cb:()=>cDlg()}]);
+  }
+  openPrinters(){
+    this.oDlg('🖨️ Impresoras','',
+      'Libres: '+G.printers.filter(p=>!p.busy&&!p.broken&&!p.locked).length+
+      '\nRotas: '+G.printers.filter(p=>p.broken).length+
+      '\nPedidos en cola: '+G.orders.length+
+      '\n\nEsta noche trabajan solas.',
+      [{lb:'OK',cb:()=>cDlg()}]);
+  }
+  openStock(){
+    const pp=getPrice('pla'),pt=getPrice('petg'),pr=getPrice('parts');
+    this.oDlg('📦 Stock','',
+      'PLA: '+G.stk.pla+'  /  PETG: '+G.stk.petg+'\nResina: '+G.stk.resin+'  /  Repuestos: '+G.stk.parts+'\n\n📈 Precios de hoy (fluctúan)',
+      [{lb:'🧵 PLA $'+pp+(pp<75?' 🔥':''),cls:'ok',cb:()=>{G.bStk('pla',pp);cDlg();this.openStock();}},
+       {lb:'🧵 PETG $'+pt+(pt<100?' 🔥':''),cb:()=>{G.bStk('petg',pt);cDlg();this.openStock();}},
+       {lb:'🔩 Repuestos $'+pr,cb:()=>{G.bStk('parts',pr);cDlg();this.openStock();}},
+       {lb:'🧉 Mate $80 (x'+G.mateCount+')',cb:()=>{if(G.gold<80){showNotif('💸 Sin fondos','error');return;}G.gold-=80;G.mateCount++;SFX.coin();showNotif('🧉 Mate comprado!','success');cDlg();this.openStock();}},
+       {lb:'Cerrar',cb:()=>cDlg()}]);
+  }
+  openTab(){
+    this.oDlg('⚡ Tablero Eléctrico','',
+      'Solar: '+(G.upg.solar?'☀️ INMUNE':'❌')+
+      '\nUPS: '+(G.upg.ups2?'🔋 Industrial':G.upg.ups1?'🔋 Básico':'❌')+
+      '\nGenerador: '+(G.upg.gen?'⛽':'❌')+
+      '\nProtector: '+(G.upg.prot?'✅':'❌'),
+      [{lb:'Ir a Tienda →',cls:'ok',cb:()=>{cDlg();G.openShop();}},{lb:'Cerrar',cb:()=>cDlg()}]);
+  }
+  oDlg(name,mood,text,choices){
+    const cl=CL.find(c=>name.includes(c.n));
+    const av=document.getElementById('dav');
+    av.textContent=cl?cl.e:'🖨️';
+    if(cl){const r=(cl.c>>16)&255,gg=(cl.c>>8)&255,b=cl.c&255;av.style.background='rgba('+r+','+gg+','+b+',.2)';}
+    document.getElementById('dn').textContent=name;
+    document.getElementById('dm').textContent=mood;
+    document.getElementById('dt').textContent=text;
+    document.getElementById('dbs').innerHTML=choices.map((c,i)=>
+      '<button class="db '+(c.cls||'')+'" onclick="G._dcb('+i+')">'+c.lb+'</button>').join('');
+    G._dch=choices;
+    document.getElementById('dlg').style.display='block';
+    this.dlgOpen=true;
+  }
+  updatePrinters(){
+    this.pGfx.forEach((pg,i)=>{
+      const p=G.printers[i];if(!p)return;
+      const c=p.order?p.order.pr.c:0x5bc8fa;
+      drawPrinter(pg.g,p.busy,p.broken,p.progress,c);
+      if(p.locked)pg.lt.setText('🔒').setColor('#222244');
+      else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
+      else if(p.busy)pg.lt.setText(p.order.pr.e+' '+Math.round(p.progress*100)+'%').setColor('#5bc8fa');
+      else pg.lt.setText('LIBRE').setColor('#2a2050');
+    });
+  }
+  updateHUD(){
+    document.getElementById('hg').textContent=G.gold;
+    document.getElementById('hr').textContent=G.rep;
+    document.getElementById('hs').textContent=G.stress;
+    document.getElementById('htf').style.width=(Math.max(0,this.timer/this.dur)*100)+'%';
+    if(this.sLbl)this.sLbl.setText(this.stkTxt());
+  }
+  update(_t,dt){
+    if(G.phase!=='day'||G.block)return;
+    this.timer-=dt;if(this.timer<=0){this.endDay();return;}
+    const pct=this.timer/this.dur;
+    if(pct<.2)document.getElementById('htf').style.background='#ff4d6a';
+    const nt=pct<.15;
+    if(nt!==this.tired){this.tired=nt;drawPlayer(this.pGr,false,nt);}
+    const k=this.keys;let vx=0,vy=0;const spd=G.mateActive?1.5:Math.max(0.5,G.energy/100);
+    if(k.a.isDown||k.lt.isDown){vx=-168*spd;this.dir=-1;}
+    if(k.d.isDown||k.rt.isDown){vx=168*spd;this.dir=1;}
+    if(k.w.isDown||k.up.isDown)vy=-101*spd;
+    if(k.s.isDown||k.dn.isDown)vy=101*spd;
+    this.player.x=Phaser.Math.Clamp(this.player.x+vx*dt/1000,28,this.W-28);
+    this.player.y=Phaser.Math.Clamp(this.player.y+vy*dt/1000,this.H*.28,this.H*.82);
+    this.player.scaleX=this.dir;
+    if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
+    let near=null,md=88;
+    this.IA.forEach(it=>{
+      const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,it.x,it.y);
+      if(d<md){md=d;near=it;}
+    });
+    this.near=near;
+    if(near){this.iLbl.setVisible(true).setText(near.lbl).setPosition(near.x,near.y-42);sHint('[E] Interactuar');}
+    else{this.iLbl.setVisible(false);sHint('WASD | E');}
+    this.cTimer+=dt;if(this.cTimer>=this.cInt){this.cTimer=0;this.spawn();}
+    this.clients.forEach(c=>{
+      if(c.served||c.walk)return;
+      c.pat-=dt;const p=Math.max(0,c.pat/c.maxP);
+      c.pbF.width=46*p;c.pbF.fillColor=p<.35?0xff4d6a:p<.65?0xffe566:0x4dff91;
+      if(c.pat<=0)this.leaveClient(c,true);
+    });
+    tickMate(dt);this.updatePrinters();this.updateHUD();
+  }
+  endDay(){
+    if(G.phase!=='day')return;
+    G.phase='transition';G.block=true;doSave(G);this.scene.pause();
+    doTrans('🌙  NOCHE',G.orders.length+' pedidos en cola.\nVigilá impresoras y ⚡ cortes de luz.',()=>{this.scene.stop();this.scene.start('Night');});
+  }
+}

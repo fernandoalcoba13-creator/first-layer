@@ -1,0 +1,90 @@
+// ═══ UI UTILS ═══
+// DOM-side helpers used across scenes and G methods.
+function sLog(m){document.getElementById('log').innerHTML=m;}
+function sHint(m){document.getElementById('hint').textContent=m;}
+function showNotif(m,type='info'){
+  // Stagger existing notifs down
+  document.querySelectorAll('.ntf').forEach((n,i)=>{n.style.top=(52+26*(i+1))+'px';});
+  const n=document.createElement('div');
+  n.className='ntf '+type;
+  n.innerHTML='<div class="ntfdot"></div><span>'+m+'</span>';
+  document.getElementById('ui').appendChild(n);
+  n.animate([{transform:'translateX(20px)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:220});
+  setTimeout(()=>{n.animate([{opacity:1},{opacity:0,transform:'translateX(12px)'}],{duration:280,fill:'forwards'});setTimeout(()=>n.remove(),280);},3200);
+}
+function shakeUI(){const c=document.getElementById('ui');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),400);}
+
+// ═══ MERCADO DE FILAMENTO ═══
+function updateMarket(){
+  const M=G.market;
+  const keys=['pla','petg','resin','parts'];
+  const names=['pla','petg','res','pts'];
+  keys.forEach((k,i)=>{
+    const item=M[k];
+    // Fluctuación basada en día + random
+    const seed=G.day*17+i*31;
+    const prev=item.cur;
+    const change=(Math.sin(seed*.7)*15+Math.cos(seed*.3)*10);
+    item.cur=Math.max(Math.round(item.base*.6),Math.round(item.base+change));
+    item.trend=item.cur>prev?1:item.cur<prev?-1:0;
+    // Update DOM
+    const prEl=document.getElementById('mk_'+names[i]);if(prEl)prEl.textContent='$'+item.cur;
+    const ta=document.getElementById('mkt_'+names[i]);
+    if(ta){ta.textContent=item.trend>0?'▲':item.trend<0?'▼':'→';ta.className='mka '+(item.trend>0?'up':item.trend<0?'dn':'');}
+  });
+  // Show market panel for 4 seconds at day start
+  const mkt=document.getElementById('mkt');mkt.classList.add('on');
+  setTimeout(()=>mkt.classList.remove('on'),4000);
+  // Log if any price is notable
+  if(M.pla.cur<M.pla.base*.85)sLog('📈 ¡PLA barato hoy! $'+M.pla.cur+' — ¡Stockeate!');
+  else if(M.pla.cur>M.pla.base*1.2)sLog('📈 PLA caro hoy ($'+M.pla.cur+'). Usá lo que tenés.');
+}
+function getPrice(k){return G.market[k]?G.market[k].cur:(k==='pla'?75:k==='petg'?100:k==='resin'?140:55);}
+
+// ═══ MATE / ENERGÍA ═══
+function updateMateHUD(){
+  const pct=G.energy;
+  document.getElementById('mfill').style.width=pct+'%';
+  document.getElementById('mval').textContent=(G.mateActive?'⚡ TURBO':'🧉 '+G.mateCount)+' | '+Math.round(pct)+'%';
+  document.getElementById('mfill').className='mfill'+(G.mateActive?' en':'');
+  document.getElementById('mhot').className=G.mateActive?'on':'';
+  // Color warning
+  if(pct<30)document.getElementById('mbar').style.borderColor='#ff4d6a';
+  else if(G.mateActive)document.getElementById('mbar').style.borderColor='#ffb347';
+  else document.getElementById('mbar').style.borderColor='#2a2040';
+}
+G.tomarMate=function(){
+  if(G.mateActive){showNotif('🧉 Ya estás en turbo!','info');return;}
+  if(G.mateCount<=0){showNotif('😔 Sin mate. Comprá en tienda ($80).','error');return;}
+  if(G.energy>85){showNotif('😎 Energía suficiente, guardá el mate.','info');return;}
+  G.mateCount--;G.mateActive=true;G.mateTimer=30000;G.energy=Math.min(100,G.energy+40);
+  SFX.up();showNotif('🧉 ¡Mate tomado! +40 energía. TURBO 30s 🚀','success');
+  updateMateHUD();
+};
+function tickMate(dt){
+  if(!G.mateActive){
+    // Drain energy slowly during day
+    if(G.phase==='day')G.energy=Math.max(0,G.energy-.008*dt/1000*100);
+  } else {
+    G.mateTimer-=dt;
+    if(G.mateTimer<=0){G.mateActive=false;G.mateTimer=0;showNotif('☕ Turbo terminó.','info');}
+  }
+  updateMateHUD();
+}
+function cDlg(){document.getElementById('dlg').style.display='none';const d=game.scene.getScene('Day');if(d)d.dlgOpen=false;}
+function doTrans(h,p,cb){
+  const el=document.getElementById('tr');
+  document.getElementById('trh').textContent=h;
+  document.getElementById('trp').textContent=p;
+  el.style.pointerEvents='all';let op=0;
+  const fi=setInterval(()=>{
+    op=Math.min(1,op+.07);el.style.opacity=op;
+    if(op>=1){clearInterval(fi);setTimeout(()=>{
+      let op2=1;const fo=setInterval(()=>{
+        op2=Math.max(0,op2-.06);el.style.opacity=op2;
+        if(op2<=0){clearInterval(fo);el.style.pointerEvents='none';cb();}
+      },28);
+    },2400);}
+  },28);
+}
+window.resetGame=()=>{localStorage.removeItem(SK);location.reload();};

@@ -1,0 +1,40 @@
+// ═══ KMORRA PRO PATCH v6 ═══
+// Non-invasive UI layer: title screen, side risk panel, pulse warnings.
+// Wraps showNotif to refresh proPanel on every notification.
+(function(){
+  const oldNotif=window.showNotif;
+  if(typeof oldNotif==='function'){
+    window.showNotif=function(msg,type){
+      oldNotif(msg,type);
+      try{ updateProPanel(); }catch(e){}
+    }
+  }
+  window.updateProPanel=function(){
+    const txt=document.getElementById('proText'), risk=document.getElementById('proRisk'), tip=document.getElementById('proTip');
+    if(!txt||!risk||!tip||!window.G)return;
+    const broken=(G.printers||[]).filter(p=>p.broken).length;
+    const queue=(G.orders||[]).length;
+    const riskVal=Math.min(100,Math.round((G.stress||0)*.55+broken*18+queue*4+(G.pActive?25:0)));
+    risk.style.width=riskVal+'%';
+    if(G.phase==='night'){
+      txt.textContent='Noche activa: '+queue+' pedidos / '+broken+' fallas / $'+G.gold+' caja.';
+      tip.textContent=G.pActive?'⚡ Corré al tablero eléctrico.':'Inspeccioná impresoras antes de acelerar.';
+    }else{
+      txt.textContent='Día '+G.day+': $'+G.gold+' caja · REP '+G.rep+' · cola '+queue+'.';
+      tip.textContent=G.energy<35?'🧉 Tomá mate o bajá ritmo.':'Comprá stock cuando el mercado esté barato.';
+    }
+    const tag=document.getElementById('ptag');
+    if(tag) tag.classList.toggle('pulseWarn',G.pActive||broken>0||G.stress>70);
+  };
+  setInterval(()=>{try{updateProPanel()}catch(e){}},700);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){
+      const ts=document.getElementById('titleScreen');
+      if(ts) ts.style.display=ts.style.display==='none'?'flex':'none';
+    }
+    if(e.key && e.key.toLowerCase()==='h'){
+      const ts=document.getElementById('titleScreen');
+      if(ts) ts.style.display='flex';
+    }
+  });
+})();

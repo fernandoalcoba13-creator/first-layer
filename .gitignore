@@ -1,0 +1,34 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*~
+
+# Editores
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-*
+
+# Logs y temp
+*.log
+*.tmp
+*.bak
+.cache/
+
+# Aseprite working files (commit solo PNG/JSON exportados)
+*.aseprite
+*.ase
+
+# Crocotile working files (commit solo PNG/glb/json exportados)
+*.crocotile
+*.crocotile3d
+
+# Carpetas locales que no van al repo
+/drafts/
+/sandbox/
+/private/
+
+# Snapshots / backups del HTML monolítico
+printshop-v*.html
