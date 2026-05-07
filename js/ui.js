@@ -87,4 +87,26 @@ function doTrans(h,p,cb){
     },2400);}
   },28);
 }
+function showDayClose(summary,cb){
+  const el=document.getElementById('dayEnd');
+  document.getElementById('deTitle').textContent='Día '+summary.day+' cerrado';
+  document.getElementById('deMood').textContent=summary.mood;
+  document.getElementById('deStats').innerHTML=[
+    ['Clientes atendidos',summary.accepted+' / '+summary.clients,summary.lost?'Se fueron o rechazaste: '+summary.lost:'Sin clientes perdidos'],
+    ['Pedidos para la noche',summary.queue,summary.urgent?'Urgentes: '+summary.urgent:'Sin urgentes en cola'],
+    ['Valor en cola','$'+summary.queueValue,'Se cobra al terminar impresiones'],
+    ['Reputación',summary.rep+(summary.repDelta?' ('+(summary.repDelta>0?'+':'')+summary.repDelta+')':''),'Estrés final: '+summary.stress+'%']
+  ].map(s=>'<div class="deStat"><b>'+s[0]+'</b><span>'+s[1]+'</span><small>'+s[2]+'</small></div>').join('');
+  document.getElementById('deNote').textContent=summary.note;
+  G._dayCloseCb=cb;
+  el.style.display='flex';
+  SFX.ok();
+}
+G.continueToNight=function(){
+  const el=document.getElementById('dayEnd');
+  el.style.display='none';
+  const cb=G._dayCloseCb;
+  G._dayCloseCb=null;
+  if(cb)cb();
+};
 window.resetGame=()=>{localStorage.removeItem(SK);location.reload();};

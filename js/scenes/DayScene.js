@@ -5,6 +5,7 @@ class DayScene extends Phaser.Scene{
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFix=0;G.pActive=false;
+    G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.cTimer=0;this.cInt=6500-(G.upg.ig?2000:0)-(G.emp.juli2?1500:0);
     this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.dlgOpen=false;
@@ -240,6 +241,19 @@ class DayScene extends Phaser.Scene{
   endDay(){
     if(G.phase!=='day')return;
     G.phase='transition';G.block=true;doSave(G);this.scene.pause();
-    doTrans('🌙  NOCHE',G.orders.length+' pedidos en cola.\nVigilá impresoras y ⚡ cortes de luz.',()=>{this.scene.stop();this.scene.start('Night');});
+    const accepted=G.dayOrd,lost=Math.max(0,G.dayCli-G.dayOrd),queue=G.orders.length;
+    const urgent=G.orders.filter(o=>o.urg).length;
+    const queueValue=G.orders.reduce((sum,o)=>sum+o.pay,0);
+    const repDelta=G.rep-(G.dayStartRep||G.rep);
+    let mood='Turno prolijo. La noche define si esa cola se convierte en plata.';
+    if(lost>2)mood='Turno picante. Varios clientes quedaron en el camino.';
+    else if(queue>=4)mood='Buen volumen. Las impresoras van a transpirar esta noche.';
+    else if(queue===0)mood='Día flojo. Sin pedidos, la noche va a ser tranquila pero seca.';
+    const note=queue
+      ? 'Prepará repuestos y mirá las máquinas de cerca. Cada pedido terminado suma caja y reputación.'
+      : 'No hay pedidos listos. Usá la próxima mañana para comprar stock barato y aceptar encargos simples.';
+    showDayClose({day:G.day,mood,clients:G.dayCli,accepted,lost,queue,urgent,queueValue,rep:G.rep,repDelta,stress:G.stress,note},()=>{
+      doTrans('🌙  NOCHE',queue+' pedidos en cola.\nVigilá impresoras y ⚡ cortes de luz.',()=>{this.scene.stop();this.scene.start('Night');});
+    });
   }
 }
