@@ -17,7 +17,7 @@ function setupPrinterAnims(scene){
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;
   setupPrinterAnims(scene);
-  const sp=scene.add.sprite(x,y+40,PRINTER_ASSET,'0.').setOrigin(.5,1).setScale(2.45).setDepth(3);
+  const sp=scene.add.sprite(x,y+40,PRINTER_ASSET,0).setOrigin(.5,1).setScale(2.45).setDepth(3);
   sp.play('printer_idle');
   return sp;
 }
