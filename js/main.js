@@ -8,5 +8,5 @@ const game=new Phaser.Game({
   scene:[DayScene,NightScene],
   loader:{imageLoadType:'HTMLImageElement'},
   scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
-  render:{pixelArt:false,antialias:true}
+  render:{pixelArt:true,antialias:false}
 });
