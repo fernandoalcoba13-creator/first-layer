@@ -3,9 +3,6 @@
 // Will be progressively retired as Mati delivers sprite assets.
 const PRINTER_ASSET='maquina3d';
 const PRINTER_SHEET='assets/printers/maquina3d.png';
-function loadPrinterAssets(scene){
-  if(!scene.textures.exists(PRINTER_ASSET))scene.load.spritesheet(PRINTER_ASSET,PRINTER_SHEET,{frameWidth:26,frameHeight:34});
-}
 function setupPrinterAnims(scene){
   if(!scene.textures.exists(PRINTER_ASSET)||scene.anims.exists('printer_idle'))return;
   const fr=n=>({key:PRINTER_ASSET,frame:n});
@@ -13,6 +10,19 @@ function setupPrinterAnims(scene){
   scene.anims.create({key:'printer_working',frames:[4,5,6,7,8,9,10,11,12].map(fr),frameRate:8,repeat:-1});
   scene.anims.create({key:'printer_fail',frames:[fr(13),fr(14)],frameRate:4,repeat:-1});
   scene.anims.create({key:'printer_out_filament',frames:[fr(15),fr(16)],frameRate:3,repeat:-1});
+}
+function loadPrinterAssetsAsync(scene,onReady){
+  if(scene.textures.exists(PRINTER_ASSET)){setupPrinterAnims(scene);if(onReady)onReady();return;}
+  const img=new Image();
+  img.onload=()=>{
+    if(!scene.textures.exists(PRINTER_ASSET)){
+      scene.textures.addSpriteSheet(PRINTER_ASSET,img,{frameWidth:26,frameHeight:34});
+      setupPrinterAnims(scene);
+    }
+    if(onReady)onReady();
+  };
+  img.onerror=()=>console.warn('Printer sprite failed to load, using procedural fallback.');
+  img.src=PRINTER_SHEET;
 }
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;

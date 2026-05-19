@@ -2,7 +2,6 @@
 // Day phase: clients arrive, player accepts/negotiates/rejects orders, manages stock & shop.
 class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
-  preload(){loadPrinterAssets(this);}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;
@@ -12,6 +11,7 @@ class DayScene extends Phaser.Scene{
     this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
+    loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     this.checkStory();this.updateHUD();
     this.time.delayedCall(900,()=>this.spawn());
     this.time.delayedCall(3000,()=>this.spawn());
@@ -199,6 +199,14 @@ class DayScene extends Phaser.Scene{
       else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
       else if(p.busy)pg.lt.setText(p.order.pr.e+' '+Math.round(p.progress*100)+'%').setColor('#5bc8fa');
       else pg.lt.setText('LIBRE').setColor('#2a2050');
+    });
+  }
+  refreshPrinterSprites(){
+    if(!this.pGfx)return;
+    this.pGfx.forEach(pg=>{
+      if(pg.sp||!this.textures.exists(PRINTER_ASSET))return;
+      pg.sp=createPrinterSprite(this,pg.px,pg.py);
+      if(pg.sp)pg.g.setVisible(false);
     });
   }
   updateHUD(){

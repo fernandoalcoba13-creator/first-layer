@@ -3,7 +3,6 @@
 // player runs to inspect/repair and to the breaker panel.
 class NightScene extends Phaser.Scene{
   constructor(){super({key:'Night'});}
-  preload(){loadPrinterAssets(this);}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     G.phase='night';G.block=false;
@@ -11,6 +10,7 @@ class NightScene extends Phaser.Scene{
     this.earn=0;this.done=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
     this.assignOrders();this.buildWorld();this.createPlayer();this.setupKeys();
+    loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     this.schedPwr();this.schedEvs();
     document.getElementById('ptag').className='ptag night';
     document.getElementById('ptag').textContent='🌙 NOCHE — Día '+G.day;
@@ -62,6 +62,14 @@ class NightScene extends Phaser.Scene{
       this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Courier New',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
+  }
+  refreshPrinterSprites(){
+    if(!this.pObjs)return;
+    this.pObjs.forEach(po=>{
+      if(po.spr||!this.textures.exists(PRINTER_ASSET))return;
+      po.spr=createPrinterSprite(this,po.px,po.py);
+      if(po.spr)po.pg.setVisible(false);
+    });
   }
   drawTblN(pwr){
     const g=this.tG,tx=this.W*.07,ty=this.H*.42;g.clear();
