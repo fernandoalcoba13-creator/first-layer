@@ -13,16 +13,18 @@ function setupPrinterAnims(scene){
 }
 function loadPrinterAssetsAsync(scene,onReady){
   if(scene.textures.exists(PRINTER_ASSET)){setupPrinterAnims(scene);if(onReady)onReady();return;}
-  const img=new Image();
-  img.onload=()=>{
-    if(!scene.textures.exists(PRINTER_ASSET)){
-      scene.textures.addSpriteSheet(PRINTER_ASSET,img,{frameWidth:26,frameHeight:34});
-      setupPrinterAnims(scene);
-    }
-    if(onReady)onReady();
-  };
-  img.onerror=()=>console.warn('Printer sprite failed to load, using procedural fallback.');
-  img.src=PRINTER_SHEET;
+  if(G._printerAssetCallbacks){G._printerAssetCallbacks.push(onReady);return;}
+  G._printerAssetCallbacks=[onReady];
+  scene.load.once('complete',()=>{
+    if(scene.textures.exists(PRINTER_ASSET))setupPrinterAnims(scene);
+    (G._printerAssetCallbacks||[]).forEach(cb=>{if(cb)cb();});
+    G._printerAssetCallbacks=null;
+  });
+  scene.load.once('loaderror',file=>{
+    if(file&&file.key===PRINTER_ASSET)console.warn('Printer sprite failed to load, using procedural fallback.');
+  });
+  scene.load.spritesheet(PRINTER_ASSET,PRINTER_SHEET,{frameWidth:26,frameHeight:34});
+  scene.load.start();
 }
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;
