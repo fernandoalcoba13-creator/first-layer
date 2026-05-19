@@ -1,7 +1,7 @@
 // ═══ BOOT ═══
 // Phaser.Game instantiation. Last script to load.
 const game=new Phaser.Game({
-  type:Phaser.AUTO,
+  type:Phaser.CANVAS,
   width:Math.min(window.innerWidth,940),
   height:Math.min(window.innerHeight,610),
   backgroundColor:'#07060f',
