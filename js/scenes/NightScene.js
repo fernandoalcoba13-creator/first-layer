@@ -3,6 +3,7 @@
 // player runs to inspect/repair and to the breaker panel.
 class NightScene extends Phaser.Scene{
   constructor(){super({key:'Night'});}
+  preload(){loadPrinterAssets(this);}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     G.phase='night';G.block=false;
@@ -38,7 +39,8 @@ class NightScene extends Phaser.Scene{
       if(p.locked)return;
       const px=sx+i*sp,py=H*.51;
       const ct=this.add.container(px,py).setDepth(3);
-      const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);ct.add(pg);
+      const spr=createPrinterSprite(this,px,py);
+      const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
       const arm=this.add.graphics();
       arm.fillStyle(0x8888cc);arm.fillRect(-2,-64,4,22);
       arm.fillStyle(0x5bc8fa);arm.fillTriangle(-4,-42,4,-42,0,-36);
@@ -57,7 +59,7 @@ class NightScene extends Phaser.Scene{
       const lb=this.add.text(0,30,'P'+(i+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'💤'),{fontSize:'8px',color:'#2a2050',fontFamily:'Courier New',align:'center'}).setOrigin(.5,0);
       ct.add(lb);
       const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
-      this.pObjs.push({p,ct,pg,pbF,lb,wn,arm,px,py});
+      this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Courier New',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
   }
@@ -240,7 +242,8 @@ class NightScene extends Phaser.Scene{
     });
     this.pObjs.forEach(po=>{
       const p=po.p,c=p.order?p.order.pr.c:0x5bc8fa;
-      drawPrinter(po.pg,p.busy&&!p._pau,p.broken,p.progress,c);
+      if(po.spr)setPrinterSpriteState(po.spr,p);
+      else drawPrinter(po.pg,p.busy&&!p._pau,p.broken,p.progress,c);
       po.pbF.width=70*Math.min(1,p.progress);
     });
     let near=null,md=95;

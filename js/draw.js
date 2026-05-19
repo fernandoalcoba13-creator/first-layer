@@ -1,6 +1,36 @@
 // ═══ DRAW HELPERS ═══
 // Procedural drawing functions used during prototype phase.
 // Will be progressively retired as Mati delivers sprite assets.
+const PRINTER_ASSET='maquina3d';
+const PRINTER_SHEET='assets/printers/maquina3d.png';
+function loadPrinterAssets(scene){
+  if(!scene.textures.exists(PRINTER_ASSET))scene.load.spritesheet(PRINTER_ASSET,PRINTER_SHEET,{frameWidth:26,frameHeight:34});
+}
+function setupPrinterAnims(scene){
+  if(!scene.textures.exists(PRINTER_ASSET)||scene.anims.exists('printer_idle'))return;
+  const fr=n=>({key:PRINTER_ASSET,frame:n});
+  scene.anims.create({key:'printer_idle',frames:[fr(0),fr(1),fr(2),fr(3)],frameRate:3,repeat:-1});
+  scene.anims.create({key:'printer_working',frames:[4,5,6,7,8,9,10,11,12].map(fr),frameRate:8,repeat:-1});
+  scene.anims.create({key:'printer_fail',frames:[fr(13),fr(14)],frameRate:4,repeat:-1});
+  scene.anims.create({key:'printer_out_filament',frames:[fr(15),fr(16)],frameRate:3,repeat:-1});
+}
+function createPrinterSprite(scene,x,y){
+  if(!scene.textures.exists(PRINTER_ASSET))return null;
+  setupPrinterAnims(scene);
+  const sp=scene.add.sprite(x,y+40,PRINTER_ASSET,'0.').setOrigin(.5,1).setScale(2.45).setDepth(3);
+  sp.play('printer_idle');
+  return sp;
+}
+function setPrinterSpriteState(sp,p){
+  if(!sp)return;
+  let key='printer_idle';
+  if(p&&p.broken)key='printer_fail';
+  else if(p&&p._ev&&p._ev.id==='run')key='printer_out_filament';
+  else if(p&&p._ev)key='printer_fail';
+  else if(p&&p.busy&&!p._pau)key='printer_working';
+  if(sp.anims&&sp.anims.currentAnim&&sp.anims.currentAnim.key===key)return;
+  sp.play(key,true);
+}
 function drawPlayer(g,light,tired){
   g.clear();
   g.fillStyle(0x000000,.3);g.fillEllipse(0,20,28,8);

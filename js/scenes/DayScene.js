@@ -2,6 +2,7 @@
 // Day phase: clients arrive, player accepts/negotiates/rejects orders, manages stock & shop.
 class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
+  preload(){loadPrinterAssets(this);}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;
@@ -57,9 +58,10 @@ class DayScene extends Phaser.Scene{
     this.pGfx=[];const psp=(W*.37)/4;
     for(let i=0;i<4;i++){
       const px=W*.6+i*psp+psp/2,py=H*.49;
-      const pg=this.add.graphics();pg.setPosition(px,py);drawPrinter(pg,false,false,0,0x5bc8fa);
+      const sp=createPrinterSprite(this,px,py);
+      const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Courier New'}).setOrigin(.5,0);
-      this.pGfx.push({g:pg,lt,px,py});
+      this.pGfx.push({g:pg,sp,lt,px,py});
     }
     this.IA.push({x:W*.77,y:H*.38,type:'printers',lbl:'[E] Impresoras'});
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Courier New',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
@@ -191,7 +193,8 @@ class DayScene extends Phaser.Scene{
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
       const c=p.order?p.order.pr.c:0x5bc8fa;
-      drawPrinter(pg.g,p.busy,p.broken,p.progress,c);
+      if(pg.sp)setPrinterSpriteState(pg.sp,p);
+      else drawPrinter(pg.g,p.busy,p.broken,p.progress,c);
       if(p.locked)pg.lt.setText('🔒').setColor('#222244');
       else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
       else if(p.busy)pg.lt.setText(p.order.pr.e+' '+Math.round(p.progress*100)+'%').setColor('#5bc8fa');
