@@ -8,7 +8,7 @@ class DayScene extends Phaser.Scene{
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=12000-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
-    this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.dlgOpen=false;
+    this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
@@ -88,7 +88,7 @@ class DayScene extends Phaser.Scene{
   refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,false);if(this.pSp)this.pGr.setVisible(false);}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
-    this.input.keyboard.on('keydown-E',()=>{if(!this.dlgOpen&&this.near&&!G.block)this.interact(this.near);});
+    this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
   }
   checkStory(){
     const e=STORY.find(s=>s.day===G.day&&G.day>G.ss);
@@ -169,7 +169,7 @@ class DayScene extends Phaser.Scene{
     const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
     const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
-    const co={ct,cg,cs,pbF,cl,pr,pay,urg,order,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP};
+    const co={ct,cg,cs,pbF,cl,pr,pay,urg,order,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP,autoReady:true};
     co.stepTw=this.tweens.add({targets:ct,y:yP-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     this.tweens.add({targets:ct,x:tX,duration:640,ease:'Power2',onComplete:()=>this.stopClientWalk(co)});
     this.clients.push(co);G.dayCli++;
@@ -181,6 +181,16 @@ class DayScene extends Phaser.Scene{
     const used=this.clients.filter(c=>!c.served).map(c=>c.slot);
     for(let i=0;i<5;i++)if(!used.includes(i))return i;
     return -1;
+  }
+  nearestClient(){
+    let best=null,md=76;
+    this.clients.forEach(c=>{
+      if(c.served||c.walk)return;
+      const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,c.ct.x,c.ct.y);
+      if(d<md){md=d;best=c;}
+      if(d>88)c.autoReady=true;
+    });
+    return best;
   }
   _shuffleCL(){
     const a=[...CL];
@@ -215,21 +225,24 @@ class DayScene extends Phaser.Scene{
   }
   interact(t){
     SFX.step();
-    if(t.type==='counter')this.openCounter();
+    if(t.type==='client')this.openCounter(t.client);
+    else if(t.type==='counter')this.openCounter();
     else if(t.type==='printers')this.openPrinters();
     else if(t.type==='stock')this.openStock();
     else if(t.type==='shop')G.openShop();
     else if(t.type==='tab')this.openTab();
   }
-  openCounter(){
+  openCounter(target){
     const w=this.clients.filter(c=>!c.served);
     if(!w.length){showNotif('No hay clientes esperando.');return;}
-    const c=w[0],dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
+    const c=target&&!target.served?target:(this.nearClient||w[0]);
+    c.autoReady=false;
+    const dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
     const preview=chooseFilament(c.order.material,c.order.diff);
     this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
       '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('filament')+': '+(preview?preview.n+' ('+tr('risk')+' '+(preview.risk>0?'+':'')+Math.round(preview.risk*100)+'%)':tr('withoutStock'))+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
       [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
-       {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter();}},
+       {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}},
        {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
        {lb:'Cerrar',cb:()=>cDlg()}]);
   }
@@ -319,13 +332,16 @@ class DayScene extends Phaser.Scene{
     this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
     if(!this.pSp)this.player.scaleX=this.dir;
     if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
-    let near=null,md=88;
+    const cNear=this.nearestClient();
+    this.nearClient=cNear;
+    if(cNear&&!this.dlgOpen&&!G.block&&cNear.autoReady)this.openCounter(cNear);
+    let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'[E] '+cNear.cl.n}:null,md=cNear?0:88;
     this.IA.forEach(it=>{
       const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,it.x,it.y);
       if(d<md){md=d;near=it;}
     });
     this.near=near;
-    if(near){this.iLbl.setVisible(true).setText(near.lbl).setPosition(near.x,near.y-42);sHint('[E] Interactuar');}
+    if(near){this.iLbl.setVisible(true).setText(near.lbl).setPosition(near.x,near.y-42);sHint(near.type==='client'?'A/N/R | Esc':'[E] Interactuar');}
     else{this.iLbl.setVisible(false);sHint('WASD | E');}
     this.cTimer+=dt;if(this.cTimer>=this.cInt){this.cTimer=0;this.spawn();}
     this.clients.forEach(c=>{

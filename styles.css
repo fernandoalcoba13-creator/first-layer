@@ -1,6 +1,6 @@
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#07060f;display:flex;align-items:center;justify-content:center;min-height:100vh;overflow:hidden;font-family:'Courier New',monospace;}
-canvas{display:block;}
+canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
 #ui{position:fixed;top:0;left:0;right:0;bottom:0;pointer-events:none;}
 .ht{position:absolute;top:0;left:0;right:0;height:44px;background:rgba(4,3,14,.93);border-bottom:2px solid #1a1628;display:flex;align-items:center;padding:0 12px;gap:8px;}
 .pill{display:flex;align-items:center;gap:4px;background:rgba(255,255,255,.05);padding:3px 8px;font-size:12px;border:1px solid rgba(255,255,255,.06);}
@@ -154,3 +154,6 @@ body:after{content:"";position:fixed;inset:-20px;pointer-events:none;z-index:39;
 .pulseWarn{animation:pulseWarn .7s infinite alternate}@keyframes pulseWarn{from{filter:drop-shadow(0 0 0 rgba(255,77,106,0))}to{filter:drop-shadow(0 0 12px rgba(255,77,106,.75))}}
 @media(max-width:760px){.tsGrid,.tsControls{grid-template-columns:1fr}.tsTitle{font-size:24px}#proPanel{display:none}}
 @media(max-width:560px){.deGrid{grid-template-columns:1fr}.deBox{padding:15px}}
+#dlg,#shop,#sto,#evp,#bkg,.mgBox,.deBox,.tsBox{box-shadow:4px 4px 0 #02010a,0 0 0 1px rgba(255,255,255,.05) inset;}
+.db,.eb,.qbtn,.tsBtn,.langBtn,.shopClose,.st,.si{box-shadow:2px 2px 0 #03020a;}
+#dlg,.dh,.dt,.db,#shop,.si,.st,#proPanel,#keyHelp span{clip-path:polygon(0 0,calc(100% - 2px) 0,100% 2px,100% 100%,2px 100%,0 calc(100% - 2px));}
