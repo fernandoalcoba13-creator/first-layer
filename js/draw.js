@@ -15,6 +15,7 @@ const CLIENT_ASSETS=[
   {key:'client_personaje4',src:'assets/characters/clients/personaje4.png'},
   {key:'client_personaje3',src:'assets/characters/clients/personaje3.png'}
 ];
+const CLIENT_SPRITE_MAP={marcos:'client_personaje2',sofi:'client_personaje3',diego:'client_personaje4'};
 const CLIENT_SPRITE_SCALE=2;
 function addSheetFromImage(scene,key,src,fw,fh,cb){
   if(scene.textures.exists(key)){if(cb)cb();return;}
@@ -102,11 +103,11 @@ function setupClientAnims(scene){
   });
 }
 function createClientSprite(scene,cl,idx){
-  const asset=CLIENT_ASSETS[idx%CLIENT_ASSETS.length];
-  if(!asset||!scene.textures.exists(asset.key))return null;
+  const key=CLIENT_SPRITE_MAP[cl.id];
+  if(!key||!scene.textures.exists(key))return null;
   setupClientAnims(scene);
-  const sp=scene.add.sprite(0,24,asset.key,0).setOrigin(.5,1).setScale(CLIENT_SPRITE_SCALE);
-  const anim=asset.key+'_walk';
+  const sp=scene.add.sprite(0,24,key,0).setOrigin(.5,1).setScale(CLIENT_SPRITE_SCALE);
+  const anim=key+'_walk';
   if(scene.anims.exists(anim))sp.play(anim);
   return sp;
 }

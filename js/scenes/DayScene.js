@@ -7,7 +7,7 @@ class DayScene extends Phaser.Scene{
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
-    this.clients=[];this.cTimer=0;this.cInt=6500-(G.upg.ig?2000:0)-(G.emp.juli2?1500:0);
+    this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=9000-(G.upg.ig?2000:0)-(G.emp.juli2?1500:0);
     this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
@@ -100,8 +100,10 @@ class DayScene extends Phaser.Scene{
     const slot=this.nextClientSlot();
     if(slot<0)return;
     const activeIds=this.clients.filter(c=>!c.served).map(c=>c.cl.id);
-    const pool=CL.filter(c=>!activeIds.includes(c.id));
-    const cl=(pool.length?pool:CL)[Math.floor(Math.random()*(pool.length?pool.length:CL.length))];
+    if(!this.clientQueue.length)this.clientQueue=this._shuffleCL();
+    const qi=this.clientQueue.findIndex(c=>!activeIds.includes(c.id));
+    if(qi<0)return;
+    const cl=this.clientQueue.splice(qi,1)[0];
     const pr=PR[Math.floor(Math.random()*PR.length)];
     const urg=cl.m==='Urgente'||Math.random()<.18;
     let pay=Math.round(pr.p*G.pMult*cl.gr*(urg?1.5:1));
@@ -130,6 +132,11 @@ class DayScene extends Phaser.Scene{
     const used=this.clients.filter(c=>!c.served).map(c=>c.slot);
     for(let i=0;i<5;i++)if(!used.includes(i))return i;
     return -1;
+  }
+  _shuffleCL(){
+    const a=[...CL];
+    for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}
+    return a;
   }
   stopClientWalk(c){
     c.walk=false;
