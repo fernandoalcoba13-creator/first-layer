@@ -63,7 +63,7 @@ function loadPlayerAssetsAsync(scene,onReady){
 function createPlayerSprite(scene,parent,night){
   if(!scene.textures.exists(PLAYER_DOWN))return null;
   setupPlayerAnims(scene);
-  const sp=scene.add.sprite(0,24,PLAYER_DOWN,0).setOrigin(.5,1).setScale(1.05).setDepth(6);
+  const sp=scene.add.sprite(0,24,PLAYER_DOWN,0).setOrigin(.5,1).setScale(2.1).setDepth(6);
   parent.add(sp);sp.play('player_walk_down');return sp;
 }
 function setPlayerSpriteState(sp,vx,vy,lastDir){
