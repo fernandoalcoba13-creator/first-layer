@@ -9,7 +9,8 @@ G.startNozzleMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
   if(G.stk.parts<ev.pts){showNotif('🔩 Sin repuestos');return;}
   document.getElementById('evp').style.display='none';
-  G._mini={ev,time:9000,max:9000,heat:18,dir:1,hits:0,tick:null,done:false};
+  const lvl=Math.min(5,Math.floor((G.day-1)/2)+(ev.printer&&ev.printer.order?Math.floor((ev.printer.order.diff||1)-1):0));
+  G._mini={ev,time:Math.max(5200,9000-lvl*650),max:Math.max(5200,9000-lvl*650),heat:18,dir:1,hits:0,need:3+(lvl>=3?1:0),lo:42+lvl*2,hi:58-lvl*2,spd:4.4+lvl*.45,tick:null,done:false};
   document.getElementById('miniGame').style.display='flex';
   document.getElementById('mgTitle').textContent='🚫 Limpiar pico - P'+(ev.printer.id+1);
   document.getElementById('mgDesc').textContent='Esperá la zona verde y limpiá el nozzle tres veces.';
@@ -18,7 +19,7 @@ G.startNozzleMini=function(){
   G._mini.tick=setInterval(()=>{
     if(!G._mini)return;
     const m=G._mini;
-    m.time-=80;m.heat+=m.dir*4.4;
+    m.time-=80;m.heat+=m.dir*m.spd;
     if(m.heat>=96){m.heat=96;m.dir=-1;}
     if(m.heat<=8){m.heat=8;m.dir=1;}
     document.getElementById('mgTimerFill').style.width=Math.max(0,m.time/m.max*100)+'%';
@@ -29,16 +30,16 @@ G.startNozzleMini=function(){
 };
 G.renderNozzleMini=function(){
   if(!G._mini)return;
-  const m=G._mini,ok=m.heat>=42&&m.heat<=58,heat=Math.round(m.heat);
+  const m=G._mini,ok=m.heat>=m.lo&&m.heat<=m.hi,heat=Math.round(m.heat);
   document.getElementById('mgGrid').innerHTML='<div class="mgCorner '+(ok?'ok':'')+'" style="grid-column:1/-1"><b>Temperatura del pico</b><div class="mgVal">'+heat+'%</div><div class="mgBar"><i style="width:'+heat+'%"></i></div><div class="mgBtns"><button style="width:120px" onclick="G.scrapeNozzle()">Limpiar</button></div></div>';
-  document.getElementById('mgHint').textContent='Limpiezas buenas: '+m.hits+'/3 | Zona verde: 42 a 58';
+  document.getElementById('mgHint').textContent='Limpiezas buenas: '+m.hits+'/'+m.need+' | Zona verde: '+m.lo+' a '+m.hi;
 };
 G.scrapeNozzle=function(){
   if(!G._mini||G._mini.done)return;
-  const ok=G._mini.heat>=42&&G._mini.heat<=58;
-  if(ok){G._mini.hits++;SFX.ok();showNotif('Limpieza perfecta '+G._mini.hits+'/3','success');}
+  const ok=G._mini.heat>=G._mini.lo&&G._mini.heat<=G._mini.hi;
+  if(ok){G._mini.hits++;SFX.ok();showNotif('Limpieza perfecta '+G._mini.hits+'/'+G._mini.need,'success');}
   else{G._mini.time=Math.max(0,G._mini.time-1500);SFX.err();shakeUI();showNotif('Rayaste el nozzle. -tiempo','error');}
-  if(G._mini.hits>=3){G._mini.done=true;setTimeout(()=>G.winNozzleMini(),180);}
+  if(G._mini.hits>=G._mini.need){G._mini.done=true;setTimeout(()=>G.winNozzleMini(),180);}
 };
 G.winNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';G.nFix();};
 G.failNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif('El pico quedó obstruido. La impresora queda fuera.','error');G.nSkip();};
@@ -61,8 +62,14 @@ G._bk=function(seq){
   }
 };
 G._dcb=function(i){const cb=G._dch&&G._dch[i]&&G._dch[i].cb;if(cb)cb();};
+G.syncPrinters=function(){
+  for(let i=0;i<4;i++){
+    if(!G.printers[i])G.printers[i]={id:i,locked:true,broken:false,busy:false,order:null,progress:0,_ev:null,_pau:false};
+    G.printers[i].locked=i>=G.pCount;
+  }
+};
 G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;};
-G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(u.req&&!G.upg[u.req]){showNotif('⚠️ Requiere: '+u.req);return;}if(G.gold<u.co){showNotif('💸 Sin fondos');return;}G.gold-=u.co;G.upg[id]=true;SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' activado!');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
+G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(u.req&&!G.upg[u.req]){showNotif('⚠️ Requiere: '+u.req);return;}if(G.gold<u.co){showNotif('💸 Sin fondos');return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' activado!');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
 G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(G.gold<e.co){showNotif('💸 Sin fondos');return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' contratado!');doSave(G);G.tab('emp');};
 G.cShop=function(){document.getElementById('shop').style.display='none';G.block=false;};
 G.showSto=function(ti,tx,ob){G.block=true;document.getElementById('sh').textContent=ti;document.getElementById('sp').textContent=tx+(ob?'\n\n🎯 Objetivo: '+ob:'');document.getElementById('sto').style.display='block';};

@@ -9,6 +9,7 @@ class NightScene extends Phaser.Scene{
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
     this.earn=0;this.done=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
+    if(G.syncPrinters)G.syncPrinters();
     this.assignOrders();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
@@ -159,7 +160,11 @@ class NightScene extends Phaser.Scene{
     if(G.phase!=='night')return;
     const busy=G.printers.filter(p=>p.busy&&!p.broken&&!p._ev&&!p._pau);
     if(!busy.length)return;
-    const tgt=busy[Math.floor(Math.random()*busy.length)];
+    const avgRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||0),0)/busy.length;
+    if(Math.random()>Math.min(.9,.22+G.day*.025+avgRisk))return;
+    const totalRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||.05),0);
+    let roll=Math.random()*totalRisk,tgt=busy[0];
+    for(const p of busy){roll-=p.order&&p.order.risk||.05;if(roll<=0){tgt=p;break;}}
     let pool=NE.filter(e=>{
       if(e.id==='therm'&&G.upg.cool&&Math.random()<.55)return false;
       if(e.id==='bed'&&G.upg.abed&&Math.random()<.5)return false;
@@ -249,7 +254,7 @@ class NightScene extends Phaser.Scene{
     if(this.el>=this.dur){this.endNight();return;}
     G.printers.forEach(p=>{
       if(!p.busy||p.broken||p._ev||p._pau)return;
-      p.progress+=dt/1000*G.sMult/(p.order?p.order.pr.t*10:100);
+      p.progress+=dt/1000*G.sMult/(p.order?(p.order.time||p.order.pr.t)*10:100);
       if(p.progress>=1){p.progress=1;this.completePrint(p);}
     });
     this.pObjs.forEach(po=>{

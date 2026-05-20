@@ -17,7 +17,12 @@ const CLIENT_ASSETS=[
   {key:'client_personaje3',src:'assets/characters/clients/personaje3.png'},
   {key:'client_personaje5',src:'assets/characters/clients/personaje5.png'}
 ];
-const CLIENT_SPRITE_MAP={marcos:'client_personaje1',sofi:'client_personaje3',diego:'client_personaje4',valeria:'client_personaje5',nico:'client_personaje2'};
+const CLIENT_SPRITE_MAP={
+  marcos:'client_personaje1',sofi:'client_personaje2',diego:'client_personaje4',
+  valeria:'client_personaje3',nico:'client_personaje5',laura:'client_personaje2',
+  juli:'client_personaje3',tomas:'client_personaje1',ramiro:'client_personaje4',
+  pablo:'client_personaje1',meli:'client_personaje2',caro:'client_personaje3'
+};
 const CLIENT_SPRITE_SCALE=2;
 function addSheetFromImage(scene,key,src,fw,fh,cb){
   if(scene.textures.exists(key)){if(cb)cb();return;}

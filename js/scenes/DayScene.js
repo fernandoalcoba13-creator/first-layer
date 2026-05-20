@@ -4,7 +4,7 @@ class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
-    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;
+    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=12000-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
@@ -20,7 +20,7 @@ class DayScene extends Phaser.Scene{
     document.getElementById('ptag').className='ptag day';
     document.getElementById('ptag').textContent='☀️ DÍA '+G.day;
     document.getElementById('hday').textContent='📅 Día '+G.day;
-    updateMarket();sLog('Día '+G.day+' — Atendé clientes y cargá pedidos para la noche.');
+    updateMarket();this.applyDayMod();sLog('Día '+G.day+' — Atendé clientes y cargá pedidos para la noche.');
     sHint('WASD | E=interactuar');
     doSave(G);
   }
@@ -95,6 +95,53 @@ class DayScene extends Phaser.Scene{
     if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>G.showSto(e.ti,e.tx,e.ob));}
     document.getElementById('obj').textContent=G.cObj?'🎯 '+G.cObj.ob:'';
   }
+  applyDayMod(){
+    if(G.day<2||Math.random()>Math.min(.58,.12+G.day*.035))return;
+    const mods=[
+      {id:'rush',name:'Clientes apurados',log:'Hoy todos quieren retirar rapido.',cInt:.84,pay:1.08,pat:.9,risk:.02},
+      {id:'humid',name:'Humedad alta',log:'El filamento esta absorbiendo humedad. Revisa repuestos.',cInt:1,pay:1,risk:.06},
+      {id:'promo',name:'Promo viral',log:'Una publicacion trajo mas consultas al taller.',cInt:.78,pay:.95,pat:1},
+      {id:'premium',name:'Pedidos premium',log:'Llegan trabajos mejor pagos, pero mas delicados.',cInt:1.08,pay:1.22,risk:.04}
+    ];
+    G.dayMod=mods[Math.floor(Math.random()*mods.length)];
+    this.cInt=Math.max(6500,this.cInt*G.dayMod.cInt);
+    sLog('EVENTO: '+G.dayMod.name+' - '+G.dayMod.log);
+    showNotif('Evento del dia: '+G.dayMod.name,'info');
+  }
+  clientStyle(cl){
+    const rules={
+      marcos:{prefs:['util'],diff:.85,pat:1.25,tag:'flexible'},
+      sofi:{prefs:['art','fig'],diff:1.12,pat:.82,tag:'apuro estetico'},
+      diego:{prefs:['util'],diff:1.28,pat:1.05,tag:'tolerancia fina'},
+      valeria:{prefs:['util','art'],diff:1.35,pat:.88,tag:'corporativo'},
+      nico:{prefs:['fig'],diff:.95,pat:1.12,tag:'fan art'},
+      laura:{prefs:['art'],diff:1.08,pat:1.05,tag:'creativo'},
+      juli:{prefs:['fig','art'],diff:1.22,pat:.72,tag:'viral'},
+      tomas:{prefs:['util'],diff:1.18,pat:.95,tag:'maqueta'},
+      ramiro:{prefs:['util'],diff:1.38,pat:.65,tag:'contra reloj'},
+      pablo:{prefs:['util'],diff:1.05,pat:1.35,tag:'academico'},
+      meli:{prefs:['fig','util'],diff:.9,pat:1.05,tag:'simple'},
+      caro:{prefs:['art','fig'],diff:1,pat:1.1,tag:'curiosa'}
+    };
+    return rules[cl.id]||{prefs:['util','fig','art'],diff:1,pat:1,tag:'normal'};
+  }
+  pickProduct(style){
+    const pref=PR.filter(p=>style.prefs.includes(p.cat));
+    const pool=(pref.length&&Math.random()<.75)?pref:PR;
+    return pool[Math.floor(Math.random()*pool.length)];
+  }
+  makeOrder(cl,pr,urg,style){
+    const dayMul=1+Math.min(.8,(G.day-1)*.045);
+    const diff=Phaser.Math.Clamp(style.diff*dayMul*(urg?1.18:1),.75,2.6);
+    const mod=G.dayMod||{};
+    const pay=Math.round(pr.p*G.pMult*cl.gr*(urg?1.5:1)*(0.82+diff*.26)*(mod.pay||1));
+    const time=Math.max(1.2,pr.t*(0.82+diff*.28)*(urg?.86:1));
+    const pat=Math.max(6,(cl.pat*style.pat-(G.day-1)*.28+(urg?-4:0))*(mod.pat||1));
+    const risk=Phaser.Math.Clamp(.035+(diff-1)*.07+G.day*.006+(urg?.035:0)+(mod.risk||0),.02,.42);
+    const material=pr.cat==='art'?'resin':(pr.cat==='util'&&diff>1.15?'petg':'pla');
+    const units=Math.max(1,Math.ceil(pr.t*diff/3));
+    return {pay,time,diff,risk,pat,tag:style.tag,material,units};
+  }
   spawn(){
     if(this.clients.length>=5||G.phase!=='day')return;
     const slot=this.nextClientSlot();
@@ -104,13 +151,15 @@ class DayScene extends Phaser.Scene{
     const qi=this.clientQueue.findIndex(c=>!activeIds.includes(c.id));
     if(qi<0)return;
     const cl=this.clientQueue.splice(qi,1)[0];
-    const pr=PR[Math.floor(Math.random()*PR.length)];
+    const style=this.clientStyle(cl);
+    const pr=this.pickProduct(style);
     const urg=cl.m==='Urgente'||Math.random()<.18;
-    let pay=Math.round(pr.p*G.pMult*cl.gr*(urg?1.5:1));
+    const order=this.makeOrder(cl,pr,urg,style);
+    let pay=order.pay;
     if(G.upg.ams&&(pr.cat==='fig'||pr.cat==='art'))pay=Math.round(pay*1.5);
     const idx=slot;
     const tX=this.W*.24+slot*86,yP=this.H*.71;
-    const pat=(cl.pat+(urg?-5:0))*1000;
+    const pat=order.pat*1000;
     const ct=this.add.container(-50,yP).setDepth(4);
     const cs=createClientSprite(this,cl,idx);
     const cg=this.add.graphics();if(cs)ct.add(cs);else{drawClient(cg,cl,idx);ct.add(cg);}
@@ -120,7 +169,7 @@ class DayScene extends Phaser.Scene{
     const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
     const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
-    const co={ct,cg,cs,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP};
+    const co={ct,cg,cs,pbF,cl,pr,pay,urg,order,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP};
     co.stepTw=this.tweens.add({targets:ct,y:yP-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     this.tweens.add({targets:ct,x:tX,duration:640,ease:'Power2',onComplete:()=>this.stopClientWalk(co)});
     this.clients.push(co);G.dayCli++;
@@ -145,11 +194,15 @@ class DayScene extends Phaser.Scene{
     if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
-    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg});
+    if((G.stk[c.order.material]||0)<c.order.units){showNotif('Falta '+c.order.material+' x'+c.order.units+' para aceptar','error');return false;}
+    G.stk[c.order.material]-=c.order.units;
+    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk:c.order.risk,tag:c.order.tag,material:c.order.material,units:c.order.units});
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
+    if(this.sLbl)this.sLbl.setText(this.stkTxt());
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 Lucas aceptó: '+c.pr.e+' '+c.pr.n);
     sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — $'+c.pay+'. Cola: '+G.orders.length);
+    return true;
   }
   leaveClient(c,ang){
     c.served=true;
@@ -171,8 +224,8 @@ class DayScene extends Phaser.Scene{
     if(!w.length){showNotif('No hay clientes esperando.');return;}
     const c=w[0],dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
     this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
-      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+(c.urg?'\n🔴 ¡URGENTE!':''),
-      [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{this.acceptOrd(c,'man');cDlg();}},
+      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\nMaterial: '+c.order.material+' x'+c.order.units+'\nDificultad: '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
+      [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
        {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter();}},
        {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
        {lb:'Cerrar',cb:()=>cDlg()}]);
