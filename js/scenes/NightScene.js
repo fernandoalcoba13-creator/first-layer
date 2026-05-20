@@ -11,6 +11,7 @@ class NightScene extends Phaser.Scene{
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
     this.assignOrders();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
+    loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     this.schedPwr();this.schedEvs();
     document.getElementById('ptag').className='ptag night';
     document.getElementById('ptag').textContent='🌙 NOCHE — Día '+G.day;
@@ -87,8 +88,9 @@ class NightScene extends Phaser.Scene{
     this.pGr=this.add.graphics();drawPlayer(this.pGr,true,false);
     this.player.add(this.pGr);
     this.fc=this.add.graphics();this.fc.fillStyle(0xffeeaa,.07);this.fc.fillTriangle(12,-6,12,6,52,0);
-    this.player.add(this.fc);
+    this.player.add(this.fc);this.pSp=null;this.pDir='down';
   }
+  refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,true);if(this.pSp)this.pGr.setVisible(false);}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
     this.input.keyboard.on('keydown-E',()=>{
@@ -238,7 +240,9 @@ class NightScene extends Phaser.Scene{
       if(k.s.isDown||k.dn.isDown)vy=103*spd;
       this.player.x=Phaser.Math.Clamp(this.player.x+vx*dt/1000,28,this.W-28);
       this.player.y=Phaser.Math.Clamp(this.player.y+vy*dt/1000,this.H*.28,this.H*.82);
-      this.player.scaleX=this.dir;this.fc.scaleX=this.dir;
+      this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
+      if(!this.pSp)this.player.scaleX=this.dir;
+      this.fc.scaleX=this.dir;
       if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>175){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
     }
     tickMate(dt);this.el+=dt;this.nBf.width=300*Math.min(1,this.el/this.dur);

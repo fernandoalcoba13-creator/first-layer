@@ -4,13 +4,28 @@
 const PRINTER_ASSET='maquina3d';
 const PRINTER_SHEET='assets/printers/maquina3d.png';
 const PRINTER_SHEET_DATA='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAboAAAAiCAYAAAAptRwfAAAAAXNSR0IArs4c6QAAB8BJREFUeJzt3W9s1GQcB/AvB2zH2HbbBLYMHLjhFrMIc4EEMFEIAk4NL4gJI74wkRdqNGoIGEOIuykhIMYYJTEkEuILwnizqBEXQAUD8sc/gw0n2XCDTTY2GbDbxhgIO190LXdtr9den3Z3t+/vzXrt0+fTZ2mfp33aPp0Ag9iwaWPQaHlofLLz4wlm09KhQ4cOHTpuOREXbti0MfjYouUAgAunf8RwxQ8AAG/dMwgU7wQA+Fo24dWOmwCA3QXZMRWKDh06dOjQcdLxREIAoGzeCpTNWwEAmF8yB/NL5gAA7pV34l55JwBgZO5ajMxdG7aelcLQoUOHDh06TjqTjMBzjUeU6YbmywAAL+ZiUv1MZb7n7wPSREG2lbLQoUOHDh06rji6V3QAcOZEU8zTVoIOHTp06NBx0gm7oltWsSqYcj9bWamn4Zyy7I+/nhpd4SKGz3co889fPCtNpObizIkmrFpZGbw78SaO1h2K2F9Khw4dOnTouOUoDZ2MAEBK1gju9nnQ2fuPkvDO79MUqPfqcWX+r1mV0sTto0jJGgHuAyn3s7GsYlVQr1B06NChQ4eOm44ysWplpXIj7+7Em+rtMB3yxgLAocM1mgLRoUOHDh06bjoR79EBwPKFS7F84VLT07EGHTp06NCh45Rj+NRl6KWjmelYgw4dOnTo0HHK0W3oAgP98GVk4kyjdKPP7HRgoB/T08w/TkqHDh06dOg47SgN3bWhdkxPmw0ACA540H7lupSBLxV9A4NKL6fedCBwB324Dp8vFUh7kJ9e0KFDhw4dOm46SkMXHPDgGiRsRu7DmJGruz26oU57bagdwQH923906NChQ4eOm05Y16UvIxPPru7H5zv+1WS25dO96Kr/DgBQ+9O3hrAvI3O0tY283E3nndcOapbt/ebPhC0P/2/x7bj1f0tbnaJZNvm3D+nQoaNywpq9wEC/YQYAkF/+gm7GvoxMZTpaPnTo0KFDh45bjuFTl3oht6qRNtDMxtKhM96cS60NuNHbjauHvxTmXL7g08ybRIcOHU0oL9Q9Mf/JYFZ+upCKw5eRib6uQZxt+EXzYiAdOnTsOyOzi207nvaWuHEKtu6x7XRsWc/yxBDxtB845YRd0QUG+tF35T/TGebn5yEQkPpCfb50dHV1Swtm9Ru+i27FiWgIdAwNQU5UQ4BjyrDpmDZsOJaMGB3LRgxOTIYJZ2R2MQbP3TOXF4CcnGwM3boNAEibOgU3bkgjT6SXFQNd9WPuFGzdg6bt26w5Q6NO2gOndOse9L2yluURXJ5kcHS7LvPz8wBAOUiNIn/mdADArcHbmDo1HbduRV/HqqM2AAh39AzRTiRDpGNkiHKiGSIcM4Zdx6wRq2PVsOrk5EjvDMkHu2Hah6TuoOHhu/CmejF8Zzh+nSETTk6I4/VieJjlSbr9QKCj29CZPfOUD2IAmJo+xfwZqwXHrmHGEWFEc0QZRo5II5Ij2tBznDDUjlNGqPNo8SOOGQCUM9hoIVcGAOD1ppheL26dHJYnJifZ9gMLjuWHUULjYssl5exV9EFMgwYN81G1rggAUL2/VbOsq6tHOUu2WumMleOvlBx/DctjJZJtPxDl2Gro4MIBTIOGE9Hc6EHJPGeNOn85CtdI39Rqqy1HhT/y/Qk7UbWuCHmL26RpFOlWCnYrHDcdf2URcpdIjh9Fuo0Dy6ONZNsPRDqGXy9gMMYimhs9qPOXO5r/rn3TDJ3mRvuHRuGac9i1b1rUbbEbeYvbcPDnTMM0X3wW8XuXcefkLmnD98dYHquRbPuBSEd4Q3fgyGns3nvcREo6ieDU+cvR3OgxrJD1Ggu7jnwlpE4jp7PjAMCbL/UaOm21ZQnhyF07zz8tvdYgnwGr03SfKgyrFN79YCfeeHt73DlyF99zSyVHvhJSp+k5Ge68XLUNC1KjP+zD8iTGfiDasd11qY61KxYha9Zkxy8W6WgjtMIsmTcixKnw16MOUqVd59evsNtqpUo7tGvOjoPRhkHduLbVass23p3q/a2oQpHyO29xm+Yst/uU9Pf1t5RvW+Kj9zchvcz84e+W469phT/EyV2idXpOap2vqjej9L3NLI/D5UlUh12XLoV8tSK6Sy7SFZd89SMi5AZMv5ErC0tDx31Hvnehd9bbfaowLE0iOPI9LL2rn56ThWFp7ATLM36ccd3QReuSsxOh3WyyIVduokOdr8hKlE7iOPLBr/4totIZC0duBNS/RTQKocHyJL8jvOvSboRehTj1lJpsyF1HdX7xVoW/XrkHo55Ph45op3p/q3LPQj0/ER1/Taty70o9X2SwPOPD0W3ozIzgECmsjOyg57y4s8XUdthxQo1oFh068ep4U71hv3fUdkZNI4eVkSpcc7zheWz/WsfxRnAsjCTC8oQ48bgfOODoNnTywWZ2SC+rQ3/RoUPHviMf1GaHWLI6FJPrzmjlbnYILKtDZSkOyxPf+4EDjuENKrMHXywHKR06dMQ4ZiuTWCqdMXFMVvaxNAph67M848bRfGFcGjndXpj5kiwdOnRiczztLdII7TbD067tUh0Lp2PLepQK+qxNtO1gefTzSXYn7MWEx0uXBjUpYozzTccivrJOhw4dOnTojIUDACicsyBYOGdBTKCVdenQoUOHDh03nP8BgG2ED6qTU4MAAAAASUVORK5CYII=';
+const PRINTER_BROKEN_ASSET='maquina3d_broken';
+const PRINTER_FILAMENT_ASSET='maquina3d_filament';
+const PLAYER_DOWN='player_walk_s';
+const PLAYER_LEFT='player_walk_a';
+const PLAYER_RIGHT='player_walk_d';
+const PLAYER_UP='player_walk_w';
+function addSheetFromImage(scene,key,src,fw,fh,cb){
+  if(scene.textures.exists(key)){if(cb)cb();return;}
+  const img=new Image();
+  img.onload=()=>{if(!scene.textures.exists(key))scene.textures.addSpriteSheet(key,img,{frameWidth:fw,frameHeight:fh});if(cb)cb();};
+  img.onerror=()=>{console.warn('Sprite failed to load: '+key);if(cb)cb();};
+  img.src=src;
+}
 function setupPrinterAnims(scene){
   if(!scene.textures.exists(PRINTER_ASSET)||scene.anims.exists('printer_idle'))return;
   const fr=n=>({key:PRINTER_ASSET,frame:n});
+  const br=n=>({key:scene.textures.exists(PRINTER_BROKEN_ASSET)?PRINTER_BROKEN_ASSET:PRINTER_ASSET,frame:n});
+  const fi=n=>({key:scene.textures.exists(PRINTER_FILAMENT_ASSET)?PRINTER_FILAMENT_ASSET:PRINTER_ASSET,frame:n});
   scene.anims.create({key:'printer_idle',frames:[fr(0),fr(1),fr(2),fr(3)],frameRate:3,repeat:-1});
   scene.anims.create({key:'printer_working',frames:[4,5,6,7,8,9,10,11,12].map(fr),frameRate:8,repeat:-1});
-  scene.anims.create({key:'printer_fail',frames:[fr(13),fr(14)],frameRate:4,repeat:-1});
-  scene.anims.create({key:'printer_out_filament',frames:[fr(15),fr(16)],frameRate:3,repeat:-1});
+  scene.anims.create({key:'printer_fail',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(br),frameRate:7,repeat:-1});
+  scene.anims.create({key:'printer_out_filament',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(fi),frameRate:7,repeat:-1});
 }
 function loadPrinterAssetsAsync(scene,onReady){
   if(scene.textures.exists(PRINTER_ASSET)){setupPrinterAnims(scene);if(onReady)onReady();return;}
@@ -21,12 +36,48 @@ function loadPrinterAssetsAsync(scene,onReady){
     if(!scene.textures.exists(PRINTER_ASSET)){
       scene.textures.addSpriteSheet(PRINTER_ASSET,img,{frameWidth:26,frameHeight:34});
     }
-    setupPrinterAnims(scene);
-    (G._printerAssetCallbacks||[]).forEach(cb=>{if(cb)cb();});
-    G._printerAssetCallbacks=null;
+    let left=2;
+    const done=()=>{left--;if(left<=0){setupPrinterAnims(scene);(G._printerAssetCallbacks||[]).forEach(cb=>{if(cb)cb();});G._printerAssetCallbacks=null;}};
+    addSheetFromImage(scene,PRINTER_BROKEN_ASSET,'assets/printers/BROKENMACHINE.png',26,34,done);
+    addSheetFromImage(scene,PRINTER_FILAMENT_ASSET,'assets/printers/MACHINEFILAMENT.png',26,34,done);
   };
   img.onerror=()=>console.warn('Printer sprite failed to load, using procedural fallback.');
   img.src=PRINTER_SHEET_DATA;
+}
+function setupPlayerAnims(scene){
+  if(!scene.textures.exists(PLAYER_DOWN)||scene.anims.exists('player_walk_down'))return;
+  scene.anims.create({key:'player_walk_down',frames:scene.anims.generateFrameNumbers(PLAYER_DOWN,{start:0,end:9}),frameRate:8,repeat:-1});
+  scene.anims.create({key:'player_walk_left',frames:scene.anims.generateFrameNumbers(PLAYER_LEFT,{start:0,end:9}),frameRate:8,repeat:-1});
+  scene.anims.create({key:'player_walk_right',frames:scene.anims.generateFrameNumbers(PLAYER_RIGHT,{start:0,end:9}),frameRate:8,repeat:-1});
+  scene.anims.create({key:'player_walk_up',frames:[{key:PLAYER_UP,frame:0}],frameRate:1,repeat:-1});
+}
+function loadPlayerAssetsAsync(scene,onReady){
+  if(scene.textures.exists(PLAYER_DOWN)){setupPlayerAnims(scene);if(onReady)onReady();return;}
+  let left=4;
+  const done=()=>{left--;if(left<=0){setupPlayerAnims(scene);if(onReady)onReady();}};
+  addSheetFromImage(scene,PLAYER_DOWN,'assets/characters/player/walkS.png',50,50,done);
+  addSheetFromImage(scene,PLAYER_LEFT,'assets/characters/player/walkA.png',50,50,done);
+  addSheetFromImage(scene,PLAYER_RIGHT,'assets/characters/player/walkD.png',50,50,done);
+  addSheetFromImage(scene,PLAYER_UP,'assets/characters/player/walkw.png',50,50,done);
+}
+function createPlayerSprite(scene,parent,night){
+  if(!scene.textures.exists(PLAYER_DOWN))return null;
+  setupPlayerAnims(scene);
+  const sp=scene.add.sprite(0,24,PLAYER_DOWN,0).setOrigin(.5,1).setScale(1.05).setDepth(6);
+  parent.add(sp);sp.play('player_walk_down');return sp;
+}
+function setPlayerSpriteState(sp,vx,vy,lastDir){
+  if(!sp)return lastDir||'down';
+  let dir=lastDir||'down';
+  if(Math.abs(vx)>Math.abs(vy)&&vx<0)dir='left';
+  else if(Math.abs(vx)>Math.abs(vy)&&vx>0)dir='right';
+  else if(vy<0)dir='up';
+  else if(vy>0)dir='down';
+  const moving=!!(vx||vy),key='player_walk_'+dir;
+  if(sp.anims&&(!sp.anims.currentAnim||sp.anims.currentAnim.key!==key))sp.play(key,true);
+  if(!moving&&sp.anims)sp.anims.pause();
+  else if(moving&&sp.anims)sp.anims.resume();
+  return dir;
 }
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;

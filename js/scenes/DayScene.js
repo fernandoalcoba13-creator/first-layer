@@ -12,6 +12,7 @@ class DayScene extends Phaser.Scene{
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
+    loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     this.checkStory();this.updateHUD();
     this.time.delayedCall(900,()=>this.spawn());
     this.time.delayedCall(3000,()=>this.spawn());
@@ -81,8 +82,9 @@ class DayScene extends Phaser.Scene{
   createPlayer(){
     this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
-    this.player.add(this.pGr);
+    this.player.add(this.pGr);this.pSp=null;this.pDir='down';
   }
+  refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,false);if(this.pSp)this.pGr.setVisible(false);}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
     this.input.keyboard.on('keydown-E',()=>{if(!this.dlgOpen&&this.near&&!G.block)this.interact(this.near);});
@@ -230,7 +232,8 @@ class DayScene extends Phaser.Scene{
     if(k.s.isDown||k.dn.isDown)vy=101*spd;
     this.player.x=Phaser.Math.Clamp(this.player.x+vx*dt/1000,28,this.W-28);
     this.player.y=Phaser.Math.Clamp(this.player.y+vy*dt/1000,this.H*.28,this.H*.82);
-    this.player.scaleX=this.dir;
+    this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
+    if(!this.pSp)this.player.scaleX=this.dir;
     if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
     let near=null,md=88;
     this.IA.forEach(it=>{
