@@ -13,6 +13,7 @@ class DayScene extends Phaser.Scene{
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
+    loadClientAssetsAsync(this);
     this.checkStory();this.updateHUD();
     this.time.delayedCall(900,()=>this.spawn());
     this.time.delayedCall(3000,()=>this.spawn());
@@ -105,7 +106,8 @@ class DayScene extends Phaser.Scene{
     const tX=this.W*.24+idx*86,yP=this.H*.71;
     const pat=(cl.pat+(urg?-5:0))*1000;
     const ct=this.add.container(-50,yP).setDepth(4);
-    const cg=this.add.graphics();drawClient(cg,cl,idx);ct.add(cg);
+    const cs=createClientSprite(this,cl);
+    const cg=this.add.graphics();if(cs)ct.add(cs);else{drawClient(cg,cl,idx);ct.add(cg);}
     const bb=this.add.graphics();bb.fillStyle(0xf8f8f8,.97);bb.fillRoundedRect(-38,-60,76,32,4);bb.fillTriangle(-5,-28,5,-28,0,-20);ct.add(bb);
     ct.add(this.add.text(0,-46,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Courier New'}).setOrigin(.5));
     if(urg)ct.add(this.add.text(0,-64,'🔴 URGENTE',{fontSize:'8px',color:'#f22',fontFamily:'Courier New'}).setOrigin(.5));
