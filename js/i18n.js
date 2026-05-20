@@ -67,7 +67,8 @@ const TXT={
     nozzleTitle:'Limpiar pico',nozzleDesc:'Espera la zona verde y limpia el nozzle.',nozzleTemp:'Temperatura del pico',
     clean:'Limpiar',goodCleans:'Limpiezas buenas',greenZone:'Zona verde',perfectClean:'Limpieza perfecta',scratchNozzle:'Rayaste el nozzle. -tiempo',
     nozzleFailed:'El pico quedo obstruido. La impresora queda fuera.',nowBreaker:'Ahora el {num}',completed:'Completado!',wrongOrder:'Orden incorrecto. Empeza de nuevo.',
-    energy:'energia',stress:'estres',saveForNozzle:'Guardalo para boquilla tapada o blob.',nozzleCleaned:'Pico limpio sin gastar repuesto.'
+    energy:'energia',stress:'estres',saveForNozzle:'Guardalo para boquilla tapada o blob.',nozzleCleaned:'Pico limpio sin gastar repuesto.',
+    bedMini:'Minijuego: adherir cama',bedTitle:'Ajustar cama',bedDesc:'Toca las esquinas en el orden indicado para recuperar la primera capa.',bedFail:'La pieza se despego. La impresora queda fuera.'
   },
   en:{
     save:'Save',menu:'Menu',currentShift:'CURRENT SHIFT',
@@ -137,7 +138,8 @@ const TXT={
     nozzleTitle:'Clean nozzle',nozzleDesc:'Wait for the green zone and clean the nozzle.',nozzleTemp:'Nozzle temperature',
     clean:'Clean',goodCleans:'Good cleans',greenZone:'Green zone',perfectClean:'Perfect clean',scratchNozzle:'You scratched the nozzle. -time',
     nozzleFailed:'The nozzle stayed clogged. The printer is out.',nowBreaker:'Now {num}',completed:'Completed!',wrongOrder:'Wrong order. Start again.',
-    energy:'energy',stress:'stress',saveForNozzle:'Save it for a clogged nozzle or blob.',nozzleCleaned:'Nozzle cleaned without spending a spare.'
+    energy:'energy',stress:'stress',saveForNozzle:'Save it for a clogged nozzle or blob.',nozzleCleaned:'Nozzle cleaned without spending a spare.',
+    bedMini:'Mini-game: bed adhesion',bedTitle:'Adjust bed',bedDesc:'Tap the corners in order to recover the first layer.',bedFail:'The part lifted. The printer is out.'
   }
 };
 function tr(k){return (TXT[G.lang]&&TXT[G.lang][k])||TXT.es[k]||k;}
@@ -159,10 +161,9 @@ const CL_EN_LINES={
 const MOOD_EN={Apurada:'Rushed','Técnico':'Technical',Corporativa:'Corporate',Creativa:'Creative',Influencer:'Influencer',Constructor:'Builder',Urgente:'Urgent',Académico:'Academic',Casual:'Casual',Curiosa:'Curious'};
 const TAG_EN={flexible:'flexible','apuro estetico':'rush finish','tolerancia fina':'tight tolerance',corporativo:'corporate','fan art':'fan art',creativo:'creative',viral:'viral',maqueta:'scale model','contra reloj':'against the clock',academico:'academic',simple:'simple',curiosa:'curious',normal:'normal'};
 const STORY_EN={
-  1:{ti:'🖨️ Day 1 - The Beginning',tx:'You start with one Bambu X1C and $500.\nKMORRA Print Shop opens its doors.',ob:'Earn $300 today'},
-  3:{ti:'🌙 Day 3 - First Rough Night',tx:'Tonight brings failures and power outages.\nBuy spares before closing.',ob:'Fix every failure'},
-  5:{ti:'📸 Day 5 - Social Boost',tx:'Juli posted a reel from the workshop.\nTwice as many clients today!',ob:'Serve 8 clients'},
-  7:{ti:'🏆 Week 1 Complete',tx:'You survived the first week!\nYour reputation is growing.',ob:'Reach $2000 cash'}
+  1:{ti:'🖨️ Day 1 - Opening Day',tx:'KMORRA Print Shop opens.\nToday is basic: eco PLA, a few clients, and a tutorial night.',ob:'Earn $300'},
+  2:{ti:'⏱️ Day 2 - First Pressure',tx:'More jobs arrive and the first outage hits.\nAccept work, but check stock before printing.',ob:'Accept 4 orders'},
+  3:{ti:'⚡ Day 3 - Breaking Point',tx:'Tonight gets heavy.\nBuy another printer to maximize production and survive with 2 machines running.',ob:'Survive with 2 printers working'}
 };
 const NE_EN={
   jam:{ti:'FILAMENT JAM',de:'Extruder on {P} jammed.',fx:'Cold pull'},

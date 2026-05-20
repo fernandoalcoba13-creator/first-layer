@@ -4,23 +4,25 @@ class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
+    this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
+    if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};ensureStockShape();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
-    this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=12000-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
-    this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
+    this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
+    this.dur=G.day===1?85000:100000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadClientAssetsAsync(this);
     this.checkStory();this.updateHUD();
-    this.time.delayedCall(1600,()=>this.spawn());
-    this.time.delayedCall(8500,()=>this.spawn());
+    this.time.delayedCall(this.beta.firstSpawn,()=>this.spawn());
+    this.time.delayedCall(this.beta.secondSpawn,()=>this.spawn());
     document.getElementById('ptag').className='ptag day';
     document.getElementById('ptag').textContent='☀️ '+tr('day')+' '+G.day;
     document.getElementById('hday').textContent='📅 '+tr('dayDyn')+' '+G.day;
-    updateMarket();this.applyDayMod();sLog(trf('dayStartLog',{day:G.day}));
+    updateMarket();this.applyDayMod();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
     sHint('WASD | E=interactuar');
     doSave(G);
   }
@@ -91,11 +93,12 @@ class DayScene extends Phaser.Scene{
     this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
   }
   checkStory(){
-    const e=STORY.find(s=>s.day===G.day&&G.day>G.ss);
+    const e=STORY.find(s=>s.day===G.day&&(BETA_DAYS[G.day]||G.day>G.ss));
     if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>{const st=storyText(e);G.showSto(st.ti,st.tx,st.ob);});}
     document.getElementById('obj').textContent=G.cObj?'🎯 '+storyText(G.cObj).ob:'';
   }
   applyDayMod(){
+    if(BETA_DAYS[G.day])return;
     if(G.day<2||Math.random()>Math.min(.58,.12+G.day*.035))return;
     const mods=[
       {id:'rush',name:'Clientes apurados',log:'Hoy todos quieren retirar rapido.',cInt:.84,pay:1.08,pat:.9,risk:.02},
@@ -143,7 +146,7 @@ class DayScene extends Phaser.Scene{
     return {pay,time,diff,risk,pat,tag:style.tag,material,units};
   }
   spawn(){
-    if(this.clients.length>=5||G.phase!=='day')return;
+    if(this.clients.length>=5||G.phase!=='day'||G.dayCli>=(this.beta.maxClients||5))return;
     const slot=this.nextClientSlot();
     if(slot<0)return;
     const activeIds=this.clients.filter(c=>!c.served).map(c=>c.cl.id);

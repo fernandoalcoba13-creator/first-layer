@@ -5,6 +5,7 @@ class NightScene extends Phaser.Scene{
   constructor(){super({key:'Night'});}
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
+    this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='night';G.block=false;
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
     this.earn=0;this.done=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
@@ -156,11 +157,15 @@ class NightScene extends Phaser.Scene{
   }
   schedPwr(){
     if(G.upg.solar)return;
+    if(this.beta&&this.beta.forcedPower){
+      this.beta.forcedPower.forEach(e=>this.time.delayedCall(e.at,()=>this.trigPwr(e.id)));
+      return;
+    }
     if(Math.random()>Math.min(.85,.3+G.day*.04))return;
     [8,22,42,58].filter(()=>Math.random()>.4).forEach(s=>
       this.time.delayedCall(s*1000+Math.random()*3500,()=>this.trigPwr()));
   }
-  trigPwr(){
+  trigPwr(forceId){
     if(G.phase!=='night'||G.pActive||G.upg.solar)return;
     G.stats.pwr++;
     let pool=PE.filter(e=>{
@@ -169,8 +174,9 @@ class NightScene extends Phaser.Scene{
       if(e.id==='long'&&G.upg.gen)return false;
       return true;
     });
+    if(forceId)pool=pool.filter(e=>e.id===forceId);
     if(!pool.length)return;
-    const ev=pool[Math.floor(Math.random()*pool.length)];
+    const ev=forceId?pool[0]:pool[Math.floor(Math.random()*pool.length)];
     const evLabel=powerText(ev);
     G.pActive=true;G.pType=ev;G.pTimer=ev.dur;G.pMax=ev.dur;
     G.upsLeft=G.upg.ups2?600000:G.upg.ups1?180000:0;
@@ -207,16 +213,20 @@ class NightScene extends Phaser.Scene{
     else showNotif('P'+(p.id+1)+': '+tr('noWorkTonight'));
   }
   schedEvs(){
+    if(this.beta&&this.beta.forcedFails){
+      this.beta.forcedFails.forEach(e=>this.time.delayedCall(e.at,()=>this.trigEv(e.id,true)));
+      return;
+    }
     const n=2+Math.floor(G.day/3);
     [9,18,30,44,56].slice(0,Math.min(n,5)).forEach(s=>
       this.time.delayedCall(s*1000+Math.random()*3000,()=>this.trigEv()));
   }
-  trigEv(){
+  trigEv(forceId,forced=false){
     if(G.phase!=='night')return;
     const busy=G.printers.filter(p=>p.busy&&!p.broken&&!p._ev&&!p._pau);
-    if(!busy.length)return;
+    if(!busy.length){if(forced)this.time.delayedCall(3500,()=>this.trigEv(forceId,true));return;}
     const avgRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||0),0)/busy.length;
-    if(Math.random()>Math.min(.9,.22+G.day*.025+avgRisk))return;
+    if(!forced&&Math.random()>Math.min(.9,.22+G.day*.025+avgRisk))return;
     const totalRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||.05),0);
     let roll=Math.random()*totalRisk,tgt=busy[0];
     for(const p of busy){roll-=p.order&&p.order.risk||.05;if(roll<=0){tgt=p;break;}}
@@ -228,6 +238,7 @@ class NightScene extends Phaser.Scene{
       if(e.id==='humid'&&G.upg.dry)return false;
       return true;
     });
+    if(forceId&&forceId!=='random')pool=pool.filter(e=>e.id===forceId);
     if(!pool.length)pool=NE;
     const fil=tgt.order&&tgt.order.filament;
     const total=pool.reduce((s,e)=>{
@@ -241,7 +252,9 @@ class NightScene extends Phaser.Scene{
       return s+w;
     },0);
     let wr=Math.random()*total,def=pool[0];
-    for(const e of pool){
+    if(forceId&&forceId!=='random'){
+      def=pool.find(e=>e.id===forceId)||pool[0];
+    } else for(const e of pool){
       let w=1;
       if(fil){
         if(['clog','jam','blob'].includes(e.id))w+=Math.max(0,fil.clog||0)*8;
@@ -271,6 +284,8 @@ class NightScene extends Phaser.Scene{
       ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 '+tr('autoRepair')+'</button>'
       :(ev.id==='clog'
         ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startNozzleMini()">🚫 '+tr('nozzleMini')+(ev.pts>0?' (-'+ev.pts+' '+tr('parts')+')':'')+'</button>'
+        :ev.id==='bed'
+        ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startBedMini()">📐 '+tr('bedMini')+(ev.g>0?' (-$'+ev.g+')':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
         +'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>';
     if(!auto&&['clog','blob'].includes(ev.id)&&G.cons&&G.cons.cleaner>0)buttons='<button class="eb fix" onclick="G.useConsumable(\'cleaner\')">'+tr('cleanNozzle')+' (-1)</button>'+buttons;
@@ -375,12 +390,18 @@ class NightScene extends Phaser.Scene{
   updateHUD(){document.getElementById('hg').textContent=G.gold;document.getElementById('hr').textContent=G.rep;}
   endNight(){
     if(G.phase!=='night')return;
-    G.phase='transition';G.block=true;G.day++;
+    G.phase='transition';G.block=true;
     let sal=0;
     Object.keys(G.emp).forEach(id=>{const e=EMP.find(x=>x.id===id);if(e){sal+=e.sal;G.gold=Math.max(0,G.gold-e.sal);}});
     doSave(G);
     const sub=(G.lang==='en'?'Completed':'Completados')+': '+this.done+' | '+(G.lang==='en'?'Earned':'Ganado')+': $'+this.earn+'\nREP: '+G.rep+(sal?' | '+(G.lang==='en'?'Wages':'Salarios')+': -$'+sal:'');
     this.scene.pause();
+    if(G.day>=3){
+      doTrans('🏁 BETA PRE-LAUNCH',sub+'\n'+(G.lang==='en'?'End of the 3-day beta structure.':'Fin de la estructura beta de 3 dias.'),()=>{setGameMenu(true);});
+      return;
+    }
+    G.day++;
+    doSave(G);
     doTrans('☀️  '+tr('day')+' '+G.day,sub,()=>{this.scene.stop();this.scene.start('Day');});
   } // end endNight
 } // end NightScene

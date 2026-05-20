@@ -63,6 +63,11 @@ const PE=[
   {id:'norm',ti:'⚡ CORTE DE LUZ',de:'Corte en el barrio.\nRestablecé el tablero.',dur:18000,pen:.4},
   {id:'long',ti:'⚡ CORTE PROLONGADO',de:'Corte extendido.\nReset completo del tablero.',dur:35000,pen:.7},
 ];
+const BETA_DAYS={
+  1:{title:'La apertura',goal:'Ganá $300',maxClients:3,firstSpawn:1800,secondSpawn:18000,interval:22000,shop:['pla:eco','parts'],forcedPower:[],forcedFails:[{at:9000,id:'clog'}],hint:'Tutorial: aceptá pedidos, comprá PLA eco y de noche destapá la boquilla.'},
+  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',maxClients:5,firstSpawn:1200,secondSpawn:8000,interval:12500,shop:['pla:eco','pla:std','parts','coffee','bar'],forcedPower:[{at:12000,id:'micro'},{at:33000,id:'norm'}],forcedFails:[{at:18000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido queda en cola.'},
+  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',maxClients:6,firstSpawn:1200,secondSpawn:6500,interval:10500,shop:['pla:eco','pla:std','petg:eco','parts','unlock2','coffee','bar','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'random'},{at:42000,id:'random'}],hint:'Comprá la segunda impresora para maximizar producción antes de la noche.'}
+};
 const UPG=[
   {id:'speed1',n:'Perfil velocidad',de:'+30% velocidad',co:300,ic:'⚡'},
   {id:'speed2',n:'Aceleración máx',de:'+60% velocidad total',co:600,ic:'🚀',req:'speed1'},
@@ -91,8 +96,7 @@ const EMP=[
   {id:'diego2',n:'Diego (Técnico Full)',de:'Supervisa noche solo',co:800,sal:150,ic:'🔧'},
 ];
 const STORY=[
-  {day:1,ti:'🖨️ Día 1 — El comienzo',tx:'Arrancás con una Bambu X1C y $500.\nKMORRA Print Shop abre sus puertas.',ob:'Ganá $300 hoy'},
-  {day:3,ti:'🌙 Día 3 — Primera noche difícil',tx:'Esta noche habrá fallas y cortes de luz.\nComprá repuestos antes de dormir.',ob:'Reparar todas las fallas'},
-  {day:5,ti:'📸 Día 5 — Explosión en redes',tx:'Juli publicó un reel del taller.\n¡El doble de clientes hoy!',ob:'Atendé 8 clientes'},
-  {day:7,ti:'🏆 Semana 1 completada',tx:'¡Sobreviviste la primera semana!\nTu reputación creció.',ob:'Llegá a $2000 en caja'},
+  {day:1,ti:'🖨️ Día 1 — La apertura',tx:'Abrís KMORRA Print Shop.\nHoy todo es básico: PLA eco, pocos clientes y una noche tutorial.',ob:'Ganá $300'},
+  {day:2,ti:'⏱️ Día 2 — Primera presión',tx:'Llegan más pedidos y aparece el primer corte.\nAceptá trabajo, pero mirá el stock antes de imprimir.',ob:'Aceptá 4 pedidos'},
+  {day:3,ti:'⚡ Día 3 — El quiebre',tx:'La noche se pone pesada.\nComprá otra impresora para maximizar producción y sobrevivir con 2 máquinas andando.',ob:'Sobreviví con 2 impresoras funcionando'},
 ];

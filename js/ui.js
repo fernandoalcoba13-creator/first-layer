@@ -250,6 +250,10 @@ document.addEventListener('keydown',e=>{
     if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd'))openGameMenu();
     e.preventDefault();return;
   }
+  if(isShown('miniGame')&&G._mini&&G._mini.type==='maze'){
+    const mv={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
+    if(mv){G.moveNozzleMaze(mv[0],mv[1]);e.preventDefault();return;}
+  }
   if(handlePanelKeys('titleScreen','#titleScreen .tsBtn,#titleScreen .langBtn',k,e,2))return;
   if(handlePanelKeys('miniGame','#miniGame button',k,e,2))return;
   if(isShown('miniGame'))return;

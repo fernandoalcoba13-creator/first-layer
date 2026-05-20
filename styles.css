@@ -70,6 +70,11 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
 .mgTimer{height:7px;background:#110d20;border:1px solid #2a2050;margin-bottom:12px;}
 #mgTimerFill{height:100%;background:linear-gradient(90deg,#4dff91,#ffb347,#ff4d6a);width:100%;}
 .mgGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px;}
+.mgGrid:has(.mgCell){grid-template-columns:repeat(5,34px);justify-content:center;}
+.mgCell{width:34px;height:34px;background:#0e0c1e;border:1px solid #2a2050;color:#5a4a80;font-family:var(--pixel-font);font-size:12px;cursor:pointer;pointer-events:all;}
+.mgCell.wall{background:#03020a;border-color:#151020;color:#151020;cursor:not-allowed;}
+.mgCell.exit{border-color:#4dff91;color:#4dff91;background:#0a1a0a;}
+.mgCell.here{border-color:#ffb347;color:#ffb347;box-shadow:0 0 0 2px rgba(255,179,71,.18);}
 .mgCorner{background:#0e0c1e;border:1px solid #2a2050;padding:9px;}
 .mgCorner.ok{border-color:#4dff91;box-shadow:inset 0 0 18px rgba(77,255,145,.08);}
 .mgCorner b{display:block;color:#9d7fe3;font-size:10px;margin-bottom:5px;}
