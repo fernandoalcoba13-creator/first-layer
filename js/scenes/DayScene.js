@@ -79,7 +79,7 @@ class DayScene extends Phaser.Scene{
     }
     this.tblG.setDepth(2);
   }
-  stkTxt(){return 'PLA:'+G.stk.pla+'  PETG:'+G.stk.petg+'\nResina:'+G.stk.resin+'  Parts:'+G.stk.parts;}
+  stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'\nResina:'+matStock('resin')+'  Parts:'+G.stk.parts;}
   createPlayer(){
     this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
@@ -194,14 +194,16 @@ class DayScene extends Phaser.Scene{
     if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
-    if((G.stk[c.order.material]||0)<c.order.units){showNotif('Falta '+c.order.material+' x'+c.order.units+' para aceptar','error');return false;}
-    G.stk[c.order.material]-=c.order.units;
-    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk:c.order.risk,tag:c.order.tag,material:c.order.material,units:c.order.units});
+    if(matStock(c.order.material)<c.order.units){showNotif('Falta '+c.order.material+' x'+c.order.units+' para aceptar','error');return false;}
+    const fil=consumeFilament(c.order.material,c.order.diff,c.order.units);
+    if(!fil){showNotif('No hay stock usable para '+c.order.material,'error');return false;}
+    const risk=Phaser.Math.Clamp(c.order.risk+fil.risk,.01,.62);
+    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk,tag:c.order.tag,material:c.order.material,units:c.order.units,filament:{id:fil.id,n:fil.n,q:fil.q,clog:fil.clog,rep:fil.rep,risk:fil.risk}});
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 Lucas aceptó: '+c.pr.e+' '+c.pr.n);
-    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — $'+c.pay+'. Cola: '+G.orders.length);
+    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' con '+fil.n+' — riesgo '+Math.round(risk*100)+'%. Cola: '+G.orders.length);
     return true;
   }
   leaveClient(c,ang){
@@ -223,8 +225,9 @@ class DayScene extends Phaser.Scene{
     const w=this.clients.filter(c=>!c.served);
     if(!w.length){showNotif('No hay clientes esperando.');return;}
     const c=w[0],dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
+    const preview=chooseFilament(c.order.material,c.order.diff);
     this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
-      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\nMaterial: '+c.order.material+' x'+c.order.units+'\nDificultad: '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
+      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\nMaterial: '+c.order.material+' x'+c.order.units+'\nFilamento: '+(preview?preview.n+' ('+(preview.risk>0?'riesgo +':'riesgo ')+Math.round(preview.risk*100)+'%)':'sin stock')+'\nDificultad: '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
       [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
        {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter();}},
        {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
@@ -239,11 +242,13 @@ class DayScene extends Phaser.Scene{
       [{lb:'OK',cb:()=>cDlg()}]);
   }
   openStock(){
-    const pp=getPrice('pla'),pt=getPrice('petg'),pr=getPrice('parts');
+    const pla=(FILAMENTS.pla||[])[1],petg=(FILAMENTS.petg||[])[1],res=(FILAMENTS.resin||[])[1];
+    const pp=getFilPrice('pla',pla.id),pt=getFilPrice('petg',petg.id),rr=getFilPrice('resin',res.id),pr=getPrice('parts');
     this.oDlg('📦 Stock','',
-      'PLA: '+G.stk.pla+'  /  PETG: '+G.stk.petg+'\nResina: '+G.stk.resin+'  /  Repuestos: '+G.stk.parts+'\n\n📈 Precios de hoy (fluctúan)',
-      [{lb:'🧵 PLA $'+pp+(pp<75?' 🔥':''),cls:'ok',cb:()=>{G.bStk('pla',pp);cDlg();this.openStock();}},
-       {lb:'🧵 PETG $'+pt+(pt<100?' 🔥':''),cb:()=>{G.bStk('petg',pt);cDlg();this.openStock();}},
+      stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\nRepuestos: '+G.stk.parts+'\n\nCompra rapida: calidad estandar. En tienda tenes todas las gamas.',
+      [{lb:'🧵 '+pla.n+' $'+pp+(pp<pla.base?' 🔥':''),cls:'ok',cb:()=>{G.bStk('pla',pp,pla.id);cDlg();this.openStock();}},
+       {lb:'🧵 '+petg.n+' $'+pt+(pt<petg.base?' 🔥':''),cb:()=>{G.bStk('petg',pt,petg.id);cDlg();this.openStock();}},
+       {lb:'🧪 '+res.n+' $'+rr+(rr<res.base?' 🔥':''),cb:()=>{G.bStk('resin',rr,res.id);cDlg();this.openStock();}},
        {lb:'🔩 Repuestos $'+pr,cb:()=>{G.bStk('parts',pr);cDlg();this.openStock();}},
        {lb:'🧉 Mate $80 (x'+G.mateCount+')',cb:()=>{if(G.gold<80){showNotif('💸 Sin fondos','error');return;}G.gold-=80;G.mateCount++;SFX.coin();showNotif('🧉 Mate comprado!','success');cDlg();this.openStock();}},
        {lb:'Cerrar',cb:()=>cDlg()}]);

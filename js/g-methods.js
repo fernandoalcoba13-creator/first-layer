@@ -1,7 +1,15 @@
 // ═══ G METHODS ═══
 // Methods attached to G for shop, fixes, breakers, story screen.
 // Called from HTML inline onclicks and Phaser scene logic.
-G.bStk=function(k,c){if(G.gold<c){showNotif('💸 Sin fondos','error');return;}G.gold-=c;G.stk[k]++;SFX.coin();showNotif('✅ '+k+' comprado. $'+G.gold,'money');document.getElementById('hg').textContent=G.gold;};
+G.bStk=function(k,c,id){
+  if(G.gold<c){showNotif('💸 Sin fondos','error');return;}
+  G.gold-=c;
+  if(id&&G.stk[k])G.stk[k][id]=(G.stk[k][id]||0)+1;
+  else G.stk[k]=(G.stk[k]||0)+1;
+  const f=id&&filDef(k,id);
+  SFX.coin();showNotif('✅ '+(f?f.n:k)+' comprado. $'+G.gold,'money');
+  document.getElementById('hg').textContent=G.gold;
+};
 G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 Sin fondos');return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 Sin repuestos');return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();showNotif('🔧 '+ev.ti+' reparado!','success');sLog('✅ '+ev.ti+' resuelto.');};
 G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
@@ -77,7 +85,7 @@ G.cSto=function(){document.getElementById('sto').style.display='none';G.block=fa
 
 // Shop v2 renderer: overrides the compact prototype shop with richer cards.
 G.shopStats=function(){
-  const hired=EMP.filter(e=>G.emp[e.id]).length,total=G.stk.pla+G.stk.petg+G.stk.resin+G.stk.parts;
+  const hired=EMP.filter(e=>G.emp[e.id]).length,total=matStock('pla')+matStock('petg')+matStock('resin')+G.stk.parts;
   document.getElementById('shopStats').innerHTML=[
     ['Caja','$'+G.gold],['Impresoras',G.pCount+'/4'],['Stock',total],['Equipo',hired+'/'+EMP.length]
   ].map(([k,v])=>'<div class="shopStat"><b>'+k+'</b><span>'+v+'</span></div>').join('');
@@ -104,9 +112,16 @@ G.tab=function(t){
     s.innerHTML=EMP.map(e=>{const h=!!G.emp[e.id],af=G.gold>=e.co;return G.shopCard({icon:e.ic,name:e.n,desc:e.de+' | Sueldo $'+e.sal+'/noche',cost:e.co,done:h,can:af,locked:false,doneText:'Contratado',attr:'data-emp="'+e.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-emp]');if(d)G._hEmp(d.dataset.emp);});
   } else {
-    s.style.gridTemplateColumns='repeat(2,1fr)';
-    const mk2=G.market,items=[['pla','PLA','🧵',mk2.pla.cur],['petg','PETG','🧵',mk2.petg.cur],['resin','Resina','🧪',mk2.resin.cur],['parts','Repuestos','🔩',mk2.parts.cur]];
-    s.innerHTML=items.map(([k,n,ic,c])=>G.shopCard({icon:ic,name:n,desc:'Tenés '+G.stk[k]+' unidades en estantería',cost:c,done:false,can:G.gold>=c,locked:false,attr:'data-stk="'+k+'" data-cost="'+c+'"'})).join('');
-    s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]');if(d){G.bStk(d.dataset.stk,Number(d.dataset.cost));G.tab('stk');}});
+    s.style.gridTemplateColumns='repeat(3,1fr)';
+    const items=[];
+    ['pla','petg','resin'].forEach(mat=>{
+      (FILAMENTS[mat]||[]).forEach(f=>{
+        const c=getFilPrice(mat,f.id);
+        items.push({mat,f,c,ic:mat==='resin'?'🧪':'🧵'});
+      });
+    });
+    items.push({mat:'parts',f:{id:'',n:'Repuestos nozzle',de:'Picos, racores, PTFE y piezas para reparar fallas.',q:2},c:G.market.parts.cur,ic:'🔩'});
+    s.innerHTML=items.map(o=>G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.brand?o.f.brand+' | Stock '+(G.stk[o.mat][o.f.id]||0)+' | Riesgo '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+o.f.de:'Stock '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,can:G.gold>=o.c,locked:false,attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
+    s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]');if(d){G.bStk(d.dataset.stk,Number(d.dataset.cost),d.dataset.id);G.tab('stk');}});
   }
 };

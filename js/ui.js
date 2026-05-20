@@ -40,6 +40,12 @@ function updateMarket(){
   else if(M.pla.cur>M.pla.base*1.2)sLog('📈 PLA caro hoy ($'+M.pla.cur+'). Usá lo que tenés.');
 }
 function getPrice(k){return G.market[k]?G.market[k].cur:(k==='pla'?75:k==='petg'?100:k==='resin'?140:55);}
+function getFilPrice(mat,id){
+  const f=filDef(mat,id),m=G.market[mat];
+  if(!f)return getPrice(mat);
+  const ratio=m?m.cur/m.base:1;
+  return Math.max(20,Math.round(f.base*ratio));
+}
 
 // ═══ MATE / ENERGÍA ═══
 function updateMateHUD(){
@@ -119,7 +125,7 @@ document.addEventListener('keydown',e=>{
   if(isShown('dayEnd')&&(k==='enter'||k===' ')){G.continueToNight();e.preventDefault();return;}
   if(isShown('sto')&&(k==='enter'||k===' ')){G.cSto();e.preventDefault();return;}
   if(isShown('dlg')){
-    if(/^[1-4]$/.test(k)){if(clickButton('#dbs .db',Number(k)-1))e.preventDefault();return;}
+    if(/^[1-6]$/.test(k)){if(clickButton('#dbs .db',Number(k)-1))e.preventDefault();return;}
     if(k==='a'||k==='enter'){if(clickButton('#dbs .db.ok',0)||clickButton('#dbs .db',0))e.preventDefault();return;}
     if(k==='n'){if(clickButton('#dbs .db',1))e.preventDefault();return;}
     if(k==='r'){if(clickButton('#dbs .db.no',0)||clickButton('#dbs .db',2))e.preventDefault();return;}

@@ -174,8 +174,29 @@ class NightScene extends Phaser.Scene{
       return true;
     });
     if(!pool.length)pool=NE;
-    const def=pool[Math.floor(Math.random()*pool.length)];
-    const ev={...def,printer:tgt,desc:def.de.replace('{P','P'+(tgt.id+1)),resolved:false};
+    const fil=tgt.order&&tgt.order.filament;
+    const total=pool.reduce((s,e)=>{
+      let w=1;
+      if(fil){
+        if(['clog','jam','blob'].includes(e.id))w+=Math.max(0,fil.clog||0)*8;
+        if(e.id==='humid')w+=Math.max(0,fil.risk||0)*8;
+        if(e.id==='warp'&&tgt.order.material!=='resin')w+=Math.max(0,fil.risk||0)*5;
+        if(e.id==='therm'&&fil.q>=3)w*=.75;
+      }
+      return s+w;
+    },0);
+    let wr=Math.random()*total,def=pool[0];
+    for(const e of pool){
+      let w=1;
+      if(fil){
+        if(['clog','jam','blob'].includes(e.id))w+=Math.max(0,fil.clog||0)*8;
+        if(e.id==='humid')w+=Math.max(0,fil.risk||0)*8;
+        if(e.id==='warp'&&tgt.order.material!=='resin')w+=Math.max(0,fil.risk||0)*5;
+        if(e.id==='therm'&&fil.q>=3)w*=.75;
+      }
+      wr-=w;if(wr<=0){def=e;break;}
+    }
+    const ev={...def,printer:tgt,desc:def.de.replace('{P','P'+(tgt.id+1))+(fil?'\nMaterial usado: '+fil.n:''),resolved:false};
     tgt._ev=ev;this.aEv=ev;G.block=true;SFX.alm();
     const po=this.pObjs.find(o=>o.p===tgt);
     if(po){po.wn.setText('⚠️');this.tweens.add({targets:po.wn,alpha:{from:1,to:0},duration:350,yoyo:true,repeat:5});}
@@ -199,7 +220,8 @@ class NightScene extends Phaser.Scene{
   }
   completePrint(p){
     const o=p.order,earned=o.pay;
-    G.gold+=earned;G.rep+=2;G.stats.earn+=earned;this.earn+=earned;this.done++;
+    const repGain=2+(o.filament&&o.filament.rep||0);
+    G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;this.earn+=earned;this.done++;
     G.orders=G.orders.filter(x=>x!==o);
     p.busy=false;p.order=null;p.progress=0;p._ev=null;p._pau=false;
     SFX.coin();
@@ -209,8 +231,8 @@ class NightScene extends Phaser.Scene{
       this.tweens.add({targets:coin,y:coin.y-55,alpha:0,duration:1100,onComplete:()=>coin.destroy()});
       this.cameras.main.flash(200,0,200,100,.3);
     }
-    showNotif('✅ '+o.pr.e+' '+o.pr.n+' — +$'+earned,'money');
-    sLog('✅ P'+(p.id+1)+': '+o.pr.e+' '+o.pr.n+' — +$'+earned+' 🪙');
+    showNotif('✅ '+o.pr.e+' '+o.pr.n+' — +$'+earned+(repGain!==2?' REP '+(repGain>0?'+':'')+repGain:''),'money');
+    sLog('✅ P'+(p.id+1)+': '+o.pr.e+' '+o.pr.n+' con '+(o.filament?o.filament.n:o.material)+' — +$'+earned+' 🪙');
     this.updateHUD();
   }
   resPwr(panel){

@@ -28,6 +28,23 @@ const PR=[
   {n:'Joyería',e:'💍',t:3,p:200,cat:'art',c:0xffd4e8},
   {n:'Cosplay',e:'🛡️',t:8,p:380,cat:'art',c:0xccccff},
 ];
+const FILAMENTS={
+  pla:[
+    {id:'eco',n:'K-PLA Barrio',brand:'Eco tipo Grilon',q:1,base:55,risk:.08,clog:.18,rep:-1,de:'Barato y rendidor, pero ensucia mas el pico.'},
+    {id:'std',n:'Morratek PLA+',brand:'PLA+ tipo Printalot',q:2,base:78,risk:.02,clog:.06,rep:0,de:'Calidad pareja para trabajos comunes.'},
+    {id:'pro',n:'ProtoLux Silk',brand:'Silk tipo Hellbot',q:3,base:112,risk:-.03,clog:.02,rep:1,de:'Mejor terminacion, menos fallas, mas caro.'}
+  ],
+  petg:[
+    {id:'eco',n:'PET-G Workline',brand:'PETG economico',q:1,base:85,risk:.07,clog:.12,rep:-1,de:'Fuerte pero irregular; pide nozzle limpio.'},
+    {id:'std',n:'Morratek PETG+',brand:'PETG tipo Printalot',q:2,base:115,risk:.025,clog:.05,rep:0,de:'Buen balance para piezas funcionales.'},
+    {id:'pro',n:'FiberMax Tough',brand:'Tecnico tipo Prusament',q:3,base:155,risk:-.025,clog:.015,rep:1,de:'Estable para tolerancias finas.'}
+  ],
+  resin:[
+    {id:'basic',n:'K-Resin Basic',brand:'Resina estandar',q:1,base:120,risk:.05,clog:.03,rep:-1,de:'Sirve para volumen, mas postproceso.'},
+    {id:'std',n:'MorraRes Detail',brand:'Resina detalle',q:2,base:155,risk:.015,clog:.01,rep:0,de:'Buen detalle y menos rechazos.'},
+    {id:'pro',n:'CrystalForge Pro',brand:'Resina premium',q:3,base:205,risk:-.02,clog:0,rep:1,de:'Para bustos, joyeria y clientes exigentes.'}
+  ]
+};
 const NE=[
   {id:'jam',ic:'⚙️',ti:'ATASCO FILAMENTO',de:'Extrusor de {P} trabó.',fx:'🔧 Cold Pull',g:0,pts:1,rp:5},
   {id:'therm',ic:'🌡️',ti:'FALLO TÉRMICO',de:'Temp fuera de rango en {P}.',fx:'❄️ Enfriar',g:40,pts:0,rp:8},
