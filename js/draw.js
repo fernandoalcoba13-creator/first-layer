@@ -15,6 +15,7 @@ const CLIENT_ASSETS=[
   {key:'client_personaje4',src:'assets/characters/clients/personaje4.png'},
   {key:'client_personaje3',src:'assets/characters/clients/personaje3.png'}
 ];
+const CLIENT_SPRITE_SCALE=2;
 function addSheetFromImage(scene,key,src,fw,fh,cb){
   if(scene.textures.exists(key)){if(cb)cb();return;}
   const img=new Image();
@@ -94,7 +95,7 @@ function loadClientAssetsAsync(scene,onReady){
 function createClientSprite(scene,cl,idx){
   const asset=CLIENT_ASSETS[idx%CLIENT_ASSETS.length];
   if(!asset||!scene.textures.exists(asset.key))return null;
-  return scene.add.sprite(0,20,asset.key,0).setOrigin(.5,1).setScale(1);
+  return scene.add.sprite(0,24,asset.key,0).setOrigin(.5,1).setScale(CLIENT_SPRITE_SCALE);
 }
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;

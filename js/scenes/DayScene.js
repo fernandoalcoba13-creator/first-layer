@@ -108,11 +108,11 @@ class DayScene extends Phaser.Scene{
     const ct=this.add.container(-50,yP).setDepth(4);
     const cs=createClientSprite(this,cl,idx);
     const cg=this.add.graphics();if(cs)ct.add(cs);else{drawClient(cg,cl,idx);ct.add(cg);}
-    const bb=this.add.graphics();bb.fillStyle(0xf8f8f8,.97);bb.fillRoundedRect(-38,-60,76,32,4);bb.fillTriangle(-5,-28,5,-28,0,-20);ct.add(bb);
-    ct.add(this.add.text(0,-46,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Courier New'}).setOrigin(.5));
-    if(urg)ct.add(this.add.text(0,-64,'🔴 URGENTE',{fontSize:'8px',color:'#f22',fontFamily:'Courier New'}).setOrigin(.5));
-    const pbB=this.add.rectangle(0,-17,46,4,0x111122).setOrigin(.5);
-    const pbF=this.add.rectangle(-23,-17,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
+    const bb=this.add.graphics();bb.fillStyle(0xf8f8f8,.97);bb.fillRoundedRect(-42,-116,84,34,4);bb.fillTriangle(-6,-82,6,-82,0,-74);ct.add(bb);
+    ct.add(this.add.text(0,-101,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Courier New'}).setOrigin(.5));
+    if(urg)ct.add(this.add.text(0,-121,'🔴 URGENTE',{fontSize:'8px',color:'#f22',fontFamily:'Courier New'}).setOrigin(.5));
+    const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
+    const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
     const co={ct,cg,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX};
     this.tweens.add({targets:ct,x:tX,duration:480,ease:'Power2',onComplete:()=>co.walk=false});
