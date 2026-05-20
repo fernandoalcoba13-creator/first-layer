@@ -48,6 +48,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
 .dbs{display:flex;gap:6px;flex-wrap:wrap;}
 .db{background:#0e0c1e;border:1px solid #2a2050;color:#ccc;font-family:'Courier New',monospace;font-size:11px;padding:5px 9px;cursor:pointer;pointer-events:all;transition:all .12s;}
 .db:hover{border-color:#5bc8fa;color:#5bc8fa;}
+.db:focus{outline:0;border-color:#4dff91;color:#4dff91;box-shadow:0 0 0 2px rgba(77,255,145,.24),2px 2px 0 #03020a;}
 .db.ok{background:#0a1a0a;border-color:#4dff91;color:#4dff91;}
 .db.no{border-color:#ff4d6a;color:#ff4d6a;}
 #evp{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#080614;border:3px solid #ff4d6a;padding:17px 21px;min-width:300px;text-align:center;pointer-events:all;display:none;z-index:15;}

@@ -280,6 +280,7 @@ class DayScene extends Phaser.Scene{
       '<button class="db '+(c.cls||'')+'" onclick="G._dcb('+i+')">'+c.lb+'</button>').join('');
     G._dch=choices;
     document.getElementById('dlg').style.display='block';
+    setTimeout(()=>{const b=document.querySelector('#dbs .db');if(b)b.focus();},0);
     this.dlgOpen=true;
   }
   updatePrinters(){
