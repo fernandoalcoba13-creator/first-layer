@@ -273,7 +273,8 @@ class DayScene extends Phaser.Scene{
     const cl=CL.find(c=>name.includes(c.n));
     const av=document.getElementById('dav');
     av.textContent=cl?cl.e:'🖨️';
-    if(cl){const r=(cl.c>>16)&255,gg=(cl.c>>8)&255,b=cl.c&255;av.style.background='rgba('+r+','+gg+','+b+',.2)';}
+    if(cl){const r=(cl.c>>16)&255,gg=(cl.c>>8)&255,b=cl.c&255;av.style.backgroundColor='rgba('+r+','+gg+','+b+',.2)';}
+    else av.style.backgroundColor='#0a0816';
     document.getElementById('dn').textContent=name;
     document.getElementById('dm').textContent=mood;
     document.getElementById('dt').textContent=text;
