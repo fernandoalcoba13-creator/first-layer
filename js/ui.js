@@ -73,6 +73,13 @@ function tickMate(dt){
 }
 function cDlg(){document.getElementById('dlg').style.display='none';const d=game.scene.getScene('Day');if(d)d.dlgOpen=false;}
 function isShown(id){const el=document.getElementById(id);return !!el&&getComputedStyle(el).display!=='none';}
+function setGameMenu(open){
+  const el=document.getElementById('titleScreen');
+  if(!el)return;
+  el.style.display=open?'flex':'none';
+}
+function openGameMenu(){setGameMenu(true);}
+function closeGameMenu(){setGameMenu(false);SFX.ok();}
 function clickButton(sel,idx=0){
   const list=[...document.querySelectorAll(sel)].filter(b=>!b.disabled&&b.offsetParent!==null);
   if(list[idx]){list[idx].click();return true;}
@@ -82,7 +89,7 @@ function closeTopPanel(){
   if(isShown('dlg')){cDlg();return true;}
   if(isShown('shop')){G.cShop();return true;}
   if(isShown('sto')){G.cSto();return true;}
-  if(isShown('titleScreen')){document.getElementById('titleScreen').style.display='none';SFX.ok();return true;}
+  if(isShown('titleScreen')){closeGameMenu();return true;}
   return false;
 }
 function buyShopCard(n){
@@ -94,8 +101,11 @@ function buyShopCard(n){
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   const k=e.key.toLowerCase();
-  if(k==='escape'){if(closeTopPanel())e.preventDefault();return;}
-  if(isShown('titleScreen')&&(k==='enter'||k===' ')){document.getElementById('titleScreen').style.display='none';SFX.ok();e.preventDefault();return;}
+  if(k==='escape'){
+    if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd'))openGameMenu();
+    e.preventDefault();return;
+  }
+  if(isShown('titleScreen')&&(k==='enter'||k===' ')){closeGameMenu();e.preventDefault();return;}
   if(isShown('miniGame')){
     if(k===' '||k==='enter'){G.scrapeNozzle();e.preventDefault();}
     return;
@@ -122,7 +132,7 @@ document.addEventListener('keydown',e=>{
   }
   if(k==='m'){G.tomarMate();e.preventDefault();return;}
   if(k==='q'){doSave(G);showNotif('Guardado manual','success');e.preventDefault();return;}
-  if(k==='h'){document.getElementById('titleScreen').style.display='flex';e.preventDefault();}
+  if(k==='h'){openGameMenu();e.preventDefault();}
 });
 function doTrans(h,p,cb){
   const el=document.getElementById('tr');

@@ -27,14 +27,4 @@
     if(tag) tag.classList.toggle('pulseWarn',G.pActive||broken>0||G.stress>70);
   };
   setInterval(()=>{try{updateProPanel()}catch(e){}},700);
-  document.addEventListener('keydown',e=>{
-    if(e.key==='Escape'){
-      const ts=document.getElementById('titleScreen');
-      if(ts) ts.style.display=ts.style.display==='none'?'flex':'none';
-    }
-    if(e.key && e.key.toLowerCase()==='h'){
-      const ts=document.getElementById('titleScreen');
-      if(ts) ts.style.display='flex';
-    }
-  });
 })();

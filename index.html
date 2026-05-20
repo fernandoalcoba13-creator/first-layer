@@ -17,7 +17,7 @@
     <div class="miniBar"><i id="proRisk"></i></div>
     <p id="proTip">TIP: si hay urgentes, priorizalos antes del cierre.</p>
   </div>
-  <div id="quickBtns"><button class="qbtn" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" onclick="document.getElementById('titleScreen').style.display='flex'">? Ayuda</button></div>
+  <div id="quickBtns"><button class="qbtn" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" onclick="openGameMenu()">? Menú</button></div>
   <div id="titleScreen">
     <div class="tsBox">
       <div class="tsK">KMORRA ORIGINAL GAME</div>
@@ -28,9 +28,19 @@
         <div class="tsCard"><b>🌙 NOCHE</b><span>Supervisá impresoras, repará fallas y sobreviví cortes de luz.</span></div>
         <div class="tsCard"><b>📈 ESCALÁ</b><span>Comprá upgrades, empleados, stock y más impresoras para crecer.</span></div>
       </div>
-      <button class="tsBtn" onclick="document.getElementById('titleScreen').style.display='none';SFX.ok();">▶ EMPEZAR TURNO</button>
+      <div class="tsControls">
+        <div><kbd>WASD</kbd><span>Mover</span></div>
+        <div><kbd>E</kbd><span>Interactuar</span></div>
+        <div><kbd>Esc</kbd><span>Cerrar / pausa</span></div>
+        <div><kbd>A</kbd><span>Aceptar pedido</span></div>
+        <div><kbd>N</kbd><span>Negociar</span></div>
+        <div><kbd>R</kbd><span>Rechazar</span></div>
+        <div><kbd>F</kbd><span>Reparar</span></div>
+        <div><kbd>M</kbd><span>Mate</span></div>
+      </div>
+      <button class="tsBtn" onclick="closeGameMenu()">▶ CONTINUAR</button>
       <button class="tsBtn alt" onclick="window.resetGame()">BORRAR PARTIDA</button>
-      <p style="font-size:10px;color:#5a4a80;margin-top:12px;line-height:1.6">WASD / Flechas = mover · E = interactuar · Click en 🧉 para boost<br>Objetivo: hacer crecer tu print shop sin fundirte ni quemar las máquinas.</p>
+      <p style="font-size:10px;color:#5a4a80;margin-top:12px;line-height:1.6">Objetivo: hacer crecer tu print shop sin fundirte ni quemar las máquinas.</p>
     </div>
   </div>
 
