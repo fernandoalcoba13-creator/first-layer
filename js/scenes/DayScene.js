@@ -7,7 +7,7 @@ class DayScene extends Phaser.Scene{
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
-    this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=9000-(G.upg.ig?2000:0)-(G.emp.juli2?1500:0);
+    this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=12000-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=100000;this.timer=this.dur;this.IA=[];this.near=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
@@ -15,8 +15,8 @@ class DayScene extends Phaser.Scene{
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadClientAssetsAsync(this);
     this.checkStory();this.updateHUD();
-    this.time.delayedCall(900,()=>this.spawn());
-    this.time.delayedCall(3000,()=>this.spawn());
+    this.time.delayedCall(1600,()=>this.spawn());
+    this.time.delayedCall(8500,()=>this.spawn());
     document.getElementById('ptag').className='ptag day';
     document.getElementById('ptag').textContent='☀️ DÍA '+G.day;
     document.getElementById('hday').textContent='📅 Día '+G.day;
