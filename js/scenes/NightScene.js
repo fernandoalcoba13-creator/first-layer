@@ -317,7 +317,7 @@ class NightScene extends Phaser.Scene{
     }
     if(!G.block){
       const k=this.keys;let vx=0,vy=0;
-      const spd=G.mateActive?1.5:Math.max(0.5,G.energy/100);
+      const spd=energySpeed();
       if(k.a.isDown||k.lt.isDown){vx=-172*spd;this.dir=-1;}
       if(k.d.isDown||k.rt.isDown){vx=172*spd;this.dir=1;}
       if(k.w.isDown||k.up.isDown)vy=-103*spd;

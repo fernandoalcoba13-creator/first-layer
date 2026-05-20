@@ -117,13 +117,13 @@ G.useConsumable=function(id){
   const names={coffee:tr('coffee'),bar:tr('bar'),cleaner:tr('cleaner')};
   if((G.cons[id]||0)<=0){showNotif('Sin '+names[id],'error');return;}
   if(id==='coffee'){
-    if(G.mateActive){showNotif('Ya estas en turbo. Guardalo.','info');return;}
-    G.cons.coffee--;G.energy=Math.min(100,G.energy+30);G.mateActive=true;G.mateTimer=Math.max(G.mateTimer||0,16000);
-    SFX.up();showNotif(tr('coffee')+' +30 energia y turbo corto','success');
+    if(G.energy>92){showNotif('Energia casi llena. Guardalo.','info');return;}
+    G.cons.coffee--;G.energy=Math.min(100,G.energy+30);
+    SFX.up();showNotif(tr('coffee')+' +30 energia','success');
     updateMateHUD();
   } else if(id==='bar'){
-    G.cons.bar--;G.energy=Math.min(100,G.energy+16);G.stress=Math.max(0,(G.stress||0)-8);
-    SFX.up();showNotif(tr('bar')+' +16 energia, -8 estres','success');
+    G.cons.bar--;G.energy=Math.min(100,G.energy+20);G.stress=Math.max(0,(G.stress||0)-8);
+    SFX.up();showNotif(tr('bar')+' +20 energia, -8 estres','success');
     updateMateHUD();
   } else if(id==='cleaner'){
     const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;

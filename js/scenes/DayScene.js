@@ -318,7 +318,7 @@ class DayScene extends Phaser.Scene{
     if(pct<.2)document.getElementById('htf').style.background='#ff4d6a';
     const nt=pct<.15;
     if(nt!==this.tired){this.tired=nt;drawPlayer(this.pGr,false,nt);}
-    const k=this.keys;let vx=0,vy=0;const spd=G.mateActive?1.5:Math.max(0.5,G.energy/100);
+    const k=this.keys;let vx=0,vy=0;const spd=energySpeed();
     if(k.a.isDown||k.lt.isDown){vx=-168*spd;this.dir=-1;}
     if(k.d.isDown||k.rt.isDown){vx=168*spd;this.dir=1;}
     if(k.w.isDown||k.up.isDown)vy=-101*spd;

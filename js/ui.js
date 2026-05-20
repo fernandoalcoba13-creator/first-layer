@@ -59,12 +59,17 @@ function updateMateHUD(){
   else if(G.mateActive)document.getElementById('mbar').style.borderColor='#ffb347';
   else document.getElementById('mbar').style.borderColor='#2a2040';
 }
+function energySpeed(){
+  const pct=Phaser.Math.Clamp(G.energy||0,0,100);
+  const base=.45+pct*.0085;
+  return G.mateActive?base*1.12:base;
+}
 G.tomarMate=function(){
   if(G.mateActive){showNotif('🧉 Ya estás en turbo!','info');return;}
   if(G.mateCount<=0){showNotif('😔 Sin mate. Comprá en tienda ($80).','error');return;}
   if(G.energy>85){showNotif('😎 Energía suficiente, guardá el mate.','info');return;}
   G.mateCount--;G.mateActive=true;G.mateTimer=30000;G.energy=Math.min(100,G.energy+40);
-  SFX.up();showNotif('🧉 ¡Mate tomado! +40 energía. TURBO 30s 🚀','success');
+  SFX.up();showNotif('🧉 ¡Mate tomado! +40 energía. Ritmo arriba 30s','success');
   updateMateHUD();
 };
 function tickMate(dt){
@@ -73,7 +78,7 @@ function tickMate(dt){
     if(G.phase==='day')G.energy=Math.max(0,G.energy-.008*dt/1000*100);
   } else {
     G.mateTimer-=dt;
-    if(G.mateTimer<=0){G.mateActive=false;G.mateTimer=0;showNotif('☕ Turbo terminó.','info');}
+    if(G.mateTimer<=0){G.mateActive=false;G.mateTimer=0;showNotif('☕ Ritmo normal.','info');}
   }
   updateMateHUD();
 }
