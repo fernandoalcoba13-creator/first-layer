@@ -74,16 +74,24 @@ canvas{display:block;}
 .mgBtns button{width:34px;height:28px;background:#0a0816;border:1px solid #2a2050;color:#ffb347;font-family:'Courier New',monospace;font-size:14px;font-weight:900;cursor:pointer;pointer-events:all;}
 .mgBtns button:hover{border-color:#ffb347;background:#160e18;}
 #mgHint{color:#ffb347;font-size:10px;margin:8px 0 11px;}
-#shop{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#080614;border:3px solid #9d7fe3;padding:15px;width:470px;max-height:70vh;overflow-y:auto;pointer-events:all;display:none;z-index:15;}
-#shop h2{color:#9d7fe3;font-size:13px;margin-bottom:9px;}
-.sts{display:flex;margin-bottom:9px;}
-.st{padding:4px 12px;font-size:10px;cursor:pointer;border:1px solid #1e1a2e;color:#555;font-family:'Courier New',monospace;}
-.st.on{background:#160e30;color:#9d7fe3;border-color:#9d7fe3;}
-.sg{display:grid;grid-template-columns:1fr 1fr;gap:6px;}
-.si{background:#0e0c1c;border:1px solid #1e1a2e;padding:8px;cursor:pointer;transition:border-color .1s;}
-.si:hover:not(.sb){border-color:#9d7fe3;}.si.sb{opacity:.45;cursor:default;}.si.sa{border-color:#4dff91;}
-.si h4{color:#e8e4f0;font-size:9px;margin-bottom:2px;}.si p{color:#555;font-size:10px;margin-bottom:3px;}
-.si .sc{color:#ffd700;font-size:10px;}.si .stg{color:#4dff91;font-size:9px;}
+#shop{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#080614;border:2px solid #9d7fe3;padding:13px;width:min(620px,92vw);max-height:78vh;overflow-y:auto;pointer-events:all;display:none;z-index:15;box-shadow:0 0 36px rgba(157,127,227,.16),inset 0 0 24px rgba(91,200,250,.04);}
+.shopHead{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:9px;}
+#shop h2{color:#9d7fe3;font-size:13px;margin-bottom:3px;letter-spacing:1px;}
+#shopSub{color:#5a4a80;font-size:10px;}
+.shopClose{width:28px;height:28px;background:#120e20;border:1px solid #2a2050;color:#8f82aa;font-family:'Courier New',monospace;cursor:pointer;pointer-events:all;}
+.shopClose:hover{border-color:#ff4d6a;color:#ff4d6a;}
+.shopStats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px;}
+.shopStat{background:#0d0a1a;border:1px solid #21183a;padding:6px;min-height:42px;}
+.shopStat b{display:block;color:#5bc8fa;font-size:8px;margin-bottom:3px;}.shopStat span{display:block;color:#eee;font-size:12px;font-weight:900;}
+.sts{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:10px;}
+.st{padding:7px 8px;font-size:10px;cursor:pointer;border:1px solid #1e1a2e;color:#6d6085;font-family:'Courier New',monospace;text-align:center;background:#0c0918;}
+.st:hover{border-color:#5bc8fa;color:#5bc8fa;}
+.st.on{background:#160e30;color:#9d7fe3;border-color:#9d7fe3;box-shadow:inset 0 -2px 0 #9d7fe3;}
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.si{background:#0e0c1c;border:1px solid #1e1a2e;padding:8px;cursor:pointer;transition:border-color .1s,transform .1s;min-height:86px;display:flex;flex-direction:column;gap:5px;}
+.si:hover:not(.sb):not(.sl){border-color:#9d7fe3;transform:translateY(-1px);}.si.sb{opacity:.62;cursor:default;}.si.sa{border-color:#4dff91;}.si.sl{opacity:.55;cursor:default;}
+.siTop{display:flex;gap:7px;align-items:flex-start;}.siIc{font-size:17px;line-height:1;min-width:20px;text-align:center;}.si h4{color:#e8e4f0;font-size:10px;margin-bottom:2px;line-height:1.25;}.si p{color:#82769d;font-size:10px;line-height:1.35;}
+.siFoot{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:auto;}.sc{color:#ffd700;font-size:10px;font-weight:900;}.stg{color:#4dff91;font-size:9px;font-weight:900;}.slock{color:#ff4d6a;font-size:9px;}.sact{color:#061006;background:#4dff91;border:1px solid #4dff91;font-size:9px;font-weight:900;padding:3px 6px;}.si.sl .sact{background:#201020;color:#ff4d6a;border-color:#402030;}.si.sb .sact{background:#0a1a0a;color:#4dff91;border-color:#1f5c32;}
 #sto{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#07060f;border:3px solid #ffb347;padding:20px 26px;max-width:370px;text-align:center;pointer-events:all;display:none;z-index:25;}
 #sto h2{color:#ffb347;font-size:13px;margin-bottom:7px;}
 #sto p{color:#ccc;font-size:12px;line-height:1.7;margin-bottom:13px;white-space:pre-line;}
