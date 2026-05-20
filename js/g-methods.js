@@ -81,8 +81,6 @@ G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(u
 G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(G.gold<e.co){showNotif('💸 Sin fondos');return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' contratado!');doSave(G);G.tab('emp');};
 G.cShop=function(){
   document.getElementById('shop').style.display='none';G.block=false;
-  const ns=game.scene.getScene('Night');
-  if(ns&&G.phase==='night'&&typeof ns.assignOrders==='function')ns.assignOrders();
 };
 G.showSto=function(ti,tx,ob){G.block=true;document.getElementById('sh').textContent=ti;document.getElementById('sp').textContent=tx+(ob?'\n\n🎯 Objetivo: '+ob:'');document.getElementById('sto').style.display='block';};
 G.cSto=function(){document.getElementById('sto').style.display='none';G.block=false;};
@@ -119,9 +117,9 @@ G.useConsumable=function(id){
   const names={coffee:tr('coffee'),bar:tr('bar'),cleaner:tr('cleaner')};
   if((G.cons[id]||0)<=0){showNotif('Sin '+names[id],'error');return;}
   if(id==='coffee'){
-    if(G.energy>92){showNotif('Energia casi llena. Guardalo.','info');return;}
-    G.cons.coffee--;G.energy=Math.min(100,G.energy+30);
-    SFX.up();showNotif(tr('coffee')+' +30 energia','success');
+    if(G.mateActive){showNotif('Ya estas en turbo. Guardalo.','info');return;}
+    G.cons.coffee--;G.energy=Math.min(100,G.energy+30);G.mateActive=true;G.mateTimer=Math.max(G.mateTimer||0,16000);
+    SFX.up();showNotif(tr('coffee')+' +30 energia y turbo corto','success');
     updateMateHUD();
   } else if(id==='bar'){
     G.cons.bar--;G.energy=Math.min(100,G.energy+16);G.stress=Math.max(0,(G.stress||0)-8);

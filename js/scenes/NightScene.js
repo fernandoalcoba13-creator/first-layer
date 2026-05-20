@@ -10,7 +10,7 @@ class NightScene extends Phaser.Scene{
     this.earn=0;this.done=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
     if(G.syncPrinters)G.syncPrinters();
-    this.assignOrders();this.buildWorld();this.createPlayer();this.setupKeys();
+    this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     this.schedPwr();this.schedEvs();
@@ -18,8 +18,8 @@ class NightScene extends Phaser.Scene{
     document.getElementById('ptag').textContent='🌙 NOCHE — Día '+G.day;
     document.getElementById('pov').className='';
     document.getElementById('phud').style.display='none';
-    sLog('Las impresoras trabajan. Vigilá fallas y ⚡ cortes de luz.');
-    sHint('WASD | E=inspeccionar');
+    sLog(G.orders.length?'Elegí una impresora libre y cargá un trabajo con E.':'Sin pedidos en cola para imprimir.');
+    sHint('WASD | E=asignar/inspeccionar');
   }
   assignOrders(){
     const av=G.printers.filter(p=>!p.broken&&!p.locked);
@@ -30,6 +30,42 @@ class NightScene extends Phaser.Scene{
       p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
     });
     if(this.pObjs)this.pObjs.forEach(po=>po.lb.setText('P'+(po.p.id+1)+'\n'+(po.p.order?po.p.order.pr.e+po.p.order.pr.n.slice(0,8):'💤')));
+  }
+  assignOrderToPrinter(p,o){
+    if(!p||!o||p.busy||p.broken||p.locked)return false;
+    if(G.printers.some(x=>x.order===o)){showNotif('Ese trabajo ya esta cargado.','info');return false;}
+    if(!prepareOrderMaterial(o)){
+      o.waitingMaterial=true;doSave(G);
+      showNotif('Falta '+o.material+' x'+o.units+' para '+o.pr.n,'error');
+      return false;
+    }
+    p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
+    doSave(G);SFX.ok();G.cSto();
+    showNotif('P'+(p.id+1)+' imprime '+o.pr.e+' '+o.pr.n,'success');
+    sLog('P'+(p.id+1)+' cargada: '+o.cl+' - '+o.pr.n+' con '+o.filament.n+'.');
+    this.refreshPrinterLabels();
+    return true;
+  }
+  refreshPrinterLabels(){
+    if(!this.pObjs)return;
+    this.pObjs.forEach(po=>po.lb.setText('P'+(po.p.id+1)+'\n'+(po.p.order?po.p.order.pr.e+po.p.order.pr.n.slice(0,8):'LIBRE')));
+  }
+  openPrinterQueue(po){
+    const p=po&&po.p;if(!p)return;
+    if(p._ev&&!p._ev.resolved){this.showEv(p._ev);G.block=true;return;}
+    if(p.broken){showNotif('P'+(p.id+1)+': rota. Reparala primero.','error');return;}
+    if(p.busy){showNotif('P'+(p.id+1)+': '+p.order.pr.e+' '+p.order.pr.n+' - '+Math.round(p.progress*100)+'%');return;}
+    const queued=G.orders.filter(o=>!G.printers.some(x=>x.order===o));
+    if(!queued.length){showNotif('No hay trabajos pendientes.','info');return;}
+    G.block=true;
+    document.getElementById('sh').textContent='Cargar P'+(p.id+1);
+    document.getElementById('stoTabs').innerHTML='';
+    document.getElementById('sp').textContent='Elegi que trabajo imprimir en esta maquina.\nSi falta material, queda en cola hasta comprar stock.';
+    document.getElementById('stoActions').innerHTML=queued.map(o=>
+      '<button class="eb fix" onclick="game.scene.getScene(\'Night\').assignOrderToPrinter(G.printers['+p.id+'],G.orders['+G.orders.indexOf(o)+'])">'+o.pr.e+' '+o.pr.n+' | '+o.cl+' | '+o.material+' x'+o.units+' | $'+o.pay+'</button>'
+    ).join('');
+    document.getElementById('sto').style.display='block';
+    setTimeout(()=>focusPanelFirst('#stoActions .eb'),0);
   }
   buildWorld(){
     const W=this.W,H=this.H;
@@ -113,7 +149,7 @@ class NightScene extends Phaser.Scene{
       if(dS<78){G.openShop('stk');return;}
       const dI=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.invZone.x,this.invZone.y);
       if(dI<78){G.showInventory();return;}
-      if(this.near)this.inspect(this.near);
+      if(this.near)this.openPrinterQueue(this.near);
       const dT=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.tZone.x,this.tZone.y);
       if(dT<90&&G.pActive&&G.pType&&G.pType.id!=='micro')this.openBk();
     });
@@ -325,8 +361,9 @@ class NightScene extends Phaser.Scene{
       this.iLbl.setVisible(true).setText('[E] Inventario').setPosition(this.invZone.x,this.invZone.y-44);
       sHint('[E] Inventario');
     } else if(near&&!G.block){
-      this.iLbl.setVisible(true).setText('[E] Inspeccionar').setPosition(near.px,near.py-88);
-      sHint('[E] Inspeccionar impresora');
+      const free=!near.p.busy&&!near.p.broken&&!near.p._ev;
+      this.iLbl.setVisible(true).setText(free?'[E] Cargar trabajo':'[E] Inspeccionar').setPosition(near.px,near.py-88);
+      sHint(free?'[E] Elegir trabajo para imprimir':'[E] Inspeccionar impresora');
     } else {
       this.iLbl.setVisible(false);
     }
@@ -335,7 +372,7 @@ class NightScene extends Phaser.Scene{
   updateHUD(){document.getElementById('hg').textContent=G.gold;document.getElementById('hr').textContent=G.rep;}
   endNight(){
     if(G.phase!=='night')return;
-    G.phase='transition';G.block=true;G.day++;G.orders=[];
+    G.phase='transition';G.block=true;G.day++;
     let sal=0;
     Object.keys(G.emp).forEach(id=>{const e=EMP.find(x=>x.id===id);if(e){sal+=e.sal;G.gold=Math.max(0,G.gold-e.sal);}});
     doSave(G);

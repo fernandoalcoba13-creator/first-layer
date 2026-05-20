@@ -179,11 +179,20 @@ function handleShopKeys(k,e){
 function handleStoryKeys(k,e){
   if(!isShown('sto'))return false;
   const tabs=[...document.querySelectorAll('#stoTabs .stoTab')];
+  const actions=[...document.querySelectorAll('#stoActions .eb')].filter(b=>!b.disabled);
   if(!tabs.length){
+    if(actions.length){
+      const idx=actions.indexOf(document.activeElement);
+      if(k==='arrowleft'||k==='arrowup'||k==='arrowright'||k==='arrowdown'){
+        const dir=(k==='arrowleft'||k==='arrowup')?-1:1;
+        actions[(idx<0?0:(idx+dir+actions.length)%actions.length)].focus();
+        e.preventDefault();return true;
+      }
+      if(k==='enter'||k===' '){(idx>=0?actions[idx]:actions[0]).click();e.preventDefault();return true;}
+    }
     if(k==='enter'||k===' '){G.cSto();e.preventDefault();return true;}
     return false;
   }
-  const actions=[...document.querySelectorAll('#stoActions .eb')].filter(b=>!b.disabled);
   const active=document.activeElement;
   const tabIndex=tabs.indexOf(active);
   const actIndex=actions.indexOf(active);

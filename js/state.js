@@ -1,7 +1,7 @@
 // ═══ SAVE ═══
 // localStorage save/load. Save key: kmorra_ps3
 const SK='kmorra_ps3';
-function doSave(G){try{localStorage.setItem(SK,JSON.stringify({gold:G.gold,rep:G.rep,day:G.day,upg:G.upg,emp:G.emp,stk:G.stk,cons:G.cons,ss:G.ss,stats:G.stats,lang:G.lang}));const e=document.getElementById('sv');e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}catch(e){}}
+function doSave(G){try{localStorage.setItem(SK,JSON.stringify({gold:G.gold,rep:G.rep,day:G.day,upg:G.upg,emp:G.emp,stk:G.stk,cons:G.cons,orders:G.orders,ss:G.ss,stats:G.stats,lang:G.lang}));const e=document.getElementById('sv');e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null;}catch(e){return null;}}
 
 // ═══ GAME STATE ═══
@@ -68,4 +68,4 @@ function prepareOrderMaterial(o){
   return true;
 }
 function spendFilament(mat,id,units){if(!G.stk[mat]||!G.stk[mat][id]||G.stk[mat][id]<units)return false;G.stk[mat][id]-=units;return true;}
-(()=>{const s=loadSave();if(s){['gold','rep','day','upg','emp','stk','cons','ss','stats','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}ensureStockShape();ensureConsumables();G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();
+(()=>{const s=loadSave();if(s){['gold','rep','day','upg','emp','stk','cons','orders','ss','stats','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}ensureStockShape();ensureConsumables();if(!Array.isArray(G.orders))G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();

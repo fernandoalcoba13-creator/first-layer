@@ -210,6 +210,7 @@ class DayScene extends Phaser.Scene{
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 Lucas aceptó: '+c.pr.e+' '+c.pr.n);
     sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — '+(canPrint?'listo para imprimir':'falta '+c.order.material+' x'+c.order.units)+'. Cola: '+G.orders.length);
+    doSave(G);
     return true;
   }
   leaveClient(c,ang){
