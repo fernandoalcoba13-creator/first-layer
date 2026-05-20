@@ -10,7 +10,7 @@ class DayScene extends Phaser.Scene{
     if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};ensureStockShape();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
-    this.dur=G.day===1?85000:100000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
+    this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
@@ -245,12 +245,58 @@ class DayScene extends Phaser.Scene{
        {lb:tr('close'),cb:()=>cDlg()}]);
   }
   openPrinters(){
+    const ps=G.printers.filter(p=>!p.locked);
+    const choices=ps.map(p=>({lb:'P'+(p.id+1)+' - '+(p.busy?p.order.pr.e+' '+Math.round(p.progress*100)+'%':tr('loadJob')),cls:p.busy?'':'ok',cb:()=>{cDlg();this.openPrinterQueue(p);}}));
+    choices.push({lb:tr('close'),cb:()=>cDlg()});
     this.oDlg('🖨️ '+tr('printerTitle'),'',
       tr('free')+': '+G.printers.filter(p=>!p.busy&&!p.broken&&!p.locked).length+
-      '\n'+tr('broken')+': '+G.printers.filter(p=>p.broken).length+
       '\n'+tr('queued')+': '+G.orders.length+
       '\n\n'+tr('manualNightHint'),
-      [{lb:tr('ok'),cb:()=>cDlg()}]);
+      choices);
+  }
+  openPrinterQueue(p){
+    if(!p||p.locked)return;
+    if(p.busy){showNotif('P'+(p.id+1)+': '+p.order.pr.e+' '+p.order.pr.n+' - '+Math.round(p.progress*100)+'%');return;}
+    const queued=G.orders.filter(o=>!G.printers.some(x=>x.order===o));
+    if(!queued.length){showNotif(tr('noPendingJobs'),'info');return;}
+    G.block=true;
+    document.getElementById('sh').textContent=trf('loadPrinter',{n:p.id+1});
+    document.getElementById('stoTabs').innerHTML='';
+    document.getElementById('sp').textContent=tr('dayLoadPrinterDesc');
+    document.getElementById('stoActions').innerHTML=queued.map(o=>
+      '<button class="eb fix" onclick="game.scene.getScene(\'Day\').assignOrderToPrinter(G.printers['+p.id+'],G.orders['+G.orders.indexOf(o)+'])">'+o.pr.e+' '+o.pr.n+' | '+o.cl+' | '+o.material+' x'+o.units+' | $'+o.pay+'</button>'
+    ).join('');
+    document.getElementById('sto').style.display='block';
+    setTimeout(()=>focusPanelFirst('#stoActions .eb'),0);
+  }
+  assignOrderToPrinter(p,o){
+    if(!p||!o||p.busy||p.locked)return false;
+    if(G.printers.some(x=>x.order===o)){showNotif(tr('jobLoaded'),'info');return false;}
+    if(!prepareOrderMaterial(o)){
+      o.waitingMaterial=true;doSave(G);
+      showNotif(trf('missingOrder',{mat:o.material,units:o.units})+' - '+o.pr.n,'error');
+      return false;
+    }
+    p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
+    doSave(G);SFX.ok();G.cSto();
+    showNotif('P'+(p.id+1)+' '+tr('prints')+' '+o.pr.e+' '+o.pr.n,'success');
+    sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
+    return true;
+  }
+  completePrint(p){
+    const o=p.order,earned=o.pay,repGain=1+(o.filament&&o.filament.rep||0);
+    G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;G.dayEarn+=earned;
+    G.orders=G.orders.filter(x=>x!==o);
+    p.busy=false;p.order=null;p.progress=0;p._ev=null;p._pau=false;
+    SFX.coin();
+    const pg=this.pGfx&&this.pGfx[p.id];
+    if(pg){
+      const coin=this.add.text(pg.px,pg.py-72,'+$'+earned,{fontSize:'12px',color:'#ffd700',fontFamily:'Press Start 2P'}).setOrigin(.5).setDepth(12);
+      this.tweens.add({targets:coin,y:coin.y-45,alpha:0,duration:1000,onComplete:()=>coin.destroy()});
+    }
+    showNotif('✅ '+o.pr.e+' '+o.pr.n+' — +$'+earned,'money');
+    sLog('✅ P'+(p.id+1)+': '+o.pr.e+' '+o.pr.n+' '+tr('withMat')+' '+(o.filament?o.filament.n:o.material)+' — +$'+earned);
+    doSave(G);
   }
   openStock(){
     const pla=(FILAMENTS.pla||[])[1],petg=(FILAMENTS.petg||[])[1],res=(FILAMENTS.resin||[])[1];
@@ -288,7 +334,12 @@ class DayScene extends Phaser.Scene{
     setTimeout(()=>{const b=document.querySelector('#dbs .db');if(b)b.focus();},0);
     this.dlgOpen=true;
   }
-  updatePrinters(){
+  updatePrinters(dt){
+    G.printers.forEach(p=>{
+      if(!p.busy||p.broken||p._ev||p._pau)return;
+      p.progress+=dt/1000*G.sMult/(p.order?(p.order.time||p.order.pr.t)*9:100);
+      if(p.progress>=1){p.progress=1;this.completePrint(p);}
+    });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
       const c=p.order?p.order.pr.c:0x5bc8fa;
@@ -349,7 +400,7 @@ class DayScene extends Phaser.Scene{
       c.pbF.width=46*p;c.pbF.fillColor=p<.35?0xff4d6a:p<.65?0xffe566:0x4dff91;
       if(c.pat<=0)this.leaveClient(c,true);
     });
-    tickMate(dt);this.updatePrinters();this.updateHUD();
+    tickMate(dt);this.updatePrinters(dt);this.updateHUD();
   }
   endDay(){
     if(G.phase!=='day')return;
