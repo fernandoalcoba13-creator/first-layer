@@ -114,12 +114,19 @@ class DayScene extends Phaser.Scene{
     const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
     const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
-    const co={ct,cg,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX};
-    this.tweens.add({targets:ct,x:tX,duration:480,ease:'Power2',onComplete:()=>co.walk=false});
+    const co={ct,cg,cs,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX,baseY:yP};
+    co.stepTw=this.tweens.add({targets:ct,y:yP-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+    this.tweens.add({targets:ct,x:tX,duration:640,ease:'Power2',onComplete:()=>this.stopClientWalk(co)});
     this.clients.push(co);G.dayCli++;
     if(G.emp.lucas&&this.clients.filter(c=>!c.served).length===1)
       this.time.delayedCall(1800,()=>{if(!co.served)this.acceptOrd(co,'auto');});
     sLog(cl.e+' '+cl.n+': "'+cl.d[Math.floor(Math.random()*cl.d.length)]+'" — '+pr.e+' $'+pay);
+  }
+  stopClientWalk(c){
+    c.walk=false;
+    if(c.stepTw)c.stepTw.stop();
+    c.ct.y=c.baseY;
+    if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
     G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg});
@@ -131,7 +138,8 @@ class DayScene extends Phaser.Scene{
   leaveClient(c,ang){
     c.served=true;
     if(ang){G.rep=Math.max(0,G.rep-5);G.stress=Math.min(100,G.stress+10);SFX.err();showNotif('😤 '+c.cl.n+' se fue. -5 REP','error');}
-    this.tweens.add({targets:c.ct,x:-80,duration:440,onComplete:()=>c.ct.destroy()});
+    c.walk=true;if(c.cs&&c.cs.anims)c.cs.anims.resume();if(c.stepTw)c.stepTw.stop();c.stepTw=this.tweens.add({targets:c.ct,y:c.baseY-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
+    this.tweens.add({targets:c.ct,x:-80,duration:560,onComplete:()=>{if(c.stepTw)c.stepTw.stop();c.ct.destroy();}});
     this.clients=this.clients.filter(x=>x!==c);
   }
   interact(t){

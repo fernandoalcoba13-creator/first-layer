@@ -19,7 +19,7 @@ const CLIENT_SPRITE_SCALE=2;
 function addSheetFromImage(scene,key,src,fw,fh,cb){
   if(scene.textures.exists(key)){if(cb)cb();return;}
   const img=new Image();
-  img.onload=()=>{if(!scene.textures.exists(key))scene.textures.addSpriteSheet(key,img,{frameWidth:fw,frameHeight:fh});if(cb)cb();};
+  img.onload=()=>{if(!scene.textures.exists(key)){scene.textures.addSpriteSheet(key,img,{frameWidth:fw,frameHeight:fh});scene.textures.get(key)._flFrames=Math.max(1,Math.floor(img.width/fw)*Math.floor(img.height/fh));}if(cb)cb();};
   img.onerror=()=>{console.warn('Sprite failed to load: '+key);if(cb)cb();};
   img.src=src;
 }
@@ -87,15 +87,28 @@ function setPlayerSpriteState(sp,vx,vy,lastDir){
 }
 function loadClientAssetsAsync(scene,onReady){
   const items=CLIENT_ASSETS.filter(a=>!scene.textures.exists(a.key));
-  if(!items.length){if(onReady)onReady();return;}
+  if(!items.length){setupClientAnims(scene);if(onReady)onReady();return;}
   let left=items.length;
-  const done=()=>{left--;if(left<=0&&onReady)onReady();};
+  const done=()=>{left--;if(left<=0){setupClientAnims(scene);if(onReady)onReady();}};
   items.forEach(a=>addSheetFromImage(scene,a.key,a.src,25,40,done));
+}
+function setupClientAnims(scene){
+  CLIENT_ASSETS.forEach(a=>{
+    if(!scene.textures.exists(a.key))return;
+    const tex=scene.textures.get(a.key),frames=tex._flFrames||1,key=a.key+'_walk';
+    if(frames>1&&!scene.anims.exists(key)){
+      scene.anims.create({key,frames:scene.anims.generateFrameNumbers(a.key,{start:0,end:frames-1}),frameRate:8,repeat:-1});
+    }
+  });
 }
 function createClientSprite(scene,cl,idx){
   const asset=CLIENT_ASSETS[idx%CLIENT_ASSETS.length];
   if(!asset||!scene.textures.exists(asset.key))return null;
-  return scene.add.sprite(0,24,asset.key,0).setOrigin(.5,1).setScale(CLIENT_SPRITE_SCALE);
+  setupClientAnims(scene);
+  const sp=scene.add.sprite(0,24,asset.key,0).setOrigin(.5,1).setScale(CLIENT_SPRITE_SCALE);
+  const anim=asset.key+'_walk';
+  if(scene.anims.exists(anim))sp.play(anim);
+  return sp;
 }
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;
