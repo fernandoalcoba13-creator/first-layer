@@ -10,11 +10,11 @@ const PLAYER_DOWN='player_walk_s';
 const PLAYER_LEFT='player_walk_a';
 const PLAYER_RIGHT='player_walk_d';
 const PLAYER_UP='player_walk_w';
-const CLIENT_ASSETS={
-  marcos:{key:'client_personaje2',src:'assets/characters/clients/personaje2.png'},
-  sofi:{key:'client_personaje4',src:'assets/characters/clients/personaje4.png'},
-  diego:{key:'client_personaje3',src:'assets/characters/clients/personaje3.png'}
-};
+const CLIENT_ASSETS=[
+  {key:'client_personaje2',src:'assets/characters/clients/personaje2.png'},
+  {key:'client_personaje4',src:'assets/characters/clients/personaje4.png'},
+  {key:'client_personaje3',src:'assets/characters/clients/personaje3.png'}
+];
 function addSheetFromImage(scene,key,src,fw,fh,cb){
   if(scene.textures.exists(key)){if(cb)cb();return;}
   const img=new Image();
@@ -85,16 +85,16 @@ function setPlayerSpriteState(sp,vx,vy,lastDir){
   return dir;
 }
 function loadClientAssetsAsync(scene,onReady){
-  const items=Object.values(CLIENT_ASSETS).filter(a=>!scene.textures.exists(a.key));
+  const items=CLIENT_ASSETS.filter(a=>!scene.textures.exists(a.key));
   if(!items.length){if(onReady)onReady();return;}
   let left=items.length;
   const done=()=>{left--;if(left<=0&&onReady)onReady();};
   items.forEach(a=>addSheetFromImage(scene,a.key,a.src,25,40,done));
 }
-function createClientSprite(scene,cl){
-  const asset=CLIENT_ASSETS[cl.id];
+function createClientSprite(scene,cl,idx){
+  const asset=CLIENT_ASSETS[idx%CLIENT_ASSETS.length];
   if(!asset||!scene.textures.exists(asset.key))return null;
-  return scene.add.sprite(0,20,asset.key,0).setOrigin(.5,1).setScale(1.8);
+  return scene.add.sprite(0,20,asset.key,0).setOrigin(.5,1).setScale(1);
 }
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;
