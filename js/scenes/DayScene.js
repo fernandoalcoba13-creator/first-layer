@@ -97,13 +97,17 @@ class DayScene extends Phaser.Scene{
   }
   spawn(){
     if(this.clients.length>=5||G.phase!=='day')return;
-    const cl=CL[Math.floor(Math.random()*CL.length)];
+    const slot=this.nextClientSlot();
+    if(slot<0)return;
+    const activeIds=this.clients.filter(c=>!c.served).map(c=>c.cl.id);
+    const pool=CL.filter(c=>!activeIds.includes(c.id));
+    const cl=(pool.length?pool:CL)[Math.floor(Math.random()*(pool.length?pool.length:CL.length))];
     const pr=PR[Math.floor(Math.random()*PR.length)];
     const urg=cl.m==='Urgente'||Math.random()<.18;
     let pay=Math.round(pr.p*G.pMult*cl.gr*(urg?1.5:1));
     if(G.upg.ams&&(pr.cat==='fig'||pr.cat==='art'))pay=Math.round(pay*1.5);
-    const idx=this.clients.length;
-    const tX=this.W*.24+idx*86,yP=this.H*.71;
+    const idx=slot;
+    const tX=this.W*.24+slot*86,yP=this.H*.71;
     const pat=(cl.pat+(urg?-5:0))*1000;
     const ct=this.add.container(-50,yP).setDepth(4);
     const cs=createClientSprite(this,cl,idx);
@@ -114,13 +118,18 @@ class DayScene extends Phaser.Scene{
     const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
     const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
-    const co={ct,cg,cs,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX,baseY:yP};
+    const co={ct,cg,cs,pbF,cl,pr,pay,urg,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP};
     co.stepTw=this.tweens.add({targets:ct,y:yP-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     this.tweens.add({targets:ct,x:tX,duration:640,ease:'Power2',onComplete:()=>this.stopClientWalk(co)});
     this.clients.push(co);G.dayCli++;
     if(G.emp.lucas&&this.clients.filter(c=>!c.served).length===1)
       this.time.delayedCall(1800,()=>{if(!co.served)this.acceptOrd(co,'auto');});
     sLog(cl.e+' '+cl.n+': "'+cl.d[Math.floor(Math.random()*cl.d.length)]+'" — '+pr.e+' $'+pay);
+  }
+  nextClientSlot(){
+    const used=this.clients.filter(c=>!c.served).map(c=>c.slot);
+    for(let i=0;i<5;i++)if(!used.includes(i))return i;
+    return -1;
   }
   stopClientWalk(c){
     c.walk=false;

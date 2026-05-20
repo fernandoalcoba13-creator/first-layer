@@ -70,7 +70,7 @@ G.tab=function(t){
   const sgNew=sg.cloneNode(false);sg.parentNode.replaceChild(sgNew,sg);
   const s=sgNew;
   if(t==='up'){
-    s.style.gridTemplateColumns='1fr 1fr';
+    s.style.gridTemplateColumns='repeat(3,1fr)';
     s.innerHTML=UPG.map(u=>{
       const b=!!G.upg[u.id],lk=u.req&&!G.upg[u.req],af=G.gold>=u.co;
       const cls='si '+(b?'sb':af&&!lk?'sa':'');
@@ -82,7 +82,7 @@ G.tab=function(t){
       if(d)G._bUpg(d.dataset.upg);
     });
   } else if(t==='emp'){
-    s.style.gridTemplateColumns='1fr 1fr';
+    s.style.gridTemplateColumns='repeat(3,1fr)';
     s.innerHTML=EMP.map(e=>{
       const h=!!G.emp[e.id],af=G.gold>=e.co;
       const cls='si '+(h?'sb':af?'sa':'');
@@ -94,7 +94,7 @@ G.tab=function(t){
       if(d)G._hEmp(d.dataset.emp);
     });
   } else {
-    s.style.gridTemplateColumns='1fr';
+    s.style.gridTemplateColumns='repeat(2,1fr)';
     const mk2=G.market;
     const items=[['pla','PLA','🧵',mk2.pla.cur],['petg','PETG','🧵',mk2.petg.cur],['resin','Resina','🧪',mk2.resin.cur],['parts','Repuestos','🔩',mk2.parts.cur]];
     s.innerHTML=items.map(([k,n,ic,c])=>{
@@ -133,15 +133,15 @@ G.tab=function(t){
   const sg=document.getElementById('sg'),sgNew=sg.cloneNode(false);sg.parentNode.replaceChild(sgNew,sg);
   const s=sgNew;
   if(t==='up'){
-    s.style.gridTemplateColumns='1fr 1fr';
+    s.style.gridTemplateColumns='repeat(3,1fr)';
     s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],lk=u.req&&!G.upg[u.req],af=G.gold>=u.co;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,can:af&&!lk,locked:lk,lockedText:'Requiere '+u.req,doneText:'Instalado',attr:'data-upg="'+u.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-upg]');if(d)G._bUpg(d.dataset.upg);});
   } else if(t==='emp'){
-    s.style.gridTemplateColumns='1fr 1fr';
+    s.style.gridTemplateColumns='repeat(3,1fr)';
     s.innerHTML=EMP.map(e=>{const h=!!G.emp[e.id],af=G.gold>=e.co;return G.shopCard({icon:e.ic,name:e.n,desc:e.de+' | Sueldo $'+e.sal+'/noche',cost:e.co,done:h,can:af,locked:false,doneText:'Contratado',attr:'data-emp="'+e.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-emp]');if(d)G._hEmp(d.dataset.emp);});
   } else {
-    s.style.gridTemplateColumns='1fr';
+    s.style.gridTemplateColumns='repeat(2,1fr)';
     const mk2=G.market,items=[['pla','PLA','🧵',mk2.pla.cur],['petg','PETG','🧵',mk2.petg.cur],['resin','Resina','🧪',mk2.resin.cur],['parts','Repuestos','🔩',mk2.parts.cur]];
     s.innerHTML=items.map(([k,n,ic,c])=>G.shopCard({icon:ic,name:n,desc:'Tenés '+G.stk[k]+' unidades en estantería',cost:c,done:false,can:G.gold>=c,locked:false,attr:'data-stk="'+k+'" data-cost="'+c+'"'})).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]');if(d){G.bStk(d.dataset.stk,Number(d.dataset.cost));G.tab('stk');}});
