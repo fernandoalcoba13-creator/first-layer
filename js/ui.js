@@ -72,6 +72,58 @@ function tickMate(dt){
   updateMateHUD();
 }
 function cDlg(){document.getElementById('dlg').style.display='none';const d=game.scene.getScene('Day');if(d)d.dlgOpen=false;}
+function isShown(id){const el=document.getElementById(id);return !!el&&getComputedStyle(el).display!=='none';}
+function clickButton(sel,idx=0){
+  const list=[...document.querySelectorAll(sel)].filter(b=>!b.disabled&&b.offsetParent!==null);
+  if(list[idx]){list[idx].click();return true;}
+  return false;
+}
+function closeTopPanel(){
+  if(isShown('dlg')){cDlg();return true;}
+  if(isShown('shop')){G.cShop();return true;}
+  if(isShown('sto')){G.cSto();return true;}
+  if(isShown('titleScreen')){document.getElementById('titleScreen').style.display='none';SFX.ok();return true;}
+  return false;
+}
+function buyShopCard(n){
+  if(!isShown('shop'))return false;
+  const cards=[...document.querySelectorAll('#sg .si')].filter(c=>!c.classList.contains('sb')&&!c.classList.contains('sl'));
+  if(cards[n]){cards[n].click();return true;}
+  return false;
+}
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  const k=e.key.toLowerCase();
+  if(k==='escape'){if(closeTopPanel())e.preventDefault();return;}
+  if(isShown('titleScreen')&&(k==='enter'||k===' ')){document.getElementById('titleScreen').style.display='none';SFX.ok();e.preventDefault();return;}
+  if(isShown('miniGame')){
+    if(k===' '||k==='enter'){G.scrapeNozzle();e.preventDefault();}
+    return;
+  }
+  if(isShown('bkg')&&/^[1-6]$/.test(k)){G._bk(Number(k)-1);e.preventDefault();return;}
+  if(isShown('evp')){
+    if(/^[1-3]$/.test(k)){clickButton('#ebs .eb',Number(k)-1);e.preventDefault();return;}
+    if(k==='f'||k==='enter'){clickButton('#ebs .eb.fix',0);e.preventDefault();return;}
+    if(k==='i'){clickButton('#ebs .eb.skip',0);e.preventDefault();return;}
+  }
+  if(isShown('dayEnd')&&(k==='enter'||k===' ')){G.continueToNight();e.preventDefault();return;}
+  if(isShown('sto')&&(k==='enter'||k===' ')){G.cSto();e.preventDefault();return;}
+  if(isShown('dlg')){
+    if(/^[1-4]$/.test(k)){if(clickButton('#dbs .db',Number(k)-1))e.preventDefault();return;}
+    if(k==='a'||k==='enter'){if(clickButton('#dbs .db.ok',0)||clickButton('#dbs .db',0))e.preventDefault();return;}
+    if(k==='n'){if(clickButton('#dbs .db',1))e.preventDefault();return;}
+    if(k==='r'){if(clickButton('#dbs .db.no',0)||clickButton('#dbs .db',2))e.preventDefault();return;}
+  }
+  if(isShown('shop')){
+    if(k==='u'){G.tab('up');e.preventDefault();return;}
+    if(k==='e'){G.tab('emp');e.preventDefault();return;}
+    if(k==='s'){G.tab('stk');e.preventDefault();return;}
+    if(/^[1-9]$/.test(k)){if(buyShopCard(Number(k)-1))e.preventDefault();return;}
+  }
+  if(k==='m'){G.tomarMate();e.preventDefault();return;}
+  if(k==='q'){doSave(G);showNotif('Guardado manual','success');e.preventDefault();return;}
+  if(k==='h'){document.getElementById('titleScreen').style.display='flex';e.preventDefault();}
+});
 function doTrans(h,p,cb){
   const el=document.getElementById('tr');
   document.getElementById('trh').textContent=h;
