@@ -146,7 +146,7 @@ G.showInventory=function(tab){
   document.getElementById('sh').textContent=tr('inventory');
   document.getElementById('sto').style.display='block';
   const tabs=document.getElementById('stoTabs'),sp=document.getElementById('sp'),acts=document.getElementById('stoActions');
-  const mk=(id,txt)=>'<button class="stoTab '+(G.invTab===id?'on':'')+'" onclick="G.showInventory(\''+id+'\')">'+txt+'</button>';
+  const mk=(id,txt)=>'<button class="stoTab '+(G.invTab===id?'on':'')+'" data-inv-tab="'+id+'" onclick="G.showInventory(\''+id+'\')">'+txt+'</button>';
   tabs.innerHTML=mk('mat',tr('materialsTab'))+mk('orders',tr('ordersTab'))+mk('cons',tr('consumablesTab'));
   acts.innerHTML='';
   if(G.invTab==='orders'){
@@ -160,6 +160,7 @@ G.showInventory=function(tab){
     G.invTab='mat';
     sp.textContent=stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts;
   }
+  setTimeout(()=>{const b=document.querySelector('#stoTabs .stoTab.on');if(b)b.focus();},0);
 };
 
 // Shop v2 renderer: overrides the compact prototype shop with richer cards.

@@ -104,6 +104,41 @@ function buyShopCard(n){
   if(cards[n]){cards[n].click();return true;}
   return false;
 }
+function handleStoryKeys(k,e){
+  if(!isShown('sto'))return false;
+  const tabs=[...document.querySelectorAll('#stoTabs .stoTab')];
+  if(!tabs.length){
+    if(k==='enter'||k===' '){G.cSto();e.preventDefault();return true;}
+    return false;
+  }
+  const actions=[...document.querySelectorAll('#stoActions .eb')].filter(b=>!b.disabled);
+  const active=document.activeElement;
+  const tabIndex=tabs.indexOf(active);
+  const actIndex=actions.indexOf(active);
+  if(k==='arrowleft'||k==='arrowright'){
+    const cur=Math.max(0,tabs.findIndex(b=>b.classList.contains('on')));
+    const next=(cur+(k==='arrowright'?1:-1)+tabs.length)%tabs.length;
+    tabs[next].click();
+    e.preventDefault();return true;
+  }
+  if(k==='arrowdown'){
+    if(actions.length)actions[actIndex>=0?(actIndex+1)%actions.length:0].focus();
+    e.preventDefault();return true;
+  }
+  if(k==='arrowup'){
+    if(actIndex>0)actions[actIndex-1].focus();
+    else {
+      const cur=Math.max(0,tabs.findIndex(b=>b.classList.contains('on')));
+      tabs[cur].focus();
+    }
+    e.preventDefault();return true;
+  }
+  if(k==='enter'||k===' '){
+    if(tabIndex>=0||actIndex>=0){active.click();e.preventDefault();return true;}
+    G.cSto();e.preventDefault();return true;
+  }
+  return false;
+}
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   const k=e.key.toLowerCase();
@@ -123,7 +158,7 @@ document.addEventListener('keydown',e=>{
     if(k==='i'){clickButton('#ebs .eb.skip',0);e.preventDefault();return;}
   }
   if(isShown('dayEnd')&&(k==='enter'||k===' ')){G.continueToNight();e.preventDefault();return;}
-  if(isShown('sto')&&(k==='enter'||k===' ')){G.cSto();e.preventDefault();return;}
+  if(handleStoryKeys(k,e))return;
   if(isShown('dlg')){
     if(/^[1-6]$/.test(k)){if(clickButton('#dbs .db',Number(k)-1))e.preventDefault();return;}
     if(k==='a'||k==='enter'){if(clickButton('#dbs .db.ok',0)||clickButton('#dbs .db',0))e.preventDefault();return;}
