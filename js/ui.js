@@ -83,6 +83,7 @@ function setGameMenu(open){
   const el=document.getElementById('titleScreen');
   if(!el)return;
   el.style.display=open?'flex':'none';
+  if(open)setTimeout(()=>focusPanelFirst('#titleScreen .tsBtn,#titleScreen .langBtn'),0);
 }
 function openGameMenu(){setGameMenu(true);}
 function closeGameMenu(){setGameMenu(false);SFX.ok();}
@@ -102,6 +103,77 @@ function buyShopCard(n){
   if(!isShown('shop'))return false;
   const cards=[...document.querySelectorAll('#sg .si')].filter(c=>!c.classList.contains('sb')&&!c.classList.contains('sl'));
   if(cards[n]){cards[n].click();return true;}
+  return false;
+}
+function focusableItems(sel){
+  const items=[...document.querySelectorAll(sel)].filter(el=>!el.disabled&&el.offsetParent!==null);
+  items.forEach(el=>{if(el.tabIndex<0)el.tabIndex=0;});
+  return items;
+}
+function focusPanelFirst(sel){
+  const items=focusableItems(sel);
+  if(items[0])items[0].focus();
+}
+function moveFocus(items,k,cols){
+  if(!items.length)return false;
+  let idx=items.indexOf(document.activeElement);
+  if(idx<0)idx=0;
+  else if(k==='arrowleft')idx=(idx-1+items.length)%items.length;
+  else if(k==='arrowright')idx=(idx+1)%items.length;
+  else if(k==='arrowup')idx=Math.max(0,idx-(cols||1));
+  else if(k==='arrowdown')idx=Math.min(items.length-1,idx+(cols||1));
+  items[idx].focus();
+  return true;
+}
+function handlePanelKeys(panelId,sel,k,e,cols){
+  if(!isShown(panelId))return false;
+  const items=focusableItems(sel);
+  if(!items.length)return false;
+  if(k==='arrowleft'||k==='arrowright'||k==='arrowup'||k==='arrowdown'){
+    moveFocus(items,k,cols);
+    e.preventDefault();return true;
+  }
+  if(k==='enter'||k===' '){
+    const active=items.includes(document.activeElement)?document.activeElement:items[0];
+    active.click();
+    e.preventDefault();return true;
+  }
+  return false;
+}
+function handleShopKeys(k,e){
+  if(!isShown('shop'))return false;
+  const tabs=focusableItems('#shop .st');
+  const cards=focusableItems('#sg .si:not(.sb):not(.sl)');
+  const close=focusableItems('#shop .shopClose');
+  const active=document.activeElement;
+  if(k==='arrowleft'||k==='arrowright'){
+    if(tabs.includes(active)){
+      const i=tabs.indexOf(active),next=(i+(k==='arrowright'?1:-1)+tabs.length)%tabs.length;
+      tabs[next].click();tabs[next].focus();
+    } else if(cards.includes(active)) moveFocus(cards,k,3);
+    else if(close.includes(active)) tabs.find(t=>t.classList.contains('on'))?.focus();
+    else (tabs.find(t=>t.classList.contains('on'))||tabs[0])?.focus();
+    e.preventDefault();return true;
+  }
+  if(k==='arrowdown'){
+    if(tabs.includes(active)||close.includes(active))cards[0]?.focus();
+    else if(cards.includes(active))moveFocus(cards,k,3);
+    else (tabs.find(t=>t.classList.contains('on'))||tabs[0])?.focus();
+    e.preventDefault();return true;
+  }
+  if(k==='arrowup'){
+    if(cards.includes(active)){
+      const i=cards.indexOf(active);
+      if(i<3)(tabs.find(t=>t.classList.contains('on'))||tabs[0])?.focus();
+      else moveFocus(cards,k,3);
+    } else close[0]?.focus();
+    e.preventDefault();return true;
+  }
+  if(k==='enter'||k===' '){
+    const all=[...tabs,...cards,...close];
+    const btn=all.includes(active)?active:(tabs.find(t=>t.classList.contains('on'))||tabs[0]);
+    if(btn){btn.click();e.preventDefault();return true;}
+  }
   return false;
 }
 function handleStoryKeys(k,e){
@@ -164,17 +236,18 @@ document.addEventListener('keydown',e=>{
     if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd'))openGameMenu();
     e.preventDefault();return;
   }
-  if(isShown('titleScreen')&&(k==='enter'||k===' ')){closeGameMenu();e.preventDefault();return;}
-  if(isShown('miniGame')){
-    if(k===' '||k==='enter'){G.scrapeNozzle();e.preventDefault();}
-    return;
-  }
+  if(handlePanelKeys('titleScreen','#titleScreen .tsBtn,#titleScreen .langBtn',k,e,2))return;
+  if(handlePanelKeys('miniGame','#miniGame button',k,e,2))return;
+  if(isShown('miniGame'))return;
+  if(handlePanelKeys('bkg','#bks .bk',k,e,6))return;
   if(isShown('bkg')&&/^[1-6]$/.test(k)){G._bk(Number(k)-1);e.preventDefault();return;}
+  if(handlePanelKeys('evp','#ebs .eb',k,e,3))return;
   if(isShown('evp')){
     if(/^[1-3]$/.test(k)){clickButton('#ebs .eb',Number(k)-1);e.preventDefault();return;}
     if(k==='f'||k==='enter'){clickButton('#ebs .eb.fix',0);e.preventDefault();return;}
     if(k==='i'){clickButton('#ebs .eb.skip',0);e.preventDefault();return;}
   }
+  if(handlePanelKeys('dayEnd','#dayEnd .deBtn',k,e,1))return;
   if(isShown('dayEnd')&&(k==='enter'||k===' ')){G.continueToNight();e.preventDefault();return;}
   if(handleStoryKeys(k,e))return;
   if(handleDialogKeys(k,e))return;
@@ -184,6 +257,7 @@ document.addEventListener('keydown',e=>{
     if(k==='n'){if(clickButton('#dbs .db',1))e.preventDefault();return;}
     if(k==='r'){if(clickButton('#dbs .db.no',0)||clickButton('#dbs .db',2))e.preventDefault();return;}
   }
+  if(handleShopKeys(k,e))return;
   if(isShown('shop')){
     if(k==='u'){G.tab('up');e.preventDefault();return;}
     if(k==='e'){G.tab('emp');e.preventDefault();return;}
@@ -225,6 +299,7 @@ function showDayClose(summary,cb){
   document.getElementById('deNote').textContent=summary.note;
   G._dayCloseCb=cb;
   el.style.display='flex';
+  setTimeout(()=>focusPanelFirst('#dayEnd .deBtn'),0);
   SFX.ok();
 }
 G.continueToNight=function(){

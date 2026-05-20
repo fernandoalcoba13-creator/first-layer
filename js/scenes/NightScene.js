@@ -156,10 +156,11 @@ class NightScene extends Phaser.Scene{
     this.bkOrd=Array.from({length:num},(_,i)=>i).sort(()=>Math.random()-.5);
     G.block=true;G._bkNum=num;G._bkNext=0;G._bkOrd=[...this.bkOrd];
     document.getElementById('bks').innerHTML=this.bkOrd.map((pos,seq)=>
-      '<div class="bk" id="bk'+seq+'" onclick="G._bk('+seq+')"><div class="bkn">'+(pos+1)+'</div><div class="bksw"></div><div class="bkl"></div></div>').join('');
+      '<div class="bk" id="bk'+seq+'" tabindex="0" onclick="G._bk('+seq+')"><div class="bkn">'+(pos+1)+'</div><div class="bksw"></div><div class="bkl"></div></div>').join('');
     document.getElementById('bkd').textContent='Levantá los disyuntores en orden (1→'+num+')';
     document.getElementById('bhint').textContent='Orden: del 1 al '+num;
     document.getElementById('bkg').style.display='block';
+    setTimeout(()=>focusPanelFirst('#bks .bk'),0);
     SFX.clk();
   }
   inspect(po){
@@ -236,6 +237,7 @@ class NightScene extends Phaser.Scene{
     if(!auto&&['clog','blob'].includes(ev.id)&&G.cons&&G.cons.cleaner>0)buttons='<button class="eb fix" onclick="G.useConsumable(\'cleaner\')">Limpia pico (-1)</button>'+buttons;
     document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
+    setTimeout(()=>focusPanelFirst('#ebs .eb'),0);
   }
   completePrint(p){
     const o=p.order,earned=o.pay;

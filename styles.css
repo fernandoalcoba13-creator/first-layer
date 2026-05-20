@@ -104,6 +104,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
 .stoTab.on{border-color:#ffb347;color:#ffb347;background:#211331;}
 .stoTab:focus,.stoActions .eb:focus{outline:0;border-color:#4dff91;color:#4dff91;box-shadow:0 0 0 2px rgba(77,255,145,.24),2px 2px 0 #03020a;}
 .stoActions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin:0 0 12px;}
+.eb:focus,.deBtn:focus,.tsBtn:focus,.langBtn:focus,.shopClose:focus,.st:focus,.si:focus,.bk:focus{outline:0;border-color:#4dff91!important;color:#4dff91!important;box-shadow:0 0 0 2px rgba(77,255,145,.24),2px 2px 0 #03020a!important;}
 #dayEnd{position:absolute;inset:0;background:rgba(3,2,8,.9);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:28;}
 .deBox{width:min(520px,92vw);background:#07060f;border:3px solid #ffb347;box-shadow:0 0 42px rgba(255,179,71,.14),inset 0 0 36px rgba(91,200,250,.06);padding:18px 20px;text-align:center;}
 .deK{color:#5bc8fa;font-size:10px;letter-spacing:3px;margin-bottom:8px;}
