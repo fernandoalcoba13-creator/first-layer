@@ -79,9 +79,19 @@ G.syncPrinters=function(){
 G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;};
 G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(u.req&&!G.upg[u.req]){showNotif('⚠️ Requiere: '+u.req);return;}if(G.gold<u.co){showNotif('💸 Sin fondos');return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' activado!');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
 G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(G.gold<e.co){showNotif('💸 Sin fondos');return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' contratado!');doSave(G);G.tab('emp');};
-G.cShop=function(){document.getElementById('shop').style.display='none';G.block=false;};
+G.cShop=function(){
+  document.getElementById('shop').style.display='none';G.block=false;
+  const ns=game.scene.getScene('Night');
+  if(ns&&G.phase==='night'&&typeof ns.assignOrders==='function')ns.assignOrders();
+};
 G.showSto=function(ti,tx,ob){G.block=true;document.getElementById('sh').textContent=ti;document.getElementById('sp').textContent=tx+(ob?'\n\n🎯 Objetivo: '+ob:'');document.getElementById('sto').style.display='block';};
 G.cSto=function(){document.getElementById('sto').style.display='none';G.block=false;};
+G.showInventory=function(){
+  const orders=(G.orders||[]).map(o=>'• '+o.pr.e+' '+o.pr.n+' — '+o.material+' x'+o.units+(o.filament?' | '+o.filament.n:o.waitingMaterial?' | falta material':'')).join('\n')||'Sin pedidos en cola.';
+  G.showSto('Inventario',
+    stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts+'\n\nCola:\n'+orders,
+    null);
+};
 
 // Shop v2 renderer: overrides the compact prototype shop with richer cards.
 G.shopStats=function(){

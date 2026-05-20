@@ -136,6 +136,8 @@ document.addEventListener('keydown',e=>{
     if(k==='s'){G.tab('stk');e.preventDefault();return;}
     if(/^[1-9]$/.test(k)){if(buyShopCard(Number(k)-1))e.preventDefault();return;}
   }
+  if(!G.block&&k==='i'){G.showInventory();e.preventDefault();return;}
+  if(!G.block&&k==='o'){G.openShop('stk');e.preventDefault();return;}
   if(k==='m'){G.tomarMate();e.preventDefault();return;}
   if(k==='q'){doSave(G);showNotif('Guardado manual','success');e.preventDefault();return;}
   if(k==='h'){openGameMenu();e.preventDefault();}

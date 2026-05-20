@@ -169,7 +169,7 @@ class DayScene extends Phaser.Scene{
     const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
     const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
-    const co={ct,cg,cs,pbF,cl,pr,pay,urg,order,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP,autoReady:true};
+    const co={ct,cg,cs,pbF,cl,pr,pay,urg,order,pat,maxP:pat,served:false,walk:true,tX,slot,baseY:yP};
     co.stepTw=this.tweens.add({targets:ct,y:yP-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     this.tweens.add({targets:ct,x:tX,duration:640,ease:'Power2',onComplete:()=>this.stopClientWalk(co)});
     this.clients.push(co);G.dayCli++;
@@ -188,7 +188,6 @@ class DayScene extends Phaser.Scene{
       if(c.served||c.walk)return;
       const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,c.ct.x,c.ct.y);
       if(d<md){md=d;best=c;}
-      if(d>88)c.autoReady=true;
     });
     return best;
   }
@@ -204,16 +203,13 @@ class DayScene extends Phaser.Scene{
     if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
-    if(matStock(c.order.material)<c.order.units){showNotif(tr('missing')+c.order.material+' x'+c.order.units,'error');return false;}
-    const fil=consumeFilament(c.order.material,c.order.diff,c.order.units);
-    if(!fil){showNotif(tr('usableStock')+c.order.material,'error');return false;}
-    const risk=Phaser.Math.Clamp(c.order.risk+fil.risk,.01,.62);
-    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk,tag:c.order.tag,material:c.order.material,units:c.order.units,filament:{id:fil.id,n:fil.n,q:fil.q,clog:fil.clog,rep:fil.rep,risk:fil.risk}});
+    const canPrint=matStock(c.order.material)>=c.order.units;
+    G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk:c.order.risk,tag:c.order.tag,material:c.order.material,units:c.order.units,waitingMaterial:!canPrint});
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 Lucas aceptó: '+c.pr.e+' '+c.pr.n);
-    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' con '+fil.n+' — riesgo '+Math.round(risk*100)+'%. Cola: '+G.orders.length);
+    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — '+(canPrint?'listo para imprimir':'falta '+c.order.material+' x'+c.order.units)+'. Cola: '+G.orders.length);
     return true;
   }
   leaveClient(c,ang){
@@ -236,11 +232,9 @@ class DayScene extends Phaser.Scene{
     const w=this.clients.filter(c=>!c.served);
     if(!w.length){showNotif('No hay clientes esperando.');return;}
     const c=target&&!target.served?target:(this.nearClient||w[0]);
-    c.autoReady=false;
     const dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
-    const preview=chooseFilament(c.order.material,c.order.diff);
     this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
-      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('filament')+': '+(preview?preview.n+' ('+tr('risk')+' '+(preview.risk>0?'+':'')+Math.round(preview.risk*100)+'%)':tr('withoutStock'))+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
+      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('stock')+': '+matStock(c.order.material)+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
       [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
        {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}},
        {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
@@ -334,7 +328,6 @@ class DayScene extends Phaser.Scene{
     if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
     const cNear=this.nearestClient();
     this.nearClient=cNear;
-    if(cNear&&!this.dlgOpen&&!G.block&&cNear.autoReady)this.openCounter(cNear);
     let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'[E] '+cNear.cl.n}:null,md=cNear?0:88;
     this.IA.forEach(it=>{
       const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,it.x,it.y);

@@ -53,5 +53,14 @@ function consumeFilament(mat,diff,units){
   const main=used[0].f,mix=used.map(u=>u.f.n+(u.take>1?' x'+u.take:'')).join(' + ');
   return {id:main.id,n:mix,q:q/units,clog:clog/units,rep:Math.round(rep/units),risk:risk/units};
 }
+function prepareOrderMaterial(o){
+  if(o.filament)return true;
+  const fil=consumeFilament(o.material,o.diff,o.units);
+  if(!fil)return false;
+  o.risk=Phaser.Math.Clamp((o.risk||0)+fil.risk,.01,.62);
+  o.filament={id:fil.id,n:fil.n,q:fil.q,clog:fil.clog,rep:fil.rep,risk:fil.risk};
+  o.waitingMaterial=false;
+  return true;
+}
 function spendFilament(mat,id,units){if(!G.stk[mat]||!G.stk[mat][id]||G.stk[mat][id]<units)return false;G.stk[mat][id]-=units;return true;}
 (()=>{const s=loadSave();if(s){['gold','rep','day','upg','emp','stk','ss','stats','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}ensureStockShape();G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();
