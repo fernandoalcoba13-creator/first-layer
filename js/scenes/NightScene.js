@@ -227,12 +227,14 @@ class NightScene extends Phaser.Scene{
     document.getElementById('ed').textContent=ev.desc+ct;
     const canFix=(ev.g===0||G.gold>=ev.g)&&(ev.pts===0||G.stk.parts>=ev.pts);
     const auto=G.emp.rodri&&['jam','blob','humid'].includes(ev.id);
-    document.getElementById('ebs').innerHTML=auto
+    let buttons=auto
       ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 Rodrigo repara solo</button>'
       :(ev.id==='clog'
         ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startNozzleMini()">🚫 Minijuego: limpiar pico'+(ev.pts>0?' (-'+ev.pts+' rep)':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
         +'<button class="eb skip" onclick="G.nSkip()">⏭ Ignorar (-'+ev.rp+' REP)</button>';
+    if(!auto&&['clog','blob'].includes(ev.id)&&G.cons&&G.cons.cleaner>0)buttons='<button class="eb fix" onclick="G.useConsumable(\'cleaner\')">Limpia pico (-1)</button>'+buttons;
+    document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
   }
   completePrint(p){

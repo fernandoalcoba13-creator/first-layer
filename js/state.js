@@ -1,12 +1,12 @@
 // ═══ SAVE ═══
 // localStorage save/load. Save key: kmorra_ps3
 const SK='kmorra_ps3';
-function doSave(G){try{localStorage.setItem(SK,JSON.stringify({gold:G.gold,rep:G.rep,day:G.day,upg:G.upg,emp:G.emp,stk:G.stk,ss:G.ss,stats:G.stats,lang:G.lang}));const e=document.getElementById('sv');e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}catch(e){}}
+function doSave(G){try{localStorage.setItem(SK,JSON.stringify({gold:G.gold,rep:G.rep,day:G.day,upg:G.upg,emp:G.emp,stk:G.stk,cons:G.cons,ss:G.ss,stats:G.stats,lang:G.lang}));const e=document.getElementById('sv');e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null;}catch(e){return null;}}
 
 // ═══ GAME STATE ═══
 // Single global G. All gameplay reads/writes go through here.
-const G={gold:500,rep:50,day:1,lang:'es',phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:{eco:2,std:4,pro:0},petg:{eco:1,std:2,pro:0},resin:{basic:1,std:1,pro:0},parts:3},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
+const G={gold:500,rep:50,day:1,lang:'es',phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:{eco:2,std:4,pro:0},petg:{eco:1,std:2,pro:0},resin:{basic:1,std:1,pro:0},parts:3},cons:{coffee:1,bar:1,cleaner:0},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
   get pCount(){return this.upg.unlock4?4:this.upg.unlock3?3:this.upg.unlock2?2:1;},
   get sMult(){return 1+(this.upg.speed1?0.3:0)+(this.upg.speed2?0.3:0);},
   get pMult(){return 1+(this.upg.qual?0.25:0)+(this.emp.caro2?0.15:0);},
@@ -24,6 +24,11 @@ function ensureStockShape(){
     (FILAMENTS[k]||[]).forEach(f=>{if(G.stk[k][f.id]===undefined)G.stk[k][f.id]=0;});
   });
   if(typeof G.stk.parts!=='number')G.stk.parts=Number(G.stk.parts||0);
+}
+function ensureConsumables(){
+  if(!G.cons)G.cons={};
+  const base={coffee:1,bar:1,cleaner:0};
+  Object.keys(base).forEach(k=>{if(G.cons[k]===undefined)G.cons[k]=base[k];});
 }
 function filDef(mat,id){return (FILAMENTS[mat]||[]).find(f=>f.id===id)||null;}
 function matStock(mat){const s=G.stk[mat];return typeof s==='number'?s:Object.values(s||{}).reduce((a,b)=>a+Number(b||0),0);}
@@ -63,4 +68,4 @@ function prepareOrderMaterial(o){
   return true;
 }
 function spendFilament(mat,id,units){if(!G.stk[mat]||!G.stk[mat][id]||G.stk[mat][id]<units)return false;G.stk[mat][id]-=units;return true;}
-(()=>{const s=loadSave();if(s){['gold','rep','day','upg','emp','stk','ss','stats','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}ensureStockShape();G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();
+(()=>{const s=loadSave();if(s){['gold','rep','day','upg','emp','stk','cons','ss','stats','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}ensureStockShape();ensureConsumables();G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();

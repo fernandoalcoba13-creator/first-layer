@@ -21,7 +21,11 @@ const TXT={
     salary:'Sueldo',partsName:'Repuestos nozzle',partsDesc:'Picos, racores y piezas para reparar.',
     tier:'Gama',risk:'Riesgo',quickStock:'Compra rapida: calidad estandar. En tienda tenes todas las gamas.',
     material:'Material',filament:'Filamento',difficulty:'Dificultad',withoutStock:'sin stock',
-    usableStock:'No hay stock usable para ',missing:'Falta '
+    usableStock:'No hay stock usable para ',missing:'Falta ',
+    inventory:'Inventario',materialsTab:'Materiales',ordersTab:'Pedidos',consumablesTab:'Consumibles',
+    coffee:'Cafe de turno',bar:'Barrita cereal',cleaner:'Limpia pico',
+    use:'Usar',missingMaterial:'falta material',noQueuedOrders:'Sin pedidos en cola.',
+    consHint:'Cafe recupera energia. La barrita baja estres. Limpia pico resuelve boquilla tapada o blob durante la noche.'
     ,nightActive:'Noche activa',orders:'pedidos',failures:'fallas',box:'caja',
     runBreaker:'Corre al tablero electrico.',inspectPrinters:'Inspecciona impresoras antes de acelerar.',
     dayDyn:'Dia',queue:'cola',drinkMate:'Toma mate o baja ritmo.',buyCheap:'Compra stock cuando el mercado este barato.'
@@ -49,6 +53,10 @@ const TXT={
     tier:'Tier',risk:'Risk',quickStock:'Quick buy: standard quality. Shop has every tier.',
     material:'Material',filament:'Filament',difficulty:'Difficulty',withoutStock:'no stock',
     usableStock:'No usable stock for ',missing:'Missing ',
+    inventory:'Inventory',materialsTab:'Materials',ordersTab:'Orders',consumablesTab:'Consumables',
+    coffee:'Shift coffee',bar:'Cereal bar',cleaner:'Nozzle wipe',
+    use:'Use',missingMaterial:'missing material',noQueuedOrders:'No queued orders.',
+    consHint:'Coffee restores energy. Cereal bars reduce stress. Nozzle wipes solve clogs or blobs during night shift.',
     nightActive:'Night shift',orders:'orders',failures:'failures',box:'cash',
     runBreaker:'Run to the breaker panel.',inspectPrinters:'Inspect printers before rushing.',
     dayDyn:'Day',queue:'queue',drinkMate:'Drink mate or slow down.',buyCheap:'Buy stock when the market is cheap.'

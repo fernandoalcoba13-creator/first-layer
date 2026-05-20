@@ -93,6 +93,75 @@ G.showInventory=function(){
     null);
 };
 
+// Inventory v2: tabbed stock, queued orders, and consumables.
+G.showSto=function(ti,tx,ob){
+  G.block=true;
+  document.getElementById('sh').textContent=ti;
+  const tabs=document.getElementById('stoTabs'),acts=document.getElementById('stoActions');
+  if(tabs)tabs.innerHTML='';
+  if(acts)acts.innerHTML='';
+  document.getElementById('sp').textContent=tx+(ob?'\n\nObjetivo: '+ob:'');
+  document.getElementById('sto').style.display='block';
+};
+G.buyConsumable=function(id){
+  const defs={coffee:{n:tr('coffee'),c:45},bar:{n:tr('bar'),c:35},cleaner:{n:tr('cleaner'),c:70}};
+  const it=defs[id];if(!it)return;
+  if(G.gold<it.c){showNotif('Sin fondos','error');return;}
+  ensureConsumables();
+  G.gold-=it.c;G.cons[id]=(G.cons[id]||0)+1;
+  SFX.coin();showNotif(it.n+' +1','money');
+  document.getElementById('hg').textContent=G.gold;
+  doSave(G);
+  if(typeof isShown==='function'&&isShown('sto'))G.showInventory('cons');
+};
+G.useConsumable=function(id){
+  ensureConsumables();
+  const names={coffee:tr('coffee'),bar:tr('bar'),cleaner:tr('cleaner')};
+  if((G.cons[id]||0)<=0){showNotif('Sin '+names[id],'error');return;}
+  if(id==='coffee'){
+    if(G.energy>92){showNotif('Energia casi llena. Guardalo.','info');return;}
+    G.cons.coffee--;G.energy=Math.min(100,G.energy+30);
+    SFX.up();showNotif(tr('coffee')+' +30 energia','success');
+    updateMateHUD();
+  } else if(id==='bar'){
+    G.cons.bar--;G.energy=Math.min(100,G.energy+16);G.stress=Math.max(0,(G.stress||0)-8);
+    SFX.up();showNotif(tr('bar')+' +16 energia, -8 estres','success');
+    updateMateHUD();
+  } else if(id==='cleaner'){
+    const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;
+    if(!ev||!['clog','blob'].includes(ev.id)){showNotif('Guardalo para boquilla tapada o blob.','info');return;}
+    G.cons.cleaner--;
+    ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;
+    document.getElementById('evp').style.display='none';
+    G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
+    SFX.fix();showNotif('Pico limpio sin gastar repuesto','success');sLog('P'+(ev.printer.id+1)+': pico limpiado con consumible.');
+  }
+  doSave(G);
+  if(typeof isShown==='function'&&isShown('sto'))G.showInventory('cons');
+};
+G.showInventory=function(tab){
+  ensureConsumables();
+  G.invTab=tab||G.invTab||'mat';
+  G.block=true;
+  document.getElementById('sh').textContent=tr('inventory');
+  document.getElementById('sto').style.display='block';
+  const tabs=document.getElementById('stoTabs'),sp=document.getElementById('sp'),acts=document.getElementById('stoActions');
+  const mk=(id,txt)=>'<button class="stoTab '+(G.invTab===id?'on':'')+'" onclick="G.showInventory(\''+id+'\')">'+txt+'</button>';
+  tabs.innerHTML=mk('mat',tr('materialsTab'))+mk('orders',tr('ordersTab'))+mk('cons',tr('consumablesTab'));
+  acts.innerHTML='';
+  if(G.invTab==='orders'){
+    sp.textContent=(G.orders||[]).map(o=>'- '+o.pr.e+' '+o.pr.n+' - '+o.material+' x'+o.units+(o.filament?' | '+o.filament.n:o.waitingMaterial?' | '+tr('missingMaterial'):'')).join('\n')||tr('noQueuedOrders');
+  } else if(G.invTab==='cons'){
+    sp.textContent=tr('coffee')+': '+G.cons.coffee+'  |  '+tr('bar')+': '+G.cons.bar+'  |  '+tr('cleaner')+': '+G.cons.cleaner+'\n\n'+tr('consHint');
+    acts.innerHTML=[
+      ['coffee',45,'Cafe'],['bar',35,'Barrita'],['cleaner',70,'Limpia pico']
+    ].map(x=>'<button class="eb fix" onclick="G.useConsumable(\''+x[0]+'\')">'+tr('use')+' '+x[2]+'</button><button class="eb" onclick="G.buyConsumable(\''+x[0]+'\')">'+tr('buy')+' $'+x[1]+'</button>').join('');
+  } else {
+    G.invTab='mat';
+    sp.textContent=stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts;
+  }
+};
+
 // Shop v2 renderer: overrides the compact prototype shop with richer cards.
 G.shopStats=function(){
   const hired=EMP.filter(e=>G.emp[e.id]).length,total=matStock('pla')+matStock('petg')+matStock('resin')+G.stk.parts;

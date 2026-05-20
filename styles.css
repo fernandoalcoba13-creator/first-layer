@@ -94,9 +94,14 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;}
 .si:hover:not(.sb):not(.sl){border-color:#ffb347;background:#151025;transform:translateY(-2px);}.si.sb{opacity:.68;cursor:default;}.si.sa{border-color:#4dff91;box-shadow:inset 0 0 0 1px rgba(77,255,145,.22);}.si.sl{opacity:.52;cursor:default;}
 .siTop{display:flex;gap:9px;align-items:flex-start;}.siIc{font-size:23px;line-height:1;min-width:26px;text-align:center;}.si h4{color:#fff;font-size:11px;margin-bottom:4px;line-height:1.25;}.si p{color:#9d91b8;font-size:10px;line-height:1.45;}
 .siFoot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto;}.sc{color:#ffd700;font-size:13px;font-weight:900;}.stg{color:#4dff91;font-size:10px;font-weight:900;}.slock{color:#ff4d6a;font-size:10px;}.sact{color:#061006;background:#4dff91;border:1px solid #4dff91;font-size:10px;font-weight:900;padding:5px 8px;}.si.sl .sact{background:#201020;color:#ff4d6a;border-color:#402030;}.si.sb .sact{background:#0a1a0a;color:#4dff91;border-color:#1f5c32;}
-#sto{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#07060f;border:3px solid #ffb347;padding:20px 26px;max-width:370px;text-align:center;pointer-events:all;display:none;z-index:25;}
+#sto{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#07060f;border:3px solid #ffb347;padding:20px 26px;max-width:520px;min-width:min(440px,92vw);text-align:center;pointer-events:all;display:none;z-index:25;}
 #sto h2{color:#ffb347;font-size:13px;margin-bottom:7px;}
 #sto p{color:#ccc;font-size:12px;line-height:1.7;margin-bottom:13px;white-space:pre-line;}
+.stoTabs{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin:0 0 11px;}
+.stoTab{font-family:'Courier New',monospace;background:#0e0c1e;border:1px solid #2a2050;color:#8f82aa;font-size:10px;padding:6px 9px;cursor:pointer;pointer-events:all;box-shadow:2px 2px 0 #03020a;}
+.stoTab:hover{border-color:#5bc8fa;color:#5bc8fa;}
+.stoTab.on{border-color:#ffb347;color:#ffb347;background:#211331;}
+.stoActions{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;margin:0 0 12px;}
 #dayEnd{position:absolute;inset:0;background:rgba(3,2,8,.9);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:28;}
 .deBox{width:min(520px,92vw);background:#07060f;border:3px solid #ffb347;box-shadow:0 0 42px rgba(255,179,71,.14),inset 0 0 36px rgba(91,200,250,.06);padding:18px 20px;text-align:center;}
 .deK{color:#5bc8fa;font-size:10px;letter-spacing:3px;margin-bottom:8px;}
