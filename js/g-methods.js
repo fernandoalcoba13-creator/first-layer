@@ -2,7 +2,7 @@
 // Methods attached to G for shop, fixes, breakers, story screen.
 // Called from HTML inline onclicks and Phaser scene logic.
 G.bStk=function(k,c,id){
-  if(G.gold<c){showNotif('💸 Sin fondos','error');return;}
+  if(G.gold<c){showNotif('💸 '+tr('noFunds'),'error');return;}
   G.gold-=c;
   if(id&&G.stk[k])G.stk[k][id]=(G.stk[k][id]||0)+1;
   else G.stk[k]=(G.stk[k]||0)+1;
@@ -10,18 +10,18 @@ G.bStk=function(k,c,id){
   SFX.coin();showNotif('✅ '+(f?f.n:k)+' comprado. $'+G.gold,'money');
   document.getElementById('hg').textContent=G.gold;
 };
-G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 Sin fondos');return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 Sin repuestos');return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();showNotif('🔧 '+ev.ti+' reparado!','success');sLog('✅ '+ev.ti+' resuelto.');};
+G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
 G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
 G.startNozzleMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
-  if(G.stk.parts<ev.pts){showNotif('🔩 Sin repuestos');return;}
+  if(G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}
   document.getElementById('evp').style.display='none';
   const lvl=Math.min(5,Math.floor((G.day-1)/2)+(ev.printer&&ev.printer.order?Math.floor((ev.printer.order.diff||1)-1):0));
   G._mini={ev,time:Math.max(5200,9000-lvl*650),max:Math.max(5200,9000-lvl*650),heat:18,dir:1,hits:0,need:3+(lvl>=3?1:0),lo:42+lvl*2,hi:58-lvl*2,spd:4.4+lvl*.45,tick:null,done:false};
   document.getElementById('miniGame').style.display='flex';
-  document.getElementById('mgTitle').textContent='🚫 Limpiar pico - P'+(ev.printer.id+1);
-  document.getElementById('mgDesc').textContent='Esperá la zona verde y limpiá el nozzle tres veces.';
+  document.getElementById('mgTitle').textContent='🚫 '+tr('nozzleTitle')+' - P'+(ev.printer.id+1);
+  document.getElementById('mgDesc').textContent=tr('nozzleDesc');
   document.getElementById('mgTimerFill').style.width='100%';
   G.renderNozzleMini();
   G._mini.tick=setInterval(()=>{
@@ -39,18 +39,18 @@ G.startNozzleMini=function(){
 G.renderNozzleMini=function(){
   if(!G._mini)return;
   const m=G._mini,ok=m.heat>=m.lo&&m.heat<=m.hi,heat=Math.round(m.heat);
-  document.getElementById('mgGrid').innerHTML='<div class="mgCorner '+(ok?'ok':'')+'" style="grid-column:1/-1"><b>Temperatura del pico</b><div class="mgVal">'+heat+'%</div><div class="mgBar"><i style="width:'+heat+'%"></i></div><div class="mgBtns"><button style="width:120px" onclick="G.scrapeNozzle()">Limpiar</button></div></div>';
-  document.getElementById('mgHint').textContent='Limpiezas buenas: '+m.hits+'/'+m.need+' | Zona verde: '+m.lo+' a '+m.hi;
+  document.getElementById('mgGrid').innerHTML='<div class="mgCorner '+(ok?'ok':'')+'" style="grid-column:1/-1"><b>'+tr('nozzleTemp')+'</b><div class="mgVal">'+heat+'%</div><div class="mgBar"><i style="width:'+heat+'%"></i></div><div class="mgBtns"><button style="width:120px" onclick="G.scrapeNozzle()">'+tr('clean')+'</button></div></div>';
+  document.getElementById('mgHint').textContent=tr('goodCleans')+': '+m.hits+'/'+m.need+' | '+tr('greenZone')+': '+m.lo+' - '+m.hi;
 };
 G.scrapeNozzle=function(){
   if(!G._mini||G._mini.done)return;
   const ok=G._mini.heat>=G._mini.lo&&G._mini.heat<=G._mini.hi;
-  if(ok){G._mini.hits++;SFX.ok();showNotif('Limpieza perfecta '+G._mini.hits+'/'+G._mini.need,'success');}
-  else{G._mini.time=Math.max(0,G._mini.time-1500);SFX.err();shakeUI();showNotif('Rayaste el nozzle. -tiempo','error');}
+  if(ok){G._mini.hits++;SFX.ok();showNotif(tr('perfectClean')+' '+G._mini.hits+'/'+G._mini.need,'success');}
+  else{G._mini.time=Math.max(0,G._mini.time-1500);SFX.err();shakeUI();showNotif(tr('scratchNozzle'),'error');}
   if(G._mini.hits>=G._mini.need){G._mini.done=true;setTimeout(()=>G.winNozzleMini(),180);}
 };
 G.winNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';G.nFix();};
-G.failNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif('El pico quedó obstruido. La impresora queda fuera.','error');G.nSkip();};
+G.failNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif(tr('nozzleFailed'),'error');G.nSkip();};
 G.cancelMiniGame=function(){G.failNozzleMini();};
 G._bk=function(seq){
   const ns=game.scene.getScene('Night');if(!ns)return;
@@ -60,13 +60,13 @@ G._bk=function(seq){
   if(pos===expectedPos){
     document.getElementById('bk'+seq).classList.add('up');
     G._bkNext++;SFX.clk();
-    document.getElementById('bhint').textContent=G._bkNext<G._bkNum?'✅ Ahora el '+(G._bkNext+1):'¡Completado!';
+    document.getElementById('bhint').textContent=G._bkNext<G._bkNum?'✅ '+trf('nowBreaker',{num:G._bkNext+1}):tr('completed');
     if(G._bkNext>=G._bkNum)setTimeout(()=>{document.getElementById('bkg').style.display='none';ns.resPwr(true);},600);
   } else {
     const b=document.getElementById('bk'+seq);
     b.classList.add('bad');setTimeout(()=>b.classList.remove('bad'),300);
     G._bkNext=0;document.querySelectorAll('.bk').forEach(b=>b.classList.remove('up'));
-    document.getElementById('bhint').textContent='❌ Orden incorrecto. Empezá de nuevo.';SFX.err();
+    document.getElementById('bhint').textContent='❌ '+tr('wrongOrder');SFX.err();
   }
 };
 G._dcb=function(i){const cb=G._dch&&G._dch[i]&&G._dch[i].cb;if(cb)cb();};
@@ -77,16 +77,16 @@ G.syncPrinters=function(){
   }
 };
 G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;setTimeout(()=>focusPanelFirst('#shop .st.on,#shop .st,#sg .si:not(.sb):not(.sl),#shop .shopClose'),0);};
-G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(u.req&&!G.upg[u.req]){showNotif('⚠️ Requiere: '+u.req);return;}if(G.gold<u.co){showNotif('💸 Sin fondos');return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' activado!');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
-G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(G.gold<e.co){showNotif('💸 Sin fondos');return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' contratado!');doSave(G);G.tab('emp');};
+G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
+G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(G.gold<e.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' OK');doSave(G);G.tab('emp');};
 G.cShop=function(){
   document.getElementById('shop').style.display='none';G.block=false;
 };
 G.showSto=function(ti,tx,ob){G.block=true;document.getElementById('sh').textContent=ti;document.getElementById('sp').textContent=tx+(ob?'\n\n🎯 Objetivo: '+ob:'');document.getElementById('sto').style.display='block';};
 G.cSto=function(){document.getElementById('sto').style.display='none';G.block=false;};
 G.showInventory=function(){
-  const orders=(G.orders||[]).map(o=>'• '+o.pr.e+' '+o.pr.n+' — '+o.material+' x'+o.units+(o.filament?' | '+o.filament.n:o.waitingMaterial?' | falta material':'')).join('\n')||'Sin pedidos en cola.';
-  G.showSto('Inventario',
+  const orders=(G.orders||[]).map(o=>'• '+o.pr.e+' '+o.pr.n+' — '+o.material+' x'+o.units+(o.filament?' | '+o.filament.n:o.waitingMaterial?' | '+tr('missingMaterial'):'')).join('\n')||tr('noQueuedOrders');
+  G.showSto(tr('inventory'),
     stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts+'\n\nCola:\n'+orders,
     null);
 };
@@ -98,13 +98,13 @@ G.showSto=function(ti,tx,ob){
   const tabs=document.getElementById('stoTabs'),acts=document.getElementById('stoActions');
   if(tabs)tabs.innerHTML='';
   if(acts)acts.innerHTML='';
-  document.getElementById('sp').textContent=tx+(ob?'\n\nObjetivo: '+ob:'');
+  document.getElementById('sp').textContent=tx+(ob?'\n\n'+tr('objectiveLabel')+': '+ob:'');
   document.getElementById('sto').style.display='block';
 };
 G.buyConsumable=function(id){
   const defs={coffee:{n:tr('coffee'),c:45},bar:{n:tr('bar'),c:35},cleaner:{n:tr('cleaner'),c:70}};
   const it=defs[id];if(!it)return;
-  if(G.gold<it.c){showNotif('Sin fondos','error');return;}
+  if(G.gold<it.c){showNotif(tr('noFunds'),'error');return;}
   ensureConsumables();
   G.gold-=it.c;G.cons[id]=(G.cons[id]||0)+1;
   SFX.coin();showNotif(it.n+' +1','money');
@@ -115,24 +115,24 @@ G.buyConsumable=function(id){
 G.useConsumable=function(id){
   ensureConsumables();
   const names={coffee:tr('coffee'),bar:tr('bar'),cleaner:tr('cleaner')};
-  if((G.cons[id]||0)<=0){showNotif('Sin '+names[id],'error');return;}
+  if((G.cons[id]||0)<=0){showNotif((G.lang==='en'?'No ':'Sin ')+names[id],'error');return;}
   if(id==='coffee'){
-    if(G.energy>92){showNotif('Energia casi llena. Guardalo.','info');return;}
+    if(G.energy>92){showNotif(tr('almostFullEnergy'),'info');return;}
     G.cons.coffee--;G.energy=Math.min(100,G.energy+30);
-    SFX.up();showNotif(tr('coffee')+' +30 energia','success');
+    SFX.up();showNotif(tr('coffee')+' +30 '+tr('energy'),'success');
     updateMateHUD();
   } else if(id==='bar'){
     G.cons.bar--;G.energy=Math.min(100,G.energy+20);G.stress=Math.max(0,(G.stress||0)-8);
-    SFX.up();showNotif(tr('bar')+' +20 energia, -8 estres','success');
+    SFX.up();showNotif(tr('bar')+' +20 '+tr('energy')+', -8 '+tr('stress'),'success');
     updateMateHUD();
   } else if(id==='cleaner'){
     const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;
-    if(!ev||!['clog','blob'].includes(ev.id)){showNotif('Guardalo para boquilla tapada o blob.','info');return;}
+    if(!ev||!['clog','blob'].includes(ev.id)){showNotif(tr('saveForNozzle'),'info');return;}
     G.cons.cleaner--;
     ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;
     document.getElementById('evp').style.display='none';
     G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
-    SFX.fix();showNotif('Pico limpio sin gastar repuesto','success');sLog('P'+(ev.printer.id+1)+': pico limpiado con consumible.');
+    SFX.fix();showNotif(tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));
   }
   doSave(G);
   if(typeof isShown==='function'&&isShown('sto'))G.showInventory('cons');
@@ -152,7 +152,7 @@ G.showInventory=function(tab){
   } else if(G.invTab==='cons'){
     sp.textContent=tr('coffee')+': '+G.cons.coffee+'  |  '+tr('bar')+': '+G.cons.bar+'  |  '+tr('cleaner')+': '+G.cons.cleaner+'\n\n'+tr('consHint');
     acts.innerHTML=[
-      ['coffee',45,'Cafe'],['bar',35,'Barrita'],['cleaner',70,'Limpia pico']
+      ['coffee',45,tr('coffee')],['bar',35,tr('bar')],['cleaner',70,tr('cleaner')]
     ].map(x=>'<button class="eb fix" onclick="G.useConsumable(\''+x[0]+'\')">'+tr('use')+' '+x[2]+'</button><button class="eb" onclick="G.buyConsumable(\''+x[0]+'\')">'+tr('buy')+' $'+x[1]+'</button>').join('');
   } else {
     G.invTab='mat';

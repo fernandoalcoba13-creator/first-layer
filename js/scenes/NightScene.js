@@ -15,34 +15,34 @@ class NightScene extends Phaser.Scene{
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     this.schedPwr();this.schedEvs();
     document.getElementById('ptag').className='ptag night';
-    document.getElementById('ptag').textContent='🌙 NOCHE — Día '+G.day;
+    document.getElementById('ptag').textContent='🌙 '+tr('night')+' — '+tr('dayDyn')+' '+G.day;
     document.getElementById('pov').className='';
     document.getElementById('phud').style.display='none';
-    sLog(G.orders.length?'Elegí una impresora libre y cargá un trabajo con E.':'Sin pedidos en cola para imprimir.');
-    sHint('WASD | E=asignar/inspeccionar');
+    sLog(G.orders.length?tr('choosePrinterJob'):tr('noOrdersToPrint'));
+    sHint(tr('assignHint'));
   }
   assignOrders(){
     const av=G.printers.filter(p=>!p.broken&&!p.locked);
     const queued=G.orders.filter(o=>!G.printers.some(p=>p.order===o));
     av.filter(p=>!p.busy&&!p.order).forEach((p,i)=>{
       const o=queued[i];if(!o)return;
-      if(!prepareOrderMaterial(o)){o.waitingMaterial=true;showNotif('Falta '+o.material+' x'+o.units+' para '+o.pr.n,'error');return;}
+      if(!prepareOrderMaterial(o)){o.waitingMaterial=true;showNotif(trf('missingOrder',{mat:o.material,units:o.units})+' - '+o.pr.n,'error');return;}
       p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
     });
     if(this.pObjs)this.pObjs.forEach(po=>po.lb.setText('P'+(po.p.id+1)+'\n'+(po.p.order?po.p.order.pr.e+po.p.order.pr.n.slice(0,8):'💤')));
   }
   assignOrderToPrinter(p,o){
     if(!p||!o||p.busy||p.broken||p.locked)return false;
-    if(G.printers.some(x=>x.order===o)){showNotif('Ese trabajo ya esta cargado.','info');return false;}
+    if(G.printers.some(x=>x.order===o)){showNotif(tr('jobLoaded'),'info');return false;}
     if(!prepareOrderMaterial(o)){
       o.waitingMaterial=true;doSave(G);
-      showNotif('Falta '+o.material+' x'+o.units+' para '+o.pr.n,'error');
+      showNotif(trf('missingOrder',{mat:o.material,units:o.units})+' - '+o.pr.n,'error');
       return false;
     }
     p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
     doSave(G);SFX.ok();G.cSto();
-    showNotif('P'+(p.id+1)+' imprime '+o.pr.e+' '+o.pr.n,'success');
-    sLog('P'+(p.id+1)+' cargada: '+o.cl+' - '+o.pr.n+' con '+o.filament.n+'.');
+    showNotif('P'+(p.id+1)+' '+tr('prints')+' '+o.pr.e+' '+o.pr.n,'success');
+    sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
     this.refreshPrinterLabels();
     return true;
   }
@@ -53,14 +53,14 @@ class NightScene extends Phaser.Scene{
   openPrinterQueue(po){
     const p=po&&po.p;if(!p)return;
     if(p._ev&&!p._ev.resolved){this.showEv(p._ev);G.block=true;return;}
-    if(p.broken){showNotif('P'+(p.id+1)+': rota. Reparala primero.','error');return;}
+    if(p.broken){showNotif('P'+(p.id+1)+': '+tr('brokenPrinter'),'error');return;}
     if(p.busy){showNotif('P'+(p.id+1)+': '+p.order.pr.e+' '+p.order.pr.n+' - '+Math.round(p.progress*100)+'%');return;}
     const queued=G.orders.filter(o=>!G.printers.some(x=>x.order===o));
-    if(!queued.length){showNotif('No hay trabajos pendientes.','info');return;}
+    if(!queued.length){showNotif(tr('noPendingJobs'),'info');return;}
     G.block=true;
-    document.getElementById('sh').textContent='Cargar P'+(p.id+1);
+    document.getElementById('sh').textContent=trf('loadPrinter',{n:p.id+1});
     document.getElementById('stoTabs').innerHTML='';
-    document.getElementById('sp').textContent='Elegi que trabajo imprimir en esta maquina.\nSi falta material, queda en cola hasta comprar stock.';
+    document.getElementById('sp').textContent=tr('loadPrinterDesc');
     document.getElementById('stoActions').innerHTML=queued.map(o=>
       '<button class="eb fix" onclick="game.scene.getScene(\'Night\').assignOrderToPrinter(G.printers['+p.id+'],G.orders['+G.orders.indexOf(o)+'])">'+o.pr.e+' '+o.pr.n+' | '+o.cl+' | '+o.material+' x'+o.units+' | $'+o.pay+'</button>'
     ).join('');
@@ -72,17 +72,17 @@ class NightScene extends Phaser.Scene{
     this.bgG=this.add.graphics();drawBG(this.bgG,W,H,true);
     const nbg=this.add.rectangle(W/2,20,300,7,0x0d0a20).setOrigin(.5);
     this.nBf=this.add.rectangle(W/2-150,20,0,7,0x9d7fe3).setOrigin(0,.5).setDepth(20);
-    this.add.text(W/2,30,'PROGRESO NOCHE',{fontSize:'7px',color:'#2a2040',fontFamily:'Courier New'}).setOrigin(.5,0).setDepth(20);
+    this.add.text(W/2,30,tr('nightActive').toUpperCase(),{fontSize:'7px',color:'#2a2040',fontFamily:'Press Start 2P'}).setOrigin(.5,0).setDepth(20);
     this.tG=this.add.graphics();this.drawTblN(false);
     this.shopZone={x:W*.9,y:H*.34};
     this.invZone={x:W*.9,y:H*.47};
     const sg=this.add.graphics();
     sg.fillStyle(0x0c180c);sg.fillRect(this.shopZone.x-38,this.shopZone.y-26,76,50);
     sg.lineStyle(1,0x2a4a2a);sg.strokeRect(this.shopZone.x-38,this.shopZone.y-26,76,50);
-    this.add.text(this.shopZone.x,this.shopZone.y,'🔧\nTIENDA',{fontSize:'9px',color:'#4dff91',fontFamily:'Courier New',align:'center'}).setOrigin(.5);
+    this.add.text(this.shopZone.x,this.shopZone.y,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#4dff91',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
     sg.fillStyle(0x10101e);sg.fillRect(this.invZone.x-38,this.invZone.y-26,76,50);
     sg.lineStyle(1,0x2a2040);sg.strokeRect(this.invZone.x-38,this.invZone.y-26,76,50);
-    this.add.text(this.invZone.x,this.invZone.y,'📦\nINV',{fontSize:'9px',color:'#5bc8fa',fontFamily:'Courier New',align:'center'}).setOrigin(.5);
+    this.add.text(this.invZone.x,this.invZone.y,'📦\n'+tr('inventoryShort'),{fontSize:'9px',color:'#5bc8fa',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
     const cnt=G.printers.filter(p=>!p.locked).length;
     const sp=Math.min(160,(W-80)/Math.max(cnt,1));
     const sx=(W-sp*(cnt-1))/2;
@@ -107,12 +107,12 @@ class NightScene extends Phaser.Scene{
       const pbB=this.add.rectangle(0,-16,70,5,0x070510).setOrigin(.5).setDepth(4);
       const pbF=this.add.rectangle(-35,-16,0,5,p.order?p.order.pr.c:0x5bc8fa).setOrigin(0,.5).setDepth(4);
       ct.add(pbB);ct.add(pbF);
-      const lb=this.add.text(0,30,'P'+(i+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'💤'),{fontSize:'8px',color:'#2a2050',fontFamily:'Courier New',align:'center'}).setOrigin(.5,0);
+      const lb=this.add.text(0,30,'P'+(i+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'💤'),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
       ct.add(lb);
       const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
       this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
     });
-    this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Courier New',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
+    this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Press Start 2P',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
   }
   refreshPrinterSprites(){
     if(!this.pObjs)return;
@@ -171,20 +171,21 @@ class NightScene extends Phaser.Scene{
     });
     if(!pool.length)return;
     const ev=pool[Math.floor(Math.random()*pool.length)];
+    const evLabel=powerText(ev);
     G.pActive=true;G.pType=ev;G.pTimer=ev.dur;G.pMax=ev.dur;
     G.upsLeft=G.upg.ups2?600000:G.upg.ups1?180000:0;
     SFX.pwr();SFX.alm();shakeUI();this.cameras.main.flash(300,255,0,0,.5);
     if(!G.upsLeft)G.printers.forEach(p=>{if(p.busy&&!p.broken)p._pau=true;});
     document.getElementById('pov').className='on';
     document.getElementById('phud').style.display='block';
-    document.getElementById('pht').textContent=ev.ti;
-    document.getElementById('phd').textContent=ev.de;
-    document.getElementById('phint').textContent=ev.id==='micro'?'Esperá que vuelva...':'Corré al tablero → E';
+    document.getElementById('pht').textContent=evLabel.ti;
+    document.getElementById('phd').textContent=evLabel.de;
+    document.getElementById('phint').textContent=ev.id==='micro'?tr('waitReturn'):tr('runToBreaker');
     document.getElementById('ptag').className='ptag pwr';
     document.getElementById('ptag').textContent='⚡ CORTE DE LUZ';
     if(ev.id==='micro')this.time.delayedCall(ev.dur,()=>this.resPwr(false));
     this.drawTblN(true);
-    sLog('⚡ '+ev.ti+' — '+(ev.id==='micro'?'Espera...':'¡Corré al tablero!'));
+    sLog('⚡ '+evLabel.ti+' — '+(ev.id==='micro'?tr('powerLogWait'):tr('powerLogRun')));
   }
   openBk(){
     if(!G.pActive||!G.pType||G.pType.id==='micro')return;
@@ -193,8 +194,8 @@ class NightScene extends Phaser.Scene{
     G.block=true;G._bkNum=num;G._bkNext=0;G._bkOrd=[...this.bkOrd];
     document.getElementById('bks').innerHTML=this.bkOrd.map((pos,seq)=>
       '<div class="bk" id="bk'+seq+'" tabindex="0" onclick="G._bk('+seq+')"><div class="bkn">'+(pos+1)+'</div><div class="bksw"></div><div class="bkl"></div></div>').join('');
-    document.getElementById('bkd').textContent='Levantá los disyuntores en orden (1→'+num+')';
-    document.getElementById('bhint').textContent='Orden: del 1 al '+num;
+    document.getElementById('bkd').textContent=trf('breakerOrder',{num});
+    document.getElementById('bhint').textContent=trf('orderFromTo',{num});
     document.getElementById('bkg').style.display='block';
     setTimeout(()=>focusPanelFirst('#bks .bk'),0);
     SFX.clk();
@@ -203,7 +204,7 @@ class NightScene extends Phaser.Scene{
     const p=po.p;
     if(p._ev&&!p._ev.resolved){this.showEv(p._ev);G.block=true;}
     else if(p.busy)showNotif('P'+(p.id+1)+': '+p.order.pr.e+' '+p.order.pr.n+' — '+Math.round(p.progress*100)+'%');
-    else showNotif('P'+(p.id+1)+': Sin trabajo esta noche.');
+    else showNotif('P'+(p.id+1)+': '+tr('noWorkTonight'));
   }
   schedEvs(){
     const n=2+Math.floor(G.day/3);
@@ -250,7 +251,9 @@ class NightScene extends Phaser.Scene{
       }
       wr-=w;if(wr<=0){def=e;break;}
     }
-    const ev={...def,printer:tgt,desc:def.de.replace('{P','P'+(tgt.id+1))+(fil?'\nMaterial usado: '+fil.n:''),resolved:false};
+    const defLabel=evText(def);
+    const matLine=fil?(G.lang==='en'?'\nMaterial used: ':'\nMaterial usado: ')+fil.n:'';
+    const ev={...defLabel,printer:tgt,desc:defLabel.de.replace('{P','P'+(tgt.id+1))+matLine,resolved:false};
     tgt._ev=ev;this.aEv=ev;G.block=true;SFX.alm();
     const po=this.pObjs.find(o=>o.p===tgt);
     if(po){po.wn.setText('⚠️');this.tweens.add({targets:po.wn,alpha:{from:1,to:0},duration:350,yoyo:true,repeat:5});}
@@ -260,17 +263,17 @@ class NightScene extends Phaser.Scene{
   }
   showEv(ev){
     document.getElementById('et').textContent=ev.ic+' '+ev.ti;
-    const ct=(ev.g>0?'\nCosto: $'+ev.g:'')+(ev.pts>0?'\nRepuestos: '+ev.pts:'');
+    const ct=(ev.g>0?'\n'+tr('cost')+': $'+ev.g:'')+(ev.pts>0?'\n'+tr('parts')+': '+ev.pts:'');
     document.getElementById('ed').textContent=ev.desc+ct;
     const canFix=(ev.g===0||G.gold>=ev.g)&&(ev.pts===0||G.stk.parts>=ev.pts);
     const auto=G.emp.rodri&&['jam','blob','humid'].includes(ev.id);
     let buttons=auto
-      ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 Rodrigo repara solo</button>'
+      ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 '+tr('autoRepair')+'</button>'
       :(ev.id==='clog'
-        ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startNozzleMini()">🚫 Minijuego: limpiar pico'+(ev.pts>0?' (-'+ev.pts+' rep)':'')+'</button>'
+        ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startNozzleMini()">🚫 '+tr('nozzleMini')+(ev.pts>0?' (-'+ev.pts+' '+tr('parts')+')':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
-        +'<button class="eb skip" onclick="G.nSkip()">⏭ Ignorar (-'+ev.rp+' REP)</button>';
-    if(!auto&&['clog','blob'].includes(ev.id)&&G.cons&&G.cons.cleaner>0)buttons='<button class="eb fix" onclick="G.useConsumable(\'cleaner\')">Limpia pico (-1)</button>'+buttons;
+        +'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>';
+    if(!auto&&['clog','blob'].includes(ev.id)&&G.cons&&G.cons.cleaner>0)buttons='<button class="eb fix" onclick="G.useConsumable(\'cleaner\')">'+tr('cleanNozzle')+' (-1)</button>'+buttons;
     document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
     setTimeout(()=>focusPanelFirst('#ebs .eb'),0);
@@ -284,7 +287,7 @@ class NightScene extends Phaser.Scene{
     SFX.coin();
     const po=this.pObjs.find(x=>x.p===p);
     if(po){
-      const coin=this.add.text(po.px,po.py-80,'+$'+earned,{fontSize:'12px',color:'#ffd700',fontFamily:'Courier New'}).setOrigin(.5).setDepth(12);
+      const coin=this.add.text(po.px,po.py-80,'+$'+earned,{fontSize:'12px',color:'#ffd700',fontFamily:'Press Start 2P'}).setOrigin(.5).setDepth(12);
       this.tweens.add({targets:coin,y:coin.y-55,alpha:0,duration:1100,onComplete:()=>coin.destroy()});
       this.cameras.main.flash(200,0,200,100,.3);
     }
@@ -300,10 +303,10 @@ class NightScene extends Phaser.Scene{
     document.getElementById('phud').style.display='none';
     document.getElementById('bkg').style.display='none';
     document.getElementById('ptag').className='ptag night';
-    document.getElementById('ptag').textContent='🌙 NOCHE';
+    document.getElementById('ptag').textContent='🌙 '+tr('night');
     G.block=false;this.drawTblN(false);
     this.cameras.main.flash(400,255,220,100,.4);
-    showNotif(panel?'✅ Tablero restablecido!':'⚡ Luz volvió automáticamente.');
+    showNotif(panel?'✅ '+tr('breakerRestored'):'⚡ '+tr('lightBack'));
     if(panel)SFX.fix();
     sLog('💡 Luz restablecida. Las impresoras retoman.');
   }
@@ -355,15 +358,15 @@ class NightScene extends Phaser.Scene{
       this.iLbl.setVisible(true).setText('[E] Tablero!').setPosition(this.tZone.x,this.tZone.y-50);
       sHint('[E] Restablecé el tablero!');
     } else if(dS<78&&!G.block){
-      this.iLbl.setVisible(true).setText('[E] Tienda').setPosition(this.shopZone.x,this.shopZone.y-44);
-      sHint('[E] Comprar material');
+      this.iLbl.setVisible(true).setText('[E] '+tr('shopTitle')).setPosition(this.shopZone.x,this.shopZone.y-44);
+      sHint('[E] '+tr('buy')+' '+tr('material'));
     } else if(dI<78&&!G.block){
-      this.iLbl.setVisible(true).setText('[E] Inventario').setPosition(this.invZone.x,this.invZone.y-44);
-      sHint('[E] Inventario');
+      this.iLbl.setVisible(true).setText('[E] '+tr('inventory')).setPosition(this.invZone.x,this.invZone.y-44);
+      sHint('[E] '+tr('inventory'));
     } else if(near&&!G.block){
       const free=!near.p.busy&&!near.p.broken&&!near.p._ev;
-      this.iLbl.setVisible(true).setText(free?'[E] Cargar trabajo':'[E] Inspeccionar').setPosition(near.px,near.py-88);
-      sHint(free?'[E] Elegir trabajo para imprimir':'[E] Inspeccionar impresora');
+      this.iLbl.setVisible(true).setText(free?'[E] '+tr('loadJob'):'[E] '+tr('interact')).setPosition(near.px,near.py-88);
+      sHint(free?'[E] '+tr('chooseJob'):'[E] '+tr('inspectPrinter'));
     } else {
       this.iLbl.setVisible(false);
     }
@@ -376,8 +379,8 @@ class NightScene extends Phaser.Scene{
     let sal=0;
     Object.keys(G.emp).forEach(id=>{const e=EMP.find(x=>x.id===id);if(e){sal+=e.sal;G.gold=Math.max(0,G.gold-e.sal);}});
     doSave(G);
-    const sub='Completados: '+this.done+' | Ganado: $'+this.earn+'\nREP: '+G.rep+(sal?' | Salarios: -$'+sal:'');
+    const sub=(G.lang==='en'?'Completed':'Completados')+': '+this.done+' | '+(G.lang==='en'?'Earned':'Ganado')+': $'+this.earn+'\nREP: '+G.rep+(sal?' | '+(G.lang==='en'?'Wages':'Salarios')+': -$'+sal:'');
     this.scene.pause();
-    doTrans('☀️  DÍA '+G.day,sub,()=>{this.scene.stop();this.scene.start('Day');});
+    doTrans('☀️  '+tr('day')+' '+G.day,sub,()=>{this.scene.stop();this.scene.start('Day');});
   } // end endNight
 } // end NightScene

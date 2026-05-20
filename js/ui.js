@@ -36,8 +36,8 @@ function updateMarket(){
   const mkt=document.getElementById('mkt');mkt.classList.add('on');
   setTimeout(()=>mkt.classList.remove('on'),4000);
   // Log if any price is notable
-  if(M.pla.cur<M.pla.base*.85)sLog('📈 ¡PLA barato hoy! $'+M.pla.cur+' — ¡Stockeate!');
-  else if(M.pla.cur>M.pla.base*1.2)sLog('📈 PLA caro hoy ($'+M.pla.cur+'). Usá lo que tenés.');
+  if(M.pla.cur<M.pla.base*.85)sLog('📈 '+tr('cheapPla')+' $'+M.pla.cur+' — '+tr('stockUp'));
+  else if(M.pla.cur>M.pla.base*1.2)sLog('📈 '+tr('expensivePla')+' ($'+M.pla.cur+'). '+tr('useStock'));
 }
 function getPrice(k){return G.market[k]?G.market[k].cur:(k==='pla'?75:k==='petg'?100:k==='resin'?140:55);}
 function getFilPrice(mat,id){
@@ -65,11 +65,11 @@ function energySpeed(){
   return G.mateActive?base*1.12:base;
 }
 G.tomarMate=function(){
-  if(G.mateActive){showNotif('🧉 Ya estás en turbo!','info');return;}
-  if(G.mateCount<=0){showNotif('😔 Sin mate. Comprá en tienda ($80).','error');return;}
-  if(G.energy>85){showNotif('😎 Energía suficiente, guardá el mate.','info');return;}
+  if(G.mateActive){showNotif('🧉 '+tr('alreadyTurbo'),'info');return;}
+  if(G.mateCount<=0){showNotif('😔 '+tr('noMate'),'error');return;}
+  if(G.energy>85){showNotif('😎 '+tr('enoughEnergy'),'info');return;}
   G.mateCount--;G.mateActive=true;G.mateTimer=30000;G.energy=Math.min(100,G.energy+40);
-  SFX.up();showNotif('🧉 ¡Mate tomado! +40 energía. Ritmo arriba 30s','success');
+  SFX.up();showNotif('🧉 '+tr('mateTaken'),'success');
   updateMateHUD();
 };
 function tickMate(dt){
@@ -78,7 +78,7 @@ function tickMate(dt){
     if(G.phase==='day')G.energy=Math.max(0,G.energy-.008*dt/1000*100);
   } else {
     G.mateTimer-=dt;
-    if(G.mateTimer<=0){G.mateActive=false;G.mateTimer=0;showNotif('☕ Ritmo normal.','info');}
+    if(G.mateTimer<=0){G.mateActive=false;G.mateTimer=0;showNotif('☕ '+tr('normalPace'),'info');}
   }
   updateMateHUD();
 }
@@ -281,7 +281,7 @@ document.addEventListener('keydown',e=>{
   if(!G.block&&k==='i'){G.showInventory();e.preventDefault();return;}
   if(!G.block&&k==='o'){G.openShop('stk');e.preventDefault();return;}
   if(k==='m'){G.tomarMate();e.preventDefault();return;}
-  if(k==='q'){doSave(G);showNotif('Guardado manual','success');e.preventDefault();return;}
+  if(k==='q'){doSave(G);showNotif(tr('savedManual'),'success');e.preventDefault();return;}
   if(k==='h'){openGameMenu();e.preventDefault();}
 });
 applyLang();
@@ -302,13 +302,13 @@ function doTrans(h,p,cb){
 }
 function showDayClose(summary,cb){
   const el=document.getElementById('dayEnd');
-  document.getElementById('deTitle').textContent='Día '+summary.day+' cerrado';
+  document.getElementById('deTitle').textContent=trf('dayClosed',{day:summary.day});
   document.getElementById('deMood').textContent=summary.mood;
   document.getElementById('deStats').innerHTML=[
-    ['Clientes atendidos',summary.accepted+' / '+summary.clients,summary.lost?'Se fueron o rechazaste: '+summary.lost:'Sin clientes perdidos'],
-    ['Pedidos para la noche',summary.queue,summary.urgent?'Urgentes: '+summary.urgent:'Sin urgentes en cola'],
-    ['Valor en cola','$'+summary.queueValue,'Se cobra al terminar impresiones'],
-    ['Reputación',summary.rep+(summary.repDelta?' ('+(summary.repDelta>0?'+':'')+summary.repDelta+')':''),'Estrés final: '+summary.stress+'%']
+    [tr('clientsServed'),summary.accepted+' / '+summary.clients,summary.lost?tr('lostRejected')+': '+summary.lost:tr('noLostClients')],
+    [tr('nightOrders'),summary.queue,summary.urgent?tr('urgentOrders')+': '+summary.urgent:tr('noUrgent')],
+    [tr('queueValue'),'$'+summary.queueValue,tr('paidOnFinish')],
+    [tr('reputation'),summary.rep+(summary.repDelta?' ('+(summary.repDelta>0?'+':'')+summary.repDelta+')':''),tr('finalStress')+': '+summary.stress+'%']
   ].map(s=>'<div class="deStat"><b>'+s[0]+'</b><span>'+s[1]+'</span><small>'+s[2]+'</small></div>').join('');
   document.getElementById('deNote').textContent=summary.note;
   G._dayCloseCb=cb;

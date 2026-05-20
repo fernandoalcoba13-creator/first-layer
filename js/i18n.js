@@ -28,7 +28,46 @@ const TXT={
     consHint:'Cafe recupera energia. La barrita baja estres. Limpia pico resuelve boquilla tapada o blob durante la noche.'
     ,nightActive:'Noche activa',orders:'pedidos',failures:'fallas',box:'caja',
     runBreaker:'Corre al tablero electrico.',inspectPrinters:'Inspecciona impresoras antes de acelerar.',
-    dayDyn:'Dia',queue:'cola',drinkMate:'Toma mate o baja ritmo.',buyCheap:'Compra stock cuando el mercado este barato.'
+    dayDyn:'Dia',queue:'cola',drinkMate:'Toma mate o baja ritmo.',buyCheap:'Compra stock cuando el mercado este barato.',
+    close:'Cerrar',ok:'OK',accept:'Aceptar',bargain:'Negociar',decline:'Rechazar',urgent:'URGENTE',
+    noWaitingClients:'No hay clientes esperando.',mood:'Mood',free:'Libres',broken:'Rotas',queued:'Pedidos en cola',
+    manualNightHint:'A la noche elegis que trabajo cargar en cada impresora.',
+    stockTitle:'Stock',mateBuy:'Mate',boardTitle:'Tablero Electrico',goShop:'Ir a Tienda',
+    solar:'Solar',immune:'INMUNE',basic:'Basico',none:'NO',parts:'Repuestos',
+    noFunds:'Sin fondos',noSpares:'Sin repuestos',almostFullEnergy:'Energia casi llena. Guardalo.',
+    noMate:'Sin mate. Compra en tienda ($80).',alreadyTurbo:'Ya estas en turbo!',
+    enoughEnergy:'Energia suficiente, guarda el mate.',mateTaken:'Mate tomado! +40 energia. Ritmo arriba 30s',normalPace:'Ritmo normal.',
+    cheapPla:'PLA barato hoy!',expensivePla:'PLA caro hoy',useStock:'Usa lo que tenes.',stockUp:'Stockeate!',
+    dayClosed:'Dia {day} cerrado',clientsServed:'Clientes atendidos',lostRejected:'Se fueron o rechazaste',
+    noLostClients:'Sin clientes perdidos',nightOrders:'Pedidos para la noche',urgentOrders:'Urgentes',
+    noUrgent:'Sin urgentes en cola',queueValue:'Valor en cola',paidOnFinish:'Se cobra al terminar impresiones',
+    reputation:'Reputacion',finalStress:'Estres final',
+    goodShift:'Turno prolijo. La noche define si esa cola se convierte en plata.',
+    spicyShift:'Turno picante. Varios clientes quedaron en el camino.',
+    bigQueue:'Buen volumen. Las impresoras van a transpirar esta noche.',
+    slowDay:'Dia flojo. Sin pedidos, la noche va a ser tranquila pero seca.',
+    prepNight:'Prepara repuestos y mira las maquinas de cerca. Cada pedido terminado suma caja y reputacion.',
+    noReadyOrders:'No hay pedidos listos. Usa la proxima manana para comprar stock barato y aceptar encargos simples.',
+    nightTitle:'NOCHE',nightQueue:'{queue} pedidos en cola.\nVigila impresoras y cortes de luz.',
+    dayStartLog:'Dia {day} - Atende clientes y carga pedidos para la noche.',
+    orderReady:'listo para imprimir',missingOrder:'falta {mat} x{units}',queueCount:'Cola',
+    lucasAccepted:'Lucas acepto',customerLeft:'se fue',printerTitle:'Impresoras',
+    choosePrinterJob:'Elegi una impresora libre y carga un trabajo con E.',noOrdersToPrint:'Sin pedidos en cola para imprimir.',
+    assignHint:'WASD | E=asignar/inspeccionar',jobLoaded:'Ese trabajo ya esta cargado.',
+    loadPrinter:'Cargar P{n}',loadPrinterDesc:'Elegi que trabajo imprimir en esta maquina.\nSi falta material, queda en cola hasta comprar stock.',
+    noPendingJobs:'No hay trabajos pendientes.',brokenPrinter:'rota. Reparala primero.',
+    prints:'imprime',loaded:'cargada',withMat:'con',noWorkTonight:'Sin trabajo esta noche.',
+    lightBack:'Luz volvio automaticamente.',breakerRestored:'Tablero restablecido!',
+    breakerOrder:'Levanta los disyuntores en orden (1->{num})',orderFromTo:'Orden: del 1 al {num}',
+    waitReturn:'Espera que vuelva...',runToBreaker:'Corre al tablero -> E',powerLogWait:'Espera...',powerLogRun:'Corre al tablero!',
+    inspectPrinter:'Inspeccionar impresora',chooseJob:'Elegir trabajo para imprimir',loadJob:'Cargar trabajo',
+    savedManual:'Guardado manual',shopTitle:'TIENDA',inventoryShort:'INV',counter:'Mostrador',
+    upgradesTab:'Upgrades',employeesTab:'Empleados',stockTab:'Stock',startNight:'Arrancar la noche',objectiveLabel:'Objetivo',
+    cost:'Costo',autoRepair:'Rodrigo repara solo',nozzleMini:'Minijuego: limpiar pico',ignore:'Ignorar',cleanNozzle:'Limpia pico',
+    nozzleTitle:'Limpiar pico',nozzleDesc:'Espera la zona verde y limpia el nozzle.',nozzleTemp:'Temperatura del pico',
+    clean:'Limpiar',goodCleans:'Limpiezas buenas',greenZone:'Zona verde',perfectClean:'Limpieza perfecta',scratchNozzle:'Rayaste el nozzle. -tiempo',
+    nozzleFailed:'El pico quedo obstruido. La impresora queda fuera.',nowBreaker:'Ahora el {num}',completed:'Completado!',wrongOrder:'Orden incorrecto. Empeza de nuevo.',
+    energy:'energia',stress:'estres',saveForNozzle:'Guardalo para boquilla tapada o blob.',nozzleCleaned:'Pico limpio sin gastar repuesto.'
   },
   en:{
     save:'Save',menu:'Menu',currentShift:'CURRENT SHIFT',
@@ -59,10 +98,96 @@ const TXT={
     consHint:'Coffee restores energy. Cereal bars reduce stress. Nozzle wipes solve clogs or blobs during night shift.',
     nightActive:'Night shift',orders:'orders',failures:'failures',box:'cash',
     runBreaker:'Run to the breaker panel.',inspectPrinters:'Inspect printers before rushing.',
-    dayDyn:'Day',queue:'queue',drinkMate:'Drink mate or slow down.',buyCheap:'Buy stock when the market is cheap.'
+    dayDyn:'Day',queue:'queue',drinkMate:'Drink mate or slow down.',buyCheap:'Buy stock when the market is cheap.',
+    close:'Close',ok:'OK',accept:'Accept',bargain:'Bargain',decline:'Reject',urgent:'URGENT',
+    noWaitingClients:'No clients waiting.',mood:'Mood',free:'Free',broken:'Broken',queued:'Queued orders',
+    manualNightHint:'At night you choose which job to load on each printer.',
+    stockTitle:'Stock',mateBuy:'Mate',boardTitle:'Breaker Panel',goShop:'Go to Shop',
+    solar:'Solar',immune:'IMMUNE',basic:'Basic',none:'NO',parts:'Spares',
+    noFunds:'No cash',noSpares:'No spares',almostFullEnergy:'Energy almost full. Save it.',
+    noMate:'No mate left. Buy more in the shop ($80).',alreadyTurbo:'Already in turbo!',
+    enoughEnergy:'Energy is high enough. Save the mate.',mateTaken:'Mate taken! +40 energy. Pace up for 30s',normalPace:'Normal pace.',
+    cheapPla:'PLA is cheap today!',expensivePla:'PLA is expensive today',useStock:'Use what you have.',stockUp:'Stock up!',
+    dayClosed:'Day {day} closed',clientsServed:'Clients served',lostRejected:'Left or rejected',
+    noLostClients:'No lost clients',nightOrders:'Night orders',urgentOrders:'Urgent',
+    noUrgent:'No urgent jobs queued',queueValue:'Queue value',paidOnFinish:'Paid when prints finish',
+    reputation:'Reputation',finalStress:'Final stress',
+    goodShift:'Clean shift. The night decides if that queue turns into cash.',
+    spicyShift:'Rough shift. Several clients slipped away.',
+    bigQueue:'Good volume. The printers will sweat tonight.',
+    slowDay:'Slow day. No jobs means a quiet but dry night.',
+    prepNight:'Prepare spares and watch the machines closely. Finished jobs add cash and reputation.',
+    noReadyOrders:'No ready jobs. Use the next morning to buy cheap stock and accept simple orders.',
+    nightTitle:'NIGHT',nightQueue:'{queue} jobs queued.\nWatch printers and power outages.',
+    dayStartLog:'Day {day} - Serve clients and queue work for the night.',
+    orderReady:'ready to print',missingOrder:'missing {mat} x{units}',queueCount:'Queue',
+    lucasAccepted:'Lucas accepted',customerLeft:'left',printerTitle:'Printers',
+    choosePrinterJob:'Choose a free printer and load a job with E.',noOrdersToPrint:'No queued jobs to print.',
+    assignHint:'WASD | E=assign/inspect',jobLoaded:'That job is already loaded.',
+    loadPrinter:'Load P{n}',loadPrinterDesc:'Choose which job to print on this machine.\nIf material is missing, it stays queued until you buy stock.',
+    noPendingJobs:'No pending jobs.',brokenPrinter:'is broken. Repair it first.',
+    prints:'prints',loaded:'loaded',withMat:'with',noWorkTonight:'No work tonight.',
+    lightBack:'Power came back automatically.',breakerRestored:'Breaker panel restored!',
+    breakerOrder:'Raise the breakers in order (1->{num})',orderFromTo:'Order: 1 to {num}',
+    waitReturn:'Wait for power...',runToBreaker:'Run to breaker -> E',powerLogWait:'Wait...',powerLogRun:'Run to the breaker!',
+    inspectPrinter:'Inspect printer',chooseJob:'Choose job to print',loadJob:'Load job',
+    savedManual:'Manual save',shopTitle:'SHOP',inventoryShort:'INV',counter:'Counter',
+    upgradesTab:'Upgrades',employeesTab:'Staff',stockTab:'Stock',startNight:'Start night',objectiveLabel:'Goal',
+    cost:'Cost',autoRepair:'Rodrigo fixes it',nozzleMini:'Mini-game: clean nozzle',ignore:'Ignore',cleanNozzle:'Nozzle wipe',
+    nozzleTitle:'Clean nozzle',nozzleDesc:'Wait for the green zone and clean the nozzle.',nozzleTemp:'Nozzle temperature',
+    clean:'Clean',goodCleans:'Good cleans',greenZone:'Green zone',perfectClean:'Perfect clean',scratchNozzle:'You scratched the nozzle. -time',
+    nozzleFailed:'The nozzle stayed clogged. The printer is out.',nowBreaker:'Now {num}',completed:'Completed!',wrongOrder:'Wrong order. Start again.',
+    energy:'energy',stress:'stress',saveForNozzle:'Save it for a clogged nozzle or blob.',nozzleCleaned:'Nozzle cleaned without spending a spare.'
   }
 };
 function tr(k){return (TXT[G.lang]&&TXT[G.lang][k])||TXT.es[k]||k;}
+function trf(k,vars){return tr(k).replace(/\{(\w+)\}/g,(_,v)=>vars&&vars[v]!==undefined?vars[v]:'');}
+const CL_EN_LINES={
+  marcos:['Send it whenever you can.','Can we add my logo?'],
+  sofi:['I need it for tomorrow!','Do you have nicer colors?'],
+  diego:['Tolerance plus/minus 0.1mm.','What material do you recommend?'],
+  valeria:['Corporate presentation.','Volume discount?'],
+  nico:['Just like in the game.','You are a legend!'],
+  laura:['I designed this myself.','I love the process.'],
+  juli:['Can I film you?','Tag me!'],
+  tomas:['For a scale model.','I have 10 more parts.'],
+  ramiro:['Hurry, match day!','Can it be ready by 5?'],
+  pablo:['I study FDM.','Interesting.'],
+  meli:['Someone recommended you.','Nice workshop!'],
+  caro:['What filaments do you have?','Any color works.']
+};
+const MOOD_EN={Apurada:'Rushed','Técnico':'Technical',Corporativa:'Corporate',Creativa:'Creative',Influencer:'Influencer',Constructor:'Builder',Urgente:'Urgent',Académico:'Academic',Casual:'Casual',Curiosa:'Curious'};
+const TAG_EN={flexible:'flexible','apuro estetico':'rush finish','tolerancia fina':'tight tolerance',corporativo:'corporate','fan art':'fan art',creativo:'creative',viral:'viral',maqueta:'scale model','contra reloj':'against the clock',academico:'academic',simple:'simple',curiosa:'curious',normal:'normal'};
+const STORY_EN={
+  1:{ti:'🖨️ Day 1 - The Beginning',tx:'You start with one Bambu X1C and $500.\nKMORRA Print Shop opens its doors.',ob:'Earn $300 today'},
+  3:{ti:'🌙 Day 3 - First Rough Night',tx:'Tonight brings failures and power outages.\nBuy spares before closing.',ob:'Fix every failure'},
+  5:{ti:'📸 Day 5 - Social Boost',tx:'Juli posted a reel from the workshop.\nTwice as many clients today!',ob:'Serve 8 clients'},
+  7:{ti:'🏆 Week 1 Complete',tx:'You survived the first week!\nYour reputation is growing.',ob:'Reach $2000 cash'}
+};
+const NE_EN={
+  jam:{ti:'FILAMENT JAM',de:'Extruder on {P} jammed.',fx:'Cold pull'},
+  therm:{ti:'THERMAL FAULT',de:'Temperature out of range on {P}.',fx:'Cool down'},
+  bed:{ti:'BED ADHESION FAIL',de:'First layer lifted on {P}.',fx:'Reprint'},
+  run:{ti:'OUT OF FILAMENT',de:'Spool on {P} ran out.',fx:'Reload'},
+  clog:{ti:'CLOGGED NOZZLE',de:'Nozzle on {P} is burnt.',fx:'Replace'},
+  warp:{ti:'SEVERE WARPING',de:'Part on {P} contracted.',fx:'Re-enclose'},
+  blob:{ti:'NOZZLE BLOB',de:'Over-extrusion on {P}.',fx:'Clean'},
+  layer:{ti:'LAYER SHIFTING',de:'Toolhead on {P} lost position.',fx:'Calibrate'},
+  motor:{ti:'BURNT MOTOR',de:'Stepper on {P} overheated.',fx:'Replace part'},
+  spag:{ti:'SPAGHETTI PRINT',de:'{P} printed in mid-air.',fx:'Retry'},
+  humid:{ti:'WET FILAMENT',de:'Filament absorbed moisture on {P}.',fx:'Dry'}
+};
+const PE_EN={
+  micro:{ti:'⚡ MICRO OUTAGE',de:'Short dip. Wait it out.'},
+  norm:{ti:'⚡ POWER OUTAGE',de:'Neighborhood outage.\nRestore the breaker panel.'},
+  long:{ti:'⚡ LONG OUTAGE',de:'Extended outage.\nFull breaker reset.'}
+};
+function clLine(cl){const lines=G.lang==='en'&&CL_EN_LINES[cl.id];return lines?lines[Math.floor(Math.random()*lines.length)]:cl.d[Math.floor(Math.random()*cl.d.length)];}
+function moodName(m){return G.lang==='en'?(MOOD_EN[m]||m):m;}
+function tagName(t){return G.lang==='en'?(TAG_EN[t]||t):t;}
+function storyText(s){return G.lang==='en'&&STORY_EN[s.day]?STORY_EN[s.day]:s;}
+function evText(ev){return G.lang==='en'&&NE_EN[ev.id]?{...ev,...NE_EN[ev.id]}:ev;}
+function powerText(ev){return G.lang==='en'&&PE_EN[ev.id]?{...ev,...PE_EN[ev.id]}:ev;}
 function filDesc(f){return G.lang==='en'?(f.deEn||f.de):f.de;}
 function filTier(f){return G.lang==='en'?(f.tierEn||f.tier):f.tier;}
 function setLang(lang){
@@ -95,7 +220,11 @@ function applyLang(){
   set('ctlMate',tr('mate'));
   set('btnContinue','▶ '+tr('continue'));
   set('btnReset',tr('reset'));
+  set('shopSub',G.stab==='emp'?tr('empSub'):G.stab==='stk'?tr('stkSub'):tr('upSub'));
+  set('deStart','▶ '+tr('startNight'));
   set('tsObjective',tr('objective'));
+  const st=document.querySelectorAll('#shop .st');
+  [tr('upgradesTab'),tr('employeesTab'),tr('stockTab')].forEach((v,i)=>{if(st[i])st[i].textContent=v;});
   const kh=document.querySelectorAll('#keyHelp span');
   [tr('keyEsc'),tr('keyPick'),tr('keyAccept'),tr('keyNeg'),tr('keyReject'),tr('keyMate'),tr('keyRepair')].forEach((v,i)=>{if(kh[i])kh[i].textContent=v;});
   document.querySelectorAll('.langBtn').forEach(b=>b.classList.toggle('on',b.dataset.lang===G.lang));

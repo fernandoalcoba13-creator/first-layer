@@ -18,9 +18,9 @@ class DayScene extends Phaser.Scene{
     this.time.delayedCall(1600,()=>this.spawn());
     this.time.delayedCall(8500,()=>this.spawn());
     document.getElementById('ptag').className='ptag day';
-    document.getElementById('ptag').textContent='☀️ DÍA '+G.day;
-    document.getElementById('hday').textContent='📅 Día '+G.day;
-    updateMarket();this.applyDayMod();sLog('Día '+G.day+' — Atendé clientes y cargá pedidos para la noche.');
+    document.getElementById('ptag').textContent='☀️ '+tr('day')+' '+G.day;
+    document.getElementById('hday').textContent='📅 '+tr('dayDyn')+' '+G.day;
+    updateMarket();this.applyDayMod();sLog(trf('dayStartLog',{day:G.day}));
     sHint('WASD | E=interactuar');
     doSave(G);
   }
@@ -35,8 +35,8 @@ class DayScene extends Phaser.Scene{
     cg.fillStyle(0x28200e);cg.fillRect(W*.23,cY,W*.54,32);
     cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
     cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
-    this.add.text(W*.5,cY+9,'🖨️  KMORRA PRINT SHOP  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Courier New'}).setOrigin(.5,0);
-    this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'[E] Mostrador'});
+    this.add.text(W*.5,cY+9,'🖨️  KMORRA PRINT SHOP  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
+    this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'[E] '+tr('counter')});
     const sx=W*.1,sy=H*.47,sg=this.add.graphics();
     sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
     sg.lineStyle(1,0x2a2040);sg.strokeRect(sx-44,sy-68,88,88);
@@ -44,29 +44,29 @@ class DayScene extends Phaser.Scene{
       const x=sx-28+i%3*28,y=sy-56+Math.floor(i/3)*30;
       sg.fillStyle(c,.8);sg.fillCircle(x,y,9);sg.fillStyle(0x07060f);sg.fillCircle(x,y,4);
     });
-    this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Courier New',align:'center'}).setOrigin(.5,0);
-    this.IA.push({x:sx,y:sy,type:'stock',lbl:'[E] Stock'});
+    this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
+    this.IA.push({x:sx,y:sy,type:'stock',lbl:'[E] '+tr('stockTitle')});
     const ux=W*.32,uy=H*.31,ug=this.add.graphics();
     ug.fillStyle(0x0c180c);ug.fillRect(ux-40,uy-28,80,52);
     ug.lineStyle(1,0x2a4a2a);ug.strokeRect(ux-40,uy-28,80,52);
-    this.add.text(ux,uy,'🔧\nTIENDA',{fontSize:'9px',color:'#4dff91',fontFamily:'Courier New',align:'center'}).setOrigin(.5);
-    this.IA.push({x:ux,y:uy,type:'shop',lbl:'[E] Tienda'});
+    this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#4dff91',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
+    this.IA.push({x:ux,y:uy,type:'shop',lbl:'[E] '+tr('shopTitle')});
     const tx=W*.06,ty=H*.35;this.tblG=this.add.graphics();this.drawTbl(false);
-    this.IA.push({x:tx,y:ty,type:'tab',lbl:'[E] Tablero'});
+    this.IA.push({x:tx,y:ty,type:'tab',lbl:'[E] '+tr('boardTitle')});
     const paG=this.add.graphics();
     paG.fillStyle(0x0a0818);paG.fillRect(W*.56,H*.18,W*.43,H*.44);
     paG.lineStyle(1,0x1a1628);paG.strokeRect(W*.56,H*.18,W*.43,H*.44);
-    this.add.text(W*.78,H*.2,'— ZONA IMPRESORAS —',{fontSize:'8px',color:'#1e1a30',fontFamily:'Courier New'}).setOrigin(.5);
+    this.add.text(W*.78,H*.2,'— '+tr('printerTitle').toUpperCase()+' —',{fontSize:'8px',color:'#1e1a30',fontFamily:'Press Start 2P'}).setOrigin(.5);
     this.pGfx=[];const psp=(W*.37)/4;
     for(let i=0;i<4;i++){
       const px=W*.6+i*psp+psp/2,py=H*.49;
       const sp=createPrinterSprite(this,px,py);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
-      const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Courier New'}).setOrigin(.5,0);
+      const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
       this.pGfx.push({g:pg,sp,lt,px,py});
     }
-    this.IA.push({x:W*.77,y:H*.38,type:'printers',lbl:'[E] Impresoras'});
-    this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Courier New',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
+    this.IA.push({x:W*.77,y:H*.38,type:'printers',lbl:'[E] '+tr('printerTitle')});
+    this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
   drawTbl(pwr){
     const g=this.tblG,tx=this.W*.06,ty=this.H*.35;g.clear();
@@ -79,7 +79,7 @@ class DayScene extends Phaser.Scene{
     }
     this.tblG.setDepth(2);
   }
-  stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'\nResina:'+matStock('resin')+'  Parts:'+G.stk.parts;}
+  stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
   createPlayer(){
     this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
@@ -92,8 +92,8 @@ class DayScene extends Phaser.Scene{
   }
   checkStory(){
     const e=STORY.find(s=>s.day===G.day&&G.day>G.ss);
-    if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>G.showSto(e.ti,e.tx,e.ob));}
-    document.getElementById('obj').textContent=G.cObj?'🎯 '+G.cObj.ob:'';
+    if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>{const st=storyText(e);G.showSto(st.ti,st.tx,st.ob);});}
+    document.getElementById('obj').textContent=G.cObj?'🎯 '+storyText(G.cObj).ob:'';
   }
   applyDayMod(){
     if(G.day<2||Math.random()>Math.min(.58,.12+G.day*.035))return;
@@ -164,8 +164,8 @@ class DayScene extends Phaser.Scene{
     const cs=createClientSprite(this,cl,idx);
     const cg=this.add.graphics();if(cs)ct.add(cs);else{drawClient(cg,cl,idx);ct.add(cg);}
     const bb=this.add.graphics();bb.fillStyle(0xf8f8f8,.97);bb.fillRoundedRect(-42,-116,84,34,4);bb.fillTriangle(-6,-82,6,-82,0,-74);ct.add(bb);
-    ct.add(this.add.text(0,-101,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Courier New'}).setOrigin(.5));
-    if(urg)ct.add(this.add.text(0,-121,'🔴 URGENTE',{fontSize:'8px',color:'#f22',fontFamily:'Courier New'}).setOrigin(.5));
+    ct.add(this.add.text(0,-101,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Press Start 2P'}).setOrigin(.5));
+    if(urg)ct.add(this.add.text(0,-121,'🔴 '+tr('urgent'),{fontSize:'8px',color:'#f22',fontFamily:'Press Start 2P'}).setOrigin(.5));
     const pbB=this.add.rectangle(0,-69,46,4,0x111122).setOrigin(.5);
     const pbF=this.add.rectangle(-23,-69,46,4,urg?0xff4d6a:0x4dff91).setOrigin(0,.5);
     ct.add(pbB);ct.add(pbF);
@@ -175,7 +175,7 @@ class DayScene extends Phaser.Scene{
     this.clients.push(co);G.dayCli++;
     if(G.emp.lucas&&this.clients.filter(c=>!c.served).length===1)
       this.time.delayedCall(1800,()=>{if(!co.served)this.acceptOrd(co,'auto');});
-    sLog(cl.e+' '+cl.n+': "'+cl.d[Math.floor(Math.random()*cl.d.length)]+'" — '+pr.e+' $'+pay);
+    sLog(cl.e+' '+cl.n+': "'+clLine(cl)+'" — '+pr.e+' $'+pay);
   }
   nextClientSlot(){
     const used=this.clients.filter(c=>!c.served).map(c=>c.slot);
@@ -208,14 +208,14 @@ class DayScene extends Phaser.Scene{
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
     this.leaveClient(c,false);SFX.ok();
-    if(mode==='auto')showNotif('👦 Lucas aceptó: '+c.pr.e+' '+c.pr.n);
-    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — '+(canPrint?'listo para imprimir':'falta '+c.order.material+' x'+c.order.units)+'. Cola: '+G.orders.length);
+    if(mode==='auto')showNotif('👦 '+tr('lucasAccepted')+': '+c.pr.e+' '+c.pr.n);
+    sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — '+(canPrint?tr('orderReady'):trf('missingOrder',{mat:c.order.material,units:c.order.units}))+'. '+tr('queueCount')+': '+G.orders.length);
     doSave(G);
     return true;
   }
   leaveClient(c,ang){
     c.served=true;
-    if(ang){G.rep=Math.max(0,G.rep-5);G.stress=Math.min(100,G.stress+10);SFX.err();showNotif('😤 '+c.cl.n+' se fue. -5 REP','error');}
+    if(ang){G.rep=Math.max(0,G.rep-5);G.stress=Math.min(100,G.stress+10);SFX.err();showNotif('😤 '+c.cl.n+' '+tr('customerLeft')+'. -5 REP','error');}
     c.walk=true;if(c.cs&&c.cs.anims)c.cs.anims.resume();if(c.stepTw)c.stepTw.stop();c.stepTw=this.tweens.add({targets:c.ct,y:c.baseY-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     this.tweens.add({targets:c.ct,x:-80,duration:560,onComplete:()=>{if(c.stepTw)c.stepTw.stop();c.ct.destroy();}});
     this.clients=this.clients.filter(x=>x!==c);
@@ -231,43 +231,43 @@ class DayScene extends Phaser.Scene{
   }
   openCounter(target){
     const w=this.clients.filter(c=>!c.served);
-    if(!w.length){showNotif('No hay clientes esperando.');return;}
+    if(!w.length){showNotif(tr('noWaitingClients'));return;}
     const c=target&&!target.served?target:(this.nearClient||w[0]);
-    const dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
-    this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
-      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('stock')+': '+matStock(c.order.material)+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
-      [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
-       {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}},
-       {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
-       {lb:'Cerrar',cb:()=>cDlg()}]);
+    const dl=clLine(c.cl);
+    this.oDlg(c.cl.e+' '+c.cl.n,tr('mood')+': '+moodName(c.cl.m),
+      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('stock')+': '+matStock(c.order.material)+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+tagName(c.order.tag)+(c.urg?'\n🔴 '+tr('urgent'):''),
+      [{lb:'✅ '+tr('accept')+' ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
+       {lb:'💬 '+tr('bargain'),cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}},
+       {lb:'❌ '+tr('decline'),cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
+       {lb:tr('close'),cb:()=>cDlg()}]);
   }
   openPrinters(){
-    this.oDlg('🖨️ Impresoras','',
-      'Libres: '+G.printers.filter(p=>!p.busy&&!p.broken&&!p.locked).length+
-      '\nRotas: '+G.printers.filter(p=>p.broken).length+
-      '\nPedidos en cola: '+G.orders.length+
-      '\n\nEsta noche trabajan solas.',
-      [{lb:'OK',cb:()=>cDlg()}]);
+    this.oDlg('🖨️ '+tr('printerTitle'),'',
+      tr('free')+': '+G.printers.filter(p=>!p.busy&&!p.broken&&!p.locked).length+
+      '\n'+tr('broken')+': '+G.printers.filter(p=>p.broken).length+
+      '\n'+tr('queued')+': '+G.orders.length+
+      '\n\n'+tr('manualNightHint'),
+      [{lb:tr('ok'),cb:()=>cDlg()}]);
   }
   openStock(){
     const pla=(FILAMENTS.pla||[])[1],petg=(FILAMENTS.petg||[])[1],res=(FILAMENTS.resin||[])[1];
     const pp=getFilPrice('pla',pla.id),pt=getFilPrice('petg',petg.id),rr=getFilPrice('resin',res.id),pr=getPrice('parts');
-    this.oDlg('📦 Stock','',
+    this.oDlg('📦 '+tr('stockTitle'),'',
       stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts+'\n\n'+tr('quickStock'),
       [{lb:'🧵 '+pla.n+' $'+pp+(pp<pla.base?' 🔥':''),cls:'ok',cb:()=>{G.bStk('pla',pp,pla.id);cDlg();this.openStock();}},
        {lb:'🧵 '+petg.n+' $'+pt+(pt<petg.base?' 🔥':''),cb:()=>{G.bStk('petg',pt,petg.id);cDlg();this.openStock();}},
        {lb:'🧪 '+res.n+' $'+rr+(rr<res.base?' 🔥':''),cb:()=>{G.bStk('resin',rr,res.id);cDlg();this.openStock();}},
-       {lb:'🔩 Repuestos $'+pr,cb:()=>{G.bStk('parts',pr);cDlg();this.openStock();}},
-       {lb:'🧉 Mate $80 (x'+G.mateCount+')',cb:()=>{if(G.gold<80){showNotif('💸 Sin fondos','error');return;}G.gold-=80;G.mateCount++;SFX.coin();showNotif('🧉 Mate comprado!','success');cDlg();this.openStock();}},
-       {lb:'Cerrar',cb:()=>cDlg()}]);
+       {lb:'🔩 '+tr('parts')+' $'+pr,cb:()=>{G.bStk('parts',pr);cDlg();this.openStock();}},
+       {lb:'🧉 '+tr('mateBuy')+' $80 (x'+G.mateCount+')',cb:()=>{if(G.gold<80){showNotif('💸 '+tr('noFunds'),'error');return;}G.gold-=80;G.mateCount++;SFX.coin();showNotif('🧉 '+tr('mateBuy')+' +1','success');cDlg();this.openStock();}},
+       {lb:tr('close'),cb:()=>cDlg()}]);
   }
   openTab(){
-    this.oDlg('⚡ Tablero Eléctrico','',
-      'Solar: '+(G.upg.solar?'☀️ INMUNE':'❌')+
-      '\nUPS: '+(G.upg.ups2?'🔋 Industrial':G.upg.ups1?'🔋 Básico':'❌')+
+    this.oDlg('⚡ '+tr('boardTitle'),'',
+      tr('solar')+': '+(G.upg.solar?'☀️ '+tr('immune'):'❌')+
+      '\nUPS: '+(G.upg.ups2?'🔋 Industrial':G.upg.ups1?'🔋 '+tr('basic'):'❌')+
       '\nGenerador: '+(G.upg.gen?'⛽':'❌')+
       '\nProtector: '+(G.upg.prot?'✅':'❌'),
-      [{lb:'Ir a Tienda →',cls:'ok',cb:()=>{cDlg();G.openShop();}},{lb:'Cerrar',cb:()=>cDlg()}]);
+      [{lb:tr('goShop')+' →',cls:'ok',cb:()=>{cDlg();G.openShop();}},{lb:tr('close'),cb:()=>cDlg()}]);
   }
   oDlg(name,mood,text,choices){
     const cl=CL.find(c=>name.includes(c.n));
@@ -355,15 +355,15 @@ class DayScene extends Phaser.Scene{
     const urgent=G.orders.filter(o=>o.urg).length;
     const queueValue=G.orders.reduce((sum,o)=>sum+o.pay,0);
     const repDelta=G.rep-(G.dayStartRep||G.rep);
-    let mood='Turno prolijo. La noche define si esa cola se convierte en plata.';
-    if(lost>2)mood='Turno picante. Varios clientes quedaron en el camino.';
-    else if(queue>=4)mood='Buen volumen. Las impresoras van a transpirar esta noche.';
-    else if(queue===0)mood='Día flojo. Sin pedidos, la noche va a ser tranquila pero seca.';
+    let mood=tr('goodShift');
+    if(lost>2)mood=tr('spicyShift');
+    else if(queue>=4)mood=tr('bigQueue');
+    else if(queue===0)mood=tr('slowDay');
     const note=queue
-      ? 'Prepará repuestos y mirá las máquinas de cerca. Cada pedido terminado suma caja y reputación.'
-      : 'No hay pedidos listos. Usá la próxima mañana para comprar stock barato y aceptar encargos simples.';
+      ? tr('prepNight')
+      : tr('noReadyOrders');
     showDayClose({day:G.day,mood,clients:G.dayCli,accepted,lost,queue,urgent,queueValue,rep:G.rep,repDelta,stress:G.stress,note},()=>{
-      doTrans('🌙  NOCHE',queue+' pedidos en cola.\nVigilá impresoras y ⚡ cortes de luz.',()=>{this.scene.stop();this.scene.start('Night');});
+      doTrans('🌙  '+tr('nightTitle'),trf('nightQueue',{queue}),()=>{this.scene.stop();this.scene.start('Night');});
     });
   }
 }
