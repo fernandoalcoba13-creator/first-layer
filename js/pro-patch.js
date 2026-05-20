@@ -17,11 +17,11 @@
     const riskVal=Math.min(100,Math.round((G.stress||0)*.55+broken*18+queue*4+(G.pActive?25:0)));
     risk.style.width=riskVal+'%';
     if(G.phase==='night'){
-      txt.textContent='Noche activa: '+queue+' pedidos / '+broken+' fallas / $'+G.gold+' caja.';
-      tip.textContent=G.pActive?'⚡ Corré al tablero eléctrico.':'Inspeccioná impresoras antes de acelerar.';
+      txt.textContent=tr('nightActive')+': '+queue+' '+tr('orders')+' / '+broken+' '+tr('failures')+' / $'+G.gold+' '+tr('box')+'.';
+      tip.textContent=G.pActive?'⚡ '+tr('runBreaker'):tr('inspectPrinters');
     }else{
-      txt.textContent='Día '+G.day+': $'+G.gold+' caja · REP '+G.rep+' · cola '+queue+'.';
-      tip.textContent=G.energy<35?'🧉 Tomá mate o bajá ritmo.':'Comprá stock cuando el mercado esté barato.';
+      txt.textContent=tr('dayDyn')+' '+G.day+': $'+G.gold+' '+tr('box')+' · REP '+G.rep+' · '+tr('queue')+' '+queue+'.';
+      tip.textContent=G.energy<35?'🧉 '+tr('drinkMate'):tr('buyCheap');
     }
     const tag=document.getElementById('ptag');
     if(tag) tag.classList.toggle('pulseWarn',G.pActive||broken>0||G.stress>70);

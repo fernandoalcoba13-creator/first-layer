@@ -140,6 +140,7 @@ document.addEventListener('keydown',e=>{
   if(k==='q'){doSave(G);showNotif('Guardado manual','success');e.preventDefault();return;}
   if(k==='h'){openGameMenu();e.preventDefault();}
 });
+applyLang();
 function doTrans(h,p,cb){
   const el=document.getElementById('tr');
   document.getElementById('trh').textContent=h;

@@ -87,12 +87,12 @@ G.cSto=function(){document.getElementById('sto').style.display='none';G.block=fa
 G.shopStats=function(){
   const hired=EMP.filter(e=>G.emp[e.id]).length,total=matStock('pla')+matStock('petg')+matStock('resin')+G.stk.parts;
   document.getElementById('shopStats').innerHTML=[
-    ['Caja','$'+G.gold],['Impresoras',G.pCount+'/4'],['Stock',total],['Equipo',hired+'/'+EMP.length]
+    [tr('cash'),'$'+G.gold],[tr('printers'),G.pCount+'/4'],[tr('stock'),total],[tr('team'),hired+'/'+EMP.length]
   ].map(([k,v])=>'<div class="shopStat"><b>'+k+'</b><span>'+v+'</span></div>').join('');
 };
 G.shopCard=function(o){
   const cls='si '+(o.done?'sb':o.locked?'sl':o.can?'sa':'');
-  const action=o.done?'LISTO':o.locked?'BLOQUEADO':o.can?'COMPRAR':'SIN FONDOS';
+  const action=o.done?tr('ready'):o.locked?tr('locked'):o.can?tr('buy'):tr('noMoney');
   const meta=o.done?'<div class="stg">'+(o.doneText||'Listo')+'</div>':o.locked?'<div class="slock">'+o.lockedText+'</div>':'<div class="sc">$'+o.cost+'</div>';
   return '<div class="'+cls+'" '+o.attr+'><div class="siTop"><div class="siIc">'+o.icon+'</div><div><h4>'+o.name+'</h4><p>'+o.desc+'</p></div></div><div class="siFoot">'+meta+'<span class="sact">'+action+'</span></div></div>';
 };
@@ -100,16 +100,16 @@ G.tab=function(t){
   G.stab=t;
   document.querySelectorAll('.st').forEach((el,i)=>el.classList.toggle('on',['up','emp','stk'][i]===t));
   G.shopStats();
-  document.getElementById('shopSub').textContent=t==='up'?'Comprá mejoras permanentes para sobrevivir más noches.':t==='emp'?'Contratá ayuda: pagás sueldo cada noche, pero te alivian el turno.':'Comprá materiales al precio del mercado de hoy.';
+  document.getElementById('shopSub').textContent=t==='up'?tr('upSub'):t==='emp'?tr('empSub'):tr('stkSub');
   const sg=document.getElementById('sg'),sgNew=sg.cloneNode(false);sg.parentNode.replaceChild(sgNew,sg);
   const s=sgNew;
   if(t==='up'){
     s.style.gridTemplateColumns='repeat(3,1fr)';
-    s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],lk=u.req&&!G.upg[u.req],af=G.gold>=u.co;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,can:af&&!lk,locked:lk,lockedText:'Requiere '+u.req,doneText:'Instalado',attr:'data-upg="'+u.id+'"'});}).join('');
+    s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],lk=u.req&&!G.upg[u.req],af=G.gold>=u.co;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,can:af&&!lk,locked:lk,lockedText:tr('needs')+u.req,doneText:tr('installed'),attr:'data-upg="'+u.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-upg]');if(d)G._bUpg(d.dataset.upg);});
   } else if(t==='emp'){
     s.style.gridTemplateColumns='repeat(3,1fr)';
-    s.innerHTML=EMP.map(e=>{const h=!!G.emp[e.id],af=G.gold>=e.co;return G.shopCard({icon:e.ic,name:e.n,desc:e.de+' | Sueldo $'+e.sal+'/noche',cost:e.co,done:h,can:af,locked:false,doneText:'Contratado',attr:'data-emp="'+e.id+'"'});}).join('');
+    s.innerHTML=EMP.map(e=>{const h=!!G.emp[e.id],af=G.gold>=e.co;return G.shopCard({icon:e.ic,name:e.n,desc:e.de+' | '+tr('salary')+' $'+e.sal+'/noche',cost:e.co,done:h,can:af,locked:false,doneText:tr('hired'),attr:'data-emp="'+e.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-emp]');if(d)G._hEmp(d.dataset.emp);});
   } else {
     s.style.gridTemplateColumns='repeat(3,1fr)';
@@ -120,8 +120,8 @@ G.tab=function(t){
         items.push({mat,f,c,ic:mat==='resin'?'🧪':'🧵'});
       });
     });
-    items.push({mat:'parts',f:{id:'',n:'Repuestos nozzle',de:'Picos, racores, PTFE y piezas para reparar fallas.',q:2},c:G.market.parts.cur,ic:'🔩'});
-    s.innerHTML=items.map(o=>G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.brand?o.f.brand+' | Stock '+(G.stk[o.mat][o.f.id]||0)+' | Riesgo '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+o.f.de:'Stock '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,can:G.gold>=o.c,locked:false,attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
+    items.push({mat:'parts',f:{id:'',n:tr('partsName'),de:tr('partsDesc'),q:2},c:G.market.parts.cur,ic:'🔩'});
+    s.innerHTML=items.map(o=>G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.tier?tr('tier')+' '+filTier(o.f)+' | '+tr('stock')+' '+(G.stk[o.mat][o.f.id]||0)+' | '+tr('risk')+' '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+filDesc(o.f):tr('stock')+' '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,can:G.gold>=o.c,locked:false,attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]');if(d){G.bStk(d.dataset.stk,Number(d.dataset.cost),d.dataset.id);G.tab('stk');}});
   }
 };

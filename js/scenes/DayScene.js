@@ -194,9 +194,9 @@ class DayScene extends Phaser.Scene{
     if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
-    if(matStock(c.order.material)<c.order.units){showNotif('Falta '+c.order.material+' x'+c.order.units+' para aceptar','error');return false;}
+    if(matStock(c.order.material)<c.order.units){showNotif(tr('missing')+c.order.material+' x'+c.order.units,'error');return false;}
     const fil=consumeFilament(c.order.material,c.order.diff,c.order.units);
-    if(!fil){showNotif('No hay stock usable para '+c.order.material,'error');return false;}
+    if(!fil){showNotif(tr('usableStock')+c.order.material,'error');return false;}
     const risk=Phaser.Math.Clamp(c.order.risk+fil.risk,.01,.62);
     G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk,tag:c.order.tag,material:c.order.material,units:c.order.units,filament:{id:fil.id,n:fil.n,q:fil.q,clog:fil.clog,rep:fil.rep,risk:fil.risk}});
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
@@ -227,7 +227,7 @@ class DayScene extends Phaser.Scene{
     const c=w[0],dl=c.cl.d[Math.floor(Math.random()*c.cl.d.length)];
     const preview=chooseFilament(c.order.material,c.order.diff);
     this.oDlg(c.cl.e+' '+c.cl.n,'Mood: '+c.cl.m,
-      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\nMaterial: '+c.order.material+' x'+c.order.units+'\nFilamento: '+(preview?preview.n+' ('+(preview.risk>0?'riesgo +':'riesgo ')+Math.round(preview.risk*100)+'%)':'sin stock')+'\nDificultad: '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
+      '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('filament')+': '+(preview?preview.n+' ('+tr('risk')+' '+(preview.risk>0?'+':'')+Math.round(preview.risk*100)+'%)':tr('withoutStock'))+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+c.order.tag+(c.urg?'\n🔴 ¡URGENTE!':''),
       [{lb:'✅ Aceptar ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
        {lb:'💬 Negociar',cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter();}},
        {lb:'❌ Rechazar',cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
@@ -245,7 +245,7 @@ class DayScene extends Phaser.Scene{
     const pla=(FILAMENTS.pla||[])[1],petg=(FILAMENTS.petg||[])[1],res=(FILAMENTS.resin||[])[1];
     const pp=getFilPrice('pla',pla.id),pt=getFilPrice('petg',petg.id),rr=getFilPrice('resin',res.id),pr=getPrice('parts');
     this.oDlg('📦 Stock','',
-      stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\nRepuestos: '+G.stk.parts+'\n\nCompra rapida: calidad estandar. En tienda tenes todas las gamas.',
+      stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts+'\n\n'+tr('quickStock'),
       [{lb:'🧵 '+pla.n+' $'+pp+(pp<pla.base?' 🔥':''),cls:'ok',cb:()=>{G.bStk('pla',pp,pla.id);cDlg();this.openStock();}},
        {lb:'🧵 '+petg.n+' $'+pt+(pt<petg.base?' 🔥':''),cb:()=>{G.bStk('petg',pt,petg.id);cDlg();this.openStock();}},
        {lb:'🧪 '+res.n+' $'+rr+(rr<res.base?' 🔥':''),cb:()=>{G.bStk('resin',rr,res.id);cDlg();this.openStock();}},

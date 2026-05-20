@@ -12,35 +12,36 @@
 
   <div id="brand">KMORRA PRINT SHOP<small>FIRST LAYER — PROTOTYPE v6</small></div>
   <div id="proPanel">
-    <h3>📋 TURNO ACTUAL</h3>
+    <h3 id="proTitle">📋 TURNO ACTUAL</h3>
     <p id="proText">Atendé clientes, comprá stock barato y prepará la noche.</p>
     <div class="miniBar"><i id="proRisk"></i></div>
     <p id="proTip">TIP: si hay urgentes, priorizalos antes del cierre.</p>
   </div>
-  <div id="quickBtns"><button class="qbtn" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" onclick="openGameMenu()">? Menú</button></div>
+  <div id="quickBtns"><button class="qbtn" id="btnSave" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" id="btnMenu" onclick="openGameMenu()">? Menú</button></div>
   <div id="titleScreen">
     <div class="tsBox">
       <div class="tsK">KMORRA ORIGINAL GAME</div>
       <h1 class="tsTitle">PRINT SHOP</h1>
       <div class="tsSub">FIRST LAYER · 3D PRINT FARM SIMULATOR</div>
+      <div class="langBtns"><button class="langBtn" data-lang="es" onclick="setLang('es')">ES</button><button class="langBtn" data-lang="en" onclick="setLang('en')">EN</button></div>
       <div class="tsGrid">
-        <div class="tsCard"><b>☀️ DÍA</b><span>Atendé clientes, negociá pedidos y cargá trabajo para la noche.</span></div>
-        <div class="tsCard"><b>🌙 NOCHE</b><span>Supervisá impresoras, repará fallas y sobreviví cortes de luz.</span></div>
-        <div class="tsCard"><b>📈 ESCALÁ</b><span>Comprá upgrades, empleados, stock y más impresoras para crecer.</span></div>
+        <div class="tsCard"><b id="tsDay">☀️ DÍA</b><span id="tsDayDesc">Atendé clientes, negociá pedidos y cargá trabajo para la noche.</span></div>
+        <div class="tsCard"><b id="tsNight">🌙 NOCHE</b><span id="tsNightDesc">Supervisá impresoras, repará fallas y sobreviví cortes de luz.</span></div>
+        <div class="tsCard"><b id="tsScale">📈 ESCALÁ</b><span id="tsScaleDesc">Comprá upgrades, empleados, stock y más impresoras para crecer.</span></div>
       </div>
       <div class="tsControls">
-        <div><kbd>WASD</kbd><span>Mover</span></div>
-        <div><kbd>E</kbd><span>Interactuar</span></div>
-        <div><kbd>Esc</kbd><span>Cerrar / pausa</span></div>
-        <div><kbd>A</kbd><span>Aceptar pedido</span></div>
-        <div><kbd>N</kbd><span>Negociar</span></div>
-        <div><kbd>R</kbd><span>Rechazar</span></div>
-        <div><kbd>F</kbd><span>Reparar</span></div>
-        <div><kbd>M</kbd><span>Mate</span></div>
+        <div><kbd>WASD</kbd><span id="ctlMove">Mover</span></div>
+        <div><kbd>E</kbd><span id="ctlInteract">Interactuar</span></div>
+        <div><kbd>Esc</kbd><span id="ctlEsc">Cerrar / pausa</span></div>
+        <div><kbd>A</kbd><span id="ctlAccept">Aceptar pedido</span></div>
+        <div><kbd>N</kbd><span id="ctlNeg">Negociar</span></div>
+        <div><kbd>R</kbd><span id="ctlReject">Rechazar</span></div>
+        <div><kbd>F</kbd><span id="ctlRepair">Reparar</span></div>
+        <div><kbd>M</kbd><span id="ctlMate">Mate</span></div>
       </div>
-      <button class="tsBtn" onclick="closeGameMenu()">▶ CONTINUAR</button>
-      <button class="tsBtn alt" onclick="window.resetGame()">BORRAR PARTIDA</button>
-      <p style="font-size:10px;color:#5a4a80;margin-top:12px;line-height:1.6">Objetivo: hacer crecer tu print shop sin fundirte ni quemar las máquinas.</p>
+      <button class="tsBtn" id="btnContinue" onclick="closeGameMenu()">▶ CONTINUAR</button>
+      <button class="tsBtn alt" id="btnReset" onclick="window.resetGame()">BORRAR PARTIDA</button>
+      <p id="tsObjective" style="font-size:10px;color:#5a4a80;margin-top:12px;line-height:1.6">Objetivo: hacer crecer tu print shop sin fundirte ni quemar las máquinas.</p>
     </div>
   </div>
 
@@ -104,6 +105,7 @@
 <script src="js/audio.js"></script>
 <script src="js/data.js"></script>
 <script src="js/state.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/draw.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/g-methods.js"></script>
