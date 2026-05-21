@@ -64,9 +64,9 @@ const PE=[
   {id:'long',ti:'⚡ CORTE PROLONGADO',de:'Corte extendido.\nReset completo del tablero.',dur:35000,pen:.7},
 ];
 const BETA_DAYS={
-  1:{title:'La apertura',goal:'Ganá $300',duration:75000,maxClients:4,firstSpawn:1800,secondSpawn:9000,interval:14000,shop:['pla:eco','parts','coffee'],forcedPower:[],forcedFails:[{at:9000,id:'clog'}],hint:'Tutorial: aceptá pedidos, cargá una impresora y comprá stock barato antes del cierre.'},
-  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',duration:95000,maxClients:5,firstSpawn:1200,secondSpawn:8000,interval:12500,shop:['pla:eco','pla:std','parts','coffee','bar'],forcedPower:[{at:12000,id:'micro'},{at:33000,id:'norm'}],forcedFails:[{at:18000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido espera hasta comprarlo.'},
-  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',duration:115000,maxClients:6,firstSpawn:1200,secondSpawn:6500,interval:10500,shop:['pla:eco','pla:std','petg:eco','parts','unlock2','coffee','bar','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'random'},{at:42000,id:'random'}],hint:'Comprá la segunda impresora y cargá trabajos temprano para maximizar producción.'}
+  1:{title:'La apertura',goal:'Ganá $300',duration:90000,maxClients:3,firstSpawn:1800,secondSpawn:12000,interval:21000,shop:['pla:eco','parts','coffee'],forcedPower:[],forcedFails:[{at:9000,id:'clog'}],hint:'Tutorial: aceptá pedidos, cargá una impresora y comprá stock barato antes del cierre.'},
+  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',duration:115000,maxClients:5,firstSpawn:1200,secondSpawn:8000,interval:16000,shop:['pla:eco','pla:std','parts','coffee','bar'],forcedPower:[{at:12000,id:'micro'},{at:33000,id:'norm'}],forcedFails:[{at:18000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido espera hasta comprarlo.'},
+  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',duration:140000,maxClients:7,firstSpawn:1200,secondSpawn:6500,interval:13000,shop:['pla:eco','pla:std','petg:eco','parts','unlock2','coffee','bar','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'random'},{at:42000,id:'random'}],hint:'Comprá la segunda impresora y cargá trabajos temprano para maximizar producción.'}
 };
 const UPG=[
   {id:'speed1',n:'Perfil velocidad',de:'+30% velocidad',co:300,ic:'⚡'},

@@ -38,8 +38,8 @@ class DayScene extends Phaser.Scene{
     cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
     cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
     this.shopSign=this.add.text(W*.5,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-    this.IA.push({x:W*.5,y:cY,type:'Click/E '+tr('counter')});
-    const sx=W*.1,sy=H*.47,sg=this.add.graphics();
+    this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'Click/E '+tr('counter')});
+    const sx=W*.2,sy=H*.47,sg=this.add.graphics();
     sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
     sg.lineStyle(1,0x2a2040);sg.strokeRect(sx-44,sy-68,88,88);
     [0x5bc8fa,0xff7eb3,0x4dff91,0xffe566,0x9d7fe3,0xff6644].forEach((c,i)=>{
@@ -47,14 +47,14 @@ class DayScene extends Phaser.Scene{
       sg.fillStyle(c,.8);sg.fillCircle(x,y,9);sg.fillStyle(0x07060f);sg.fillCircle(x,y,4);
     });
     this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
-    this.IA.push({x:sx,y:sy,type:'Click/E '+tr('stockTitle')});
-    const ux=W*.32,uy=H*.31,ug=this.add.graphics();
+    this.IA.push({x:sx,y:sy,type:'stock',lbl:'Click/E '+tr('stockTitle')});
+    const ux=W*.41,uy=H*.31,ug=this.add.graphics();
     ug.fillStyle(0x0c180c);ug.fillRect(ux-40,uy-28,80,52);
     ug.lineStyle(1,0x2a4a2a);ug.strokeRect(ux-40,uy-28,80,52);
     this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#4dff91',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
-    this.IA.push({x:ux,y:uy,type:'Click/E '+tr('shopTitle')});
-    const tx=W*.06,ty=H*.35;this.tblG=this.add.graphics();this.drawTbl(false);
-    this.IA.push({x:tx,y:ty,type:'Click/E '+tr('boardTitle')});
+    this.IA.push({x:ux,y:uy,type:'shop',lbl:'Click/E '+tr('shopTitle')});
+    const tx=W*.29,ty=H*.35;this.tZone={x:tx,y:ty};this.tblG=this.add.graphics();this.drawTbl(false);
+    this.IA.push({x:tx,y:ty,type:'tab',lbl:'Click/E '+tr('boardTitle')});
     const paG=this.add.graphics();
     paG.fillStyle(0x0a0818);paG.fillRect(W*.56,H*.18,W*.43,H*.44);
     paG.lineStyle(1,0x1a1628);paG.strokeRect(W*.56,H*.18,W*.43,H*.44);
@@ -67,16 +67,16 @@ class DayScene extends Phaser.Scene{
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
       this.pGfx.push({g:pg,sp,lt,px,py});
     }
-    this.IA.push({x:W*.77,y:H*.49,type:'Click/E '+tr('printerTitle')});
+    this.IA.push({x:W*.77,y:H*.49,type:'printers',lbl:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
       if(p.locked)return;
       const px=W*.6+i*psp+psp/2;
-      this.IA.push({x:px,y:H*.49,type:'Click/E P'+(i+1)+' '+tr('loadJob')});
+      this.IA.push({x:px,y:H*.49,type:'printer',pid:i,lbl:'Click/E P'+(i+1)+' '+tr('loadJob')});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
   drawTbl(pwr){
-    const g=this.tblG,tx=this.W*.06,ty=this.H*.35;g.clear();
+    const g=this.tblG,tx=(this.tZone&&this.tZone.x)||this.W*.29,ty=(this.tZone&&this.tZone.y)||this.H*.35;g.clear();
     g.fillStyle(pwr?0x2a0808:0x1a1010);g.fillRect(tx-24,ty-33,48,66);
     g.lineStyle(2,pwr?0xff3333:0x3a1a1a);g.strokeRect(tx-24,ty-33,48,66);
     g.fillStyle(pwr?0x3a0808:0x2a0808);g.fillRect(tx-20,ty-29,40,12);

@@ -10,7 +10,7 @@
     }
   }
   window.updateProPanel=function(){
-    const txt=document.getElementById('proText'), risk=document.getElementById('proRisk'), tip=document.getElementById('proTip'), list=document.getElementById('objList');
+    const title=document.getElementById('proTitle'), txt=document.getElementById('proText'), risk=document.getElementById('proRisk'), tip=document.getElementById('proTip'), list=document.getElementById('objList');
     if(!txt||!risk||!tip||!window.G)return;
     const broken=(G.printers||[]).filter(p=>p.broken).length;
     const queue=(G.orders||[]).length;
@@ -22,6 +22,10 @@
     risk.style.width=riskVal+'%';
     const repBoost=Math.round((repPriceMult()-1)*100);
     const maker=(G.makerName||G.shopName)?makerDisplayName()+' / '+shopDisplayName()+' · ':'';
+    if(title){
+      const b=BETA_DAYS[G.day]||{};
+      title.textContent=(G.phase==='night'?'NOCHE ':'DIA ')+G.day+(b.title?' - '+b.title:'');
+    }
     if(G.phase==='night'){
       txt.textContent=maker+tr('nightActive')+': '+queue+' '+tr('orders')+' / '+broken+' '+tr('failures')+'. REP '+G.rep+' ('+(repBoost>=0?'+':'')+repBoost+'% $)';
       tip.textContent=G.pActive?'⚡ '+tr('runBreaker'):tr('inspectPrinters');

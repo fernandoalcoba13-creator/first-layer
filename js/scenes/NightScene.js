@@ -9,7 +9,7 @@ class NightScene extends Phaser.Scene{
     G.phase='night';G.block=false;
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
     this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
-    this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
+    this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.2,y:this.H*.42};
     if(G.syncPrinters)G.syncPrinters();
     this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
@@ -124,7 +124,7 @@ class NightScene extends Phaser.Scene{
     });
   }
   drawTblN(pwr){
-    const g=this.tG,tx=this.W*.07,ty=this.H*.42;g.clear();
+    const g=this.tG,tx=this.tZone.x,ty=this.tZone.y;g.clear();
     g.fillStyle(pwr?0x2a0808:0x1a1010);g.fillRect(tx-26,ty-38,52,70);
     g.lineStyle(2,pwr?0xff3333:0x3a1a1a);g.strokeRect(tx-26,ty-38,52,70);
     g.fillStyle(pwr?0x3a0808:0x2a0808);g.fillRect(tx-22,ty-34,44,14);
