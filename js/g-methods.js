@@ -183,11 +183,20 @@ G.showSto=function(ti,tx,ob){
   const tabs=document.getElementById('stoTabs'),acts=document.getElementById('stoActions');
   if(tabs)tabs.innerHTML='';
   if(acts)acts.innerHTML='';
-  document.getElementById('sp').textContent=tx+(ob?'\n\n'+tr('objectiveLabel')+': '+ob:'');
+  const sp=document.getElementById('sp');sp.className='';sp.textContent=tx+(ob?'\n\n'+tr('objectiveLabel')+': '+ob:'');
   document.getElementById('sto').style.display='block';
 };
+function consumableDefs(){
+  return {
+    coffee:{n:tr('coffee'),ic:'☕',c:45,de:tr('coffeeDesc')},
+    mate:{n:tr('mateConsumable'),ic:'🧉',c:55,de:tr('mateDesc')},
+    bar:{n:tr('bar'),ic:'🍫',c:35,de:tr('barDesc')},
+    sandwich:{n:tr('sandwich'),ic:'🥪',c:75,de:tr('sandwichDesc')},
+    cleaner:{n:tr('cleaner'),ic:'🪡',c:180,de:tr('cleanerDesc')}
+  };
+}
 G.buyConsumable=function(id){
-  const defs={coffee:{n:tr('coffee'),c:45},bar:{n:tr('bar'),c:35},cleaner:{n:tr('cleaner'),c:180}};
+  const defs=consumableDefs();
   const it=defs[id];if(!it)return;
   if(!betaShopAllows('cons',id)){showNotif('🔒 '+tr('lockedToday'),'info');return;}
   if(G.gold<it.c){showNotif(tr('noFunds'),'error');return;}
@@ -201,14 +210,21 @@ G.buyConsumable=function(id){
 };
 G.useConsumable=function(id){
   ensureConsumables();
-  const names={coffee:tr('coffee'),bar:tr('bar'),cleaner:tr('cleaner')};
-  if((G.cons[id]||0)<=0){showNotif((G.lang==='en'?'No ':'Sin ')+names[id],'error');return;}
+  const defs=consumableDefs(),it=defs[id];if(!it)return;
+  if((G.cons[id]||0)<=0){showNotif((G.lang==='en'?'No ':'Sin ')+it.n,'error');return;}
   if(id==='coffee'){
     if(G.mateActive){showNotif(tr('alreadyTurbo'),'info');return;}
     G.cons.coffee--;startTurbo(12000,30,'☕ '+tr('coffee')+' +30 '+tr('energy')+' | TURBO');
+  } else if(id==='mate'){
+    if(G.mateActive){showNotif(tr('alreadyTurbo'),'info');return;}
+    G.cons.mate--;startTurbo(30000,40,'🧉 '+tr('mateConsumable')+' +40 '+tr('energy')+' | TURBO');
   } else if(id==='bar'){
     G.cons.bar--;G.energy=Math.min(100,G.energy+20);G.stress=Math.max(0,(G.stress||0)-8);
     SFX.up();showNotif(tr('bar')+' +20 '+tr('energy')+', -8 '+tr('stress'),'success');
+    updateMateHUD();
+  } else if(id==='sandwich'){
+    G.cons.sandwich--;G.energy=Math.min(100,G.energy+35);G.stress=Math.max(0,(G.stress||0)-15);
+    SFX.up();showNotif(tr('sandwich')+' +35 '+tr('energy')+', -15 '+tr('stress'),'success');
     updateMateHUD();
   } else if(id==='cleaner'){
     showNotif(tr('saveForNozzle'),'info');return;
@@ -218,6 +234,7 @@ G.useConsumable=function(id){
 };
 G.showInventory=function(tab){
   ensureConsumables();
+  ensureStockShape();
   G.invTab=tab||G.invTab||'mat';
   G.block=true;
   document.getElementById('sh').textContent=tr('inventory');
@@ -226,16 +243,33 @@ G.showInventory=function(tab){
   const mk=(id,txt)=>'<button class="stoTab '+(G.invTab===id?'on':'')+'" data-inv-tab="'+id+'" onclick="G.showInventory(\''+id+'\')">'+txt+'</button>';
   tabs.innerHTML=mk('mat',tr('materialsTab'))+mk('orders',tr('ordersTab'))+mk('cons',tr('consumablesTab'));
   acts.innerHTML='';
+  sp.className='invGrid';
+  const esc=s=>String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  const card=(ic,title,qty,body,actions,good)=>'<div class="invCard '+(good?'good':'')+'"><div class="invTop"><div class="invIc">'+ic+'</div><div><h4>'+esc(title)+'</h4>'+(body?'<p>'+body+'</p>':'')+'</div><div class="invQty">'+qty+'</div></div>'+(actions?'<div class="invActions">'+actions+'</div>':'')+'</div>';
+  const btn=(cls,txt,fn)=>'<button class="eb '+cls+'" onclick="'+fn+'">'+txt+'</button>';
+  const matCard=(mat,ic)=>{
+    const total=matStock(mat);
+    const detail=(FILAMENTS[mat]||[]).map(f=>'<span>'+esc(f.n)+': <b>'+(G.stk[mat][f.id]||0)+'</b></span>').join('<br>');
+    return card(ic,mat.toUpperCase(),total,'<span class="invBreak">'+detail+'</span>','',total>0);
+  };
   if(G.invTab==='orders'){
-    sp.textContent=(G.orders||[]).map(o=>'- '+o.pr.e+' '+o.pr.n+' - '+o.material+' x'+o.units+(o.filament?' | '+o.filament.n:o.waitingMaterial?' | '+tr('missingMaterial'):'')).join('\n')||tr('noQueuedOrders');
+    const orders=(G.orders||[]);
+    sp.innerHTML=orders.length?orders.map(o=>{
+      const status=o.filament?o.filament.n:o.waitingMaterial?tr('missingMaterial'):tr('queued');
+      const body='<span class="invMeta">'+esc(o.cl.n)+' | '+esc(o.material.toUpperCase())+' x'+o.units+' | $'+o.pay+'</span><br>'+esc(status);
+      return card(o.pr.e,o.pr.n,o.loaded?'P'+o.loaded:'',body,'',!!o.filament);
+    }).join(''):'<div class="invEmpty">'+tr('noQueuedOrders')+'</div>';
   } else if(G.invTab==='cons'){
-    sp.textContent=tr('coffee')+': '+G.cons.coffee+'  |  '+tr('bar')+': '+G.cons.bar+'  |  '+tr('cleaner')+': '+G.cons.cleaner+'\n\n'+tr('consHint');
-    acts.innerHTML=[
-      ['coffee',45,tr('coffee')],['bar',35,tr('bar')],['cleaner',180,tr('cleaner')]
-    ].map(x=>'<button class="eb fix" onclick="G.useConsumable(\''+x[0]+'\')">'+tr('use')+' '+x[2]+'</button><button class="eb" onclick="G.buyConsumable(\''+x[0]+'\')">'+tr('buy')+' $'+x[1]+'</button>').join('');
+    const defs=consumableDefs();
+    sp.innerHTML=Object.keys(defs).map(id=>{
+      const it=defs[id],qty=G.cons[id]||0,locked=!betaShopAllows('cons',id);
+      const buyTxt=locked?tr('lockedToday'):tr('buy')+' $'+it.c;
+      const actions=btn('fix',tr('use'),"G.useConsumable('"+id+"')")+btn('',buyTxt,"G.buyConsumable('"+id+"')");
+      return card(it.ic,it.n,qty,esc(it.de),actions,qty>0);
+    }).join('')+'<div class="invEmpty">'+tr('consHint')+'</div>';
   } else {
     G.invTab='mat';
-    sp.textContent=stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('tpu')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts;
+    sp.innerHTML=matCard('pla','🧵')+matCard('petg','🧶')+matCard('tpu','🪢')+matCard('resin','🧪')+card('🔩',tr('partsName'),G.stk.parts,esc(tr('partsDesc')),'',G.stk.parts>0);
   }
   setTimeout(()=>{const b=document.querySelector('#stoTabs .stoTab.on');if(b)b.focus();},0);
 };
@@ -286,9 +320,10 @@ G.tab=function(t){
       });
     });
     items.push({mat:'parts',f:{id:'',n:tr('partsName'),de:tr('partsDesc'),q:2},c:G.market.parts.cur,ic:'🔩',locked:!betaShopAllows('parts','')});
-    items.push({cons:'coffee',ic:'☕',n:tr('coffee'),de:tr('coffeeDesc'),c:45,locked:!betaShopAllows('cons','coffee')});
-    items.push({cons:'bar',ic:'🍫',n:tr('bar'),de:tr('barDesc'),c:35,locked:!betaShopAllows('cons','bar')});
-    items.push({cons:'cleaner',ic:'🪡',n:tr('cleaner'),de:tr('cleanerDesc'),c:180,locked:!betaShopAllows('cons','cleaner')});
+    Object.keys(consumableDefs()).forEach(id=>{
+      const it=consumableDefs()[id];
+      items.push({cons:id,ic:it.ic,n:it.n,de:it.de,c:it.c,locked:!betaShopAllows('cons',id)});
+    });
     items.sort((a,b)=>(a.cons?1:0)-(b.cons?1:0)||a.c-b.c);
     s.innerHTML=items.map(o=>o.cons
       ?G.shopCard({icon:o.ic,name:o.n,desc:o.de,cost:o.c,done:false,can:G.gold>=o.c&&!o.locked,locked:o.locked,lockedText:tr('lockedToday'),attr:'data-cons="'+o.cons+'"'})

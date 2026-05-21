@@ -190,7 +190,7 @@ function handleShopKeys(k,e){
 function handleStoryKeys(k,e){
   if(!isShown('sto'))return false;
   const tabs=[...document.querySelectorAll('#stoTabs .stoTab')];
-  const actions=[...document.querySelectorAll('#stoActions .eb')].filter(b=>!b.disabled);
+  const actions=[...document.querySelectorAll('#stoActions .eb,#sp .eb')].filter(b=>!b.disabled);
   if(!tabs.length){
     if(actions.length){
       const idx=actions.indexOf(document.activeElement);
