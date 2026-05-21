@@ -56,7 +56,7 @@
           {txt:es?'Terminar dos trabajos antes del cierre':'Finish two jobs before closing',done:printed>=2}
         ];
       list.innerHTML=tasks.map(t=>
-        '<div class="objRow '+(t.done?'done':'')+'"><span>'+(t.done?'✓':'□')+'</span><b>'+t.txt+'</b><em>'+(t.done?'OK':'TODO')+'</em></div>'
+        '<div class="objRow '+(t.done?'done':'')+'"><span>'+(t.done?'✓':'□')+'</span><b>'+t.txt+'</b><em>'+(t.done?'OK':'')+'</em></div>'
       ).join('');
     }
     const tag=document.getElementById('ptag');

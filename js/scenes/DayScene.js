@@ -39,7 +39,7 @@ class DayScene extends Phaser.Scene{
     cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
     this.shopSign=this.add.text(W*.5,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
     this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'Click/E '+tr('counter')});
-    const sx=W*.2,sy=H*.47,sg=this.add.graphics();
+    const sx=W*.25,sy=H*.47,sg=this.add.graphics();
     sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
     sg.lineStyle(1,0x2a2040);sg.strokeRect(sx-44,sy-68,88,88);
     [0x5bc8fa,0xff7eb3,0x4dff91,0xffe566,0x9d7fe3,0xff6644].forEach((c,i)=>{
