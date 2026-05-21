@@ -8,6 +8,7 @@ G.bStk=function(k,c,id){
   G.gold-=c;
   if(id&&G.stk[k])G.stk[k][id]=(G.stk[k][id]||0)+1;
   else G.stk[k]=(G.stk[k]||0)+1;
+  if(G.phase==='day')G.dayBought=(G.dayBought||0)+1;
   const f=id&&filDef(k,id);
   SFX.coin();showNotif('✅ '+(f?f.n:k)+' comprado. $'+G.gold,'money');
   document.getElementById('hg').textContent=G.gold;
@@ -180,6 +181,7 @@ G.buyConsumable=function(id){
   if(G.gold<it.c){showNotif(tr('noFunds'),'error');return;}
   ensureConsumables();
   G.gold-=it.c;G.cons[id]=(G.cons[id]||0)+1;
+  if(G.phase==='day')G.dayBought=(G.dayBought||0)+1;
   SFX.coin();showNotif(it.n+' +1','money');
   document.getElementById('hg').textContent=G.gold;
   doSave(G);

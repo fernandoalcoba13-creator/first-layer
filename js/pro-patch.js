@@ -39,7 +39,7 @@
         ?[
           {txt:es?'Atender al primer cliente':'Serve the first client',done:(G.dayOrd||0)>=1},
           {txt:es?'Cargar un trabajo para la noche':'Load one job for the night',done:loaded>=1},
-          {txt:es?'Comprar repuestos o cafe si sobra caja':'Buy spares or coffee if cash allows',done:(G.stk&&G.stk.parts||0)>=3||((G.cons&&G.cons.coffee)||0)>1}
+          {txt:es?'Comprar stock si sobra caja':'Buy stock if cash allows',done:(G.dayBought||0)>=1}
         ]
         :G.day===2
         ?[
