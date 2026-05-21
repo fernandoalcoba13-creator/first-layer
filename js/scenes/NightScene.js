@@ -11,7 +11,7 @@ class NightScene extends Phaser.Scene{
     this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
     if(G.syncPrinters)G.syncPrinters();
-    this.buildWorld();this.createPlayer();this.setupKeys();
+    this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     this.schedPwr();this.schedEvs();
@@ -154,6 +154,28 @@ class NightScene extends Phaser.Scene{
       const dT=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.tZone.x,this.tZone.y);
       if(dT<90&&G.pActive&&G.pType&&G.pType.id!=='micro')this.openBk();
     });
+  }
+  setupPointer(){
+    this.input.on('pointerdown',p=>{
+      if(G.block||G.phase!=='night')return;
+      const x=p.worldX,y=p.worldY;
+      const dS=Phaser.Math.Distance.Between(x,y,this.shopZone.x,this.shopZone.y);
+      if(dS<82){G.openShop('stk');return;}
+      const dI=Phaser.Math.Distance.Between(x,y,this.invZone.x,this.invZone.y);
+      if(dI<82){G.showInventory();return;}
+      const dT=Phaser.Math.Distance.Between(x,y,this.tZone.x,this.tZone.y);
+      if(dT<95&&G.pActive&&G.pType&&G.pType.id!=='micro'){this.openBk();return;}
+      const po=this.printerAt(x,y,86);
+      if(po)this.openPrinterQueue(po);
+    });
+  }
+  printerAt(x,y,range){
+    let best=null,md=range;
+    this.pObjs.forEach(po=>{
+      const d=Phaser.Math.Distance.Between(x,y,po.px,po.py+15);
+      if(d<md){md=d;best=po;}
+    });
+    return best;
   }
   schedPwr(){
     if(G.upg.solar)return;
@@ -370,18 +392,18 @@ class NightScene extends Phaser.Scene{
     const dS=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.shopZone.x,this.shopZone.y);
     const dI=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.invZone.x,this.invZone.y);
     if(G.pActive&&dT<90&&G.pType&&G.pType.id!=='micro'){
-      this.iLbl.setVisible(true).setText('[E] Tablero!').setPosition(this.tZone.x,this.tZone.y-50);
-      sHint('[E] Restablecé el tablero!');
+      this.iLbl.setVisible(true).setText('Click/E Tablero!').setPosition(this.tZone.x,this.tZone.y-50);
+      sHint('Click o [E] tablero');
     } else if(dS<78&&!G.block){
-      this.iLbl.setVisible(true).setText('[E] '+tr('shopTitle')).setPosition(this.shopZone.x,this.shopZone.y-44);
-      sHint('[E] '+tr('buy')+' '+tr('material'));
+      this.iLbl.setVisible(true).setText('Click/E '+tr('shopTitle')).setPosition(this.shopZone.x,this.shopZone.y-44);
+      sHint('Click o [E] '+tr('buy')+' '+tr('material'));
     } else if(dI<78&&!G.block){
-      this.iLbl.setVisible(true).setText('[E] '+tr('inventory')).setPosition(this.invZone.x,this.invZone.y-44);
-      sHint('[E] '+tr('inventory'));
+      this.iLbl.setVisible(true).setText('Click/E '+tr('inventory')).setPosition(this.invZone.x,this.invZone.y-44);
+      sHint('Click o [E] '+tr('inventory'));
     } else if(near&&!G.block){
       const free=!near.p.busy&&!near.p.broken&&!near.p._ev;
-      this.iLbl.setVisible(true).setText(free?'[E] '+tr('loadJob'):'[E] '+tr('interact')).setPosition(near.px,near.py-88);
-      sHint(free?'[E] '+tr('chooseJob'):'[E] '+tr('inspectPrinter'));
+      this.iLbl.setVisible(true).setText(free?'Click/E '+tr('loadJob'):'Click/E '+tr('interact')).setPosition(near.px,near.py-88);
+      sHint(free?'Click o [E] '+tr('chooseJob'):'Click o [E] '+tr('inspectPrinter'));
     } else {
       this.iLbl.setVisible(false);
     }

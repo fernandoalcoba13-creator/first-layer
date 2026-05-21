@@ -12,7 +12,7 @@ class DayScene extends Phaser.Scene{
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
-    this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();
+    this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadClientAssetsAsync(this);
@@ -23,7 +23,7 @@ class DayScene extends Phaser.Scene{
     document.getElementById('ptag').textContent='☀️ '+tr('day')+' '+G.day;
     document.getElementById('hday').textContent='📅 '+tr('dayDyn')+' '+G.day;
     updateMarket();this.applyDayMod();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
-    sHint('WASD | E=interactuar');
+    sHint('Click objetos | WASD + E');
     doSave(G);
   }
   initPrinters(){
@@ -38,7 +38,7 @@ class DayScene extends Phaser.Scene{
     cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
     cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
     this.shopSign=this.add.text(W*.5,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-    this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'[E] '+tr('counter')});
+    this.IA.push({x:W*.5,y:cY,type:'Click/E '+tr('counter')});
     const sx=W*.1,sy=H*.47,sg=this.add.graphics();
     sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
     sg.lineStyle(1,0x2a2040);sg.strokeRect(sx-44,sy-68,88,88);
@@ -47,14 +47,14 @@ class DayScene extends Phaser.Scene{
       sg.fillStyle(c,.8);sg.fillCircle(x,y,9);sg.fillStyle(0x07060f);sg.fillCircle(x,y,4);
     });
     this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
-    this.IA.push({x:sx,y:sy,type:'stock',lbl:'[E] '+tr('stockTitle')});
+    this.IA.push({x:sx,y:sy,type:'Click/E '+tr('stockTitle')});
     const ux=W*.32,uy=H*.31,ug=this.add.graphics();
     ug.fillStyle(0x0c180c);ug.fillRect(ux-40,uy-28,80,52);
     ug.lineStyle(1,0x2a4a2a);ug.strokeRect(ux-40,uy-28,80,52);
     this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#4dff91',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
-    this.IA.push({x:ux,y:uy,type:'shop',lbl:'[E] '+tr('shopTitle')});
+    this.IA.push({x:ux,y:uy,type:'Click/E '+tr('shopTitle')});
     const tx=W*.06,ty=H*.35;this.tblG=this.add.graphics();this.drawTbl(false);
-    this.IA.push({x:tx,y:ty,type:'tab',lbl:'[E] '+tr('boardTitle')});
+    this.IA.push({x:tx,y:ty,type:'Click/E '+tr('boardTitle')});
     const paG=this.add.graphics();
     paG.fillStyle(0x0a0818);paG.fillRect(W*.56,H*.18,W*.43,H*.44);
     paG.lineStyle(1,0x1a1628);paG.strokeRect(W*.56,H*.18,W*.43,H*.44);
@@ -67,11 +67,11 @@ class DayScene extends Phaser.Scene{
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
       this.pGfx.push({g:pg,sp,lt,px,py});
     }
-    this.IA.push({x:W*.77,y:H*.49,type:'printers',lbl:'[E] '+tr('printerTitle')});
+    this.IA.push({x:W*.77,y:H*.49,type:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
       if(p.locked)return;
       const px=W*.6+i*psp+psp/2;
-      this.IA.push({x:px,y:H*.49,type:'printer',pid:i,lbl:'[E] P'+(i+1)+' '+tr('loadJob')});
+      this.IA.push({x:px,y:H*.49,type:'Click/E P'+(i+1)+' '+tr('loadJob')});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
@@ -96,6 +96,16 @@ class DayScene extends Phaser.Scene{
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
     this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
+  }
+  setupPointer(){
+    this.input.on('pointerdown',p=>{
+      if(this.dlgOpen||G.block||G.phase!=='day')return;
+      const x=p.worldX,y=p.worldY;
+      const c=this.clientAt(x,y,78);
+      if(c){this.openCounter(c);return;}
+      const it=this.interactiveAt(x,y,86);
+      if(it)this.interact(it);
+    });
   }
   checkStory(){
     const e=STORY.find(s=>s.day===G.day&&(BETA_DAYS[G.day]||G.day>G.ss));
@@ -197,6 +207,23 @@ class DayScene extends Phaser.Scene{
       if(c.served||c.walk)return;
       const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,c.ct.x,c.ct.y);
       if(d<md){md=d;best=c;}
+    });
+    return best;
+  }
+  clientAt(x,y,range){
+    let best=null,md=range;
+    this.clients.forEach(c=>{
+      if(c.served||c.walk)return;
+      const d=Phaser.Math.Distance.Between(x,y,c.ct.x,c.ct.y);
+      if(d<md){md=d;best=c;}
+    });
+    return best;
+  }
+  interactiveAt(x,y,range){
+    let best=null,md=range;
+    this.IA.forEach(it=>{
+      const d=Phaser.Math.Distance.Between(x,y,it.x,it.y);
+      if(d<md){md=d;best=it;}
     });
     return best;
   }
@@ -394,7 +421,7 @@ class DayScene extends Phaser.Scene{
     if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
     const cNear=this.nearestClient();
     this.nearClient=cNear;
-    let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'[E] '+cNear.cl.n}:null,md=cNear?0:88;
+    let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'Click/E '+cNear.cl.n}:null,md=cNear?0:88;
     this.IA.forEach(it=>{
       const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,it.x,it.y);
       if(d<md){md=d;near=it;}
@@ -403,9 +430,9 @@ class DayScene extends Phaser.Scene{
     if(near){
       const pulse=.55+.35*Math.sin(this.time.now/120);
       this.iLbl.setVisible(true).setAlpha(.72+pulse*.28).setScale(1+pulse*.05).setText(near.lbl).setPosition(near.x,near.y-42);
-      sHint(near.type==='client'?'A/N/R | Esc':'[E] Interactuar');
+      sHint(near.type==='client'?'Click botones | A/N/R | Esc':'Click o [E]');
     }
-    else{this.iLbl.setVisible(false);sHint('WASD | E');}
+    else{this.iLbl.setVisible(false);sHint('Click objetos | WASD + E');}
     this.cTimer+=dt;if(this.cTimer>=this.cInt){this.cTimer=0;this.spawn();}
     this.clients.forEach(c=>{
       if(c.served||c.walk)return;
