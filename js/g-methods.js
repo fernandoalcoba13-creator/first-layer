@@ -115,7 +115,7 @@ G.syncPrinters=function(){
     G.printers[i].locked=i>=G.pCount;
   }
 };
-G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;setTimeout(()=>focusPanelFirst('#shop .st.on,#shop .st,#sg .si:not(.sb):not(.sl),#shop .shopClose'),0);};
+G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;setTimeout(()=>focusPanelFirst('#shop .st.on,#shop .st,#sg .si:not(.sb),#shop .shopClose'),0);};
 G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(!betaShopAllows('upg',id)){showNotif('🔒 '+tr('lockedToday'),'info');return;}if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
 G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(!betaShopAllows('emp',id)){showNotif('🔒 '+tr('lockedToday'),'info');return;}if(G.gold<e.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' OK');doSave(G);G.tab('emp');};
 G.cShop=function(){

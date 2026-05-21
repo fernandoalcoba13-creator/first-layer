@@ -154,7 +154,7 @@ function handlePanelKeys(panelId,sel,k,e,cols){
 function handleShopKeys(k,e){
   if(!isShown('shop'))return false;
   const tabs=focusableItems('#shop .st');
-  const cards=focusableItems('#sg .si:not(.sb):not(.sl)');
+  const cards=focusableItems('#sg .si:not(.sb)');
   const close=focusableItems('#shop .shopClose');
   const active=document.activeElement;
   if(k==='arrowleft'||k==='arrowright'){

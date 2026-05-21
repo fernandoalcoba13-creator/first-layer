@@ -397,6 +397,11 @@ class DayScene extends Phaser.Scene{
     this.timer-=dt;if(this.timer<=0){this.endDay();return;}
     const pct=this.timer/this.dur;
     if(pct<.2)document.getElementById('htf').style.background='#ff4d6a';
+    if(G.day===1&&!this.cheapStockTip&&pct<.18){
+      this.cheapStockTip=true;
+      showNotif(tr('cheapPlaRisk'),'info');
+      sLog('💡 '+tr('cheapPlaRisk'));
+    }
     const nt=pct<.15;
     if(nt!==this.tired){this.tired=nt;drawPlayer(this.pGr,false,nt);}
     const k=this.keys;let vx=0,vy=0;const spd=energySpeed();
