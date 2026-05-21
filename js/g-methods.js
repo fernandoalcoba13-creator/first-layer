@@ -154,10 +154,8 @@ G.useConsumable=function(id){
   const names={coffee:tr('coffee'),bar:tr('bar'),cleaner:tr('cleaner')};
   if((G.cons[id]||0)<=0){showNotif((G.lang==='en'?'No ':'Sin ')+names[id],'error');return;}
   if(id==='coffee'){
-    if(G.energy>92){showNotif(tr('almostFullEnergy'),'info');return;}
-    G.cons.coffee--;G.energy=Math.min(100,G.energy+30);
-    SFX.up();showNotif(tr('coffee')+' +30 '+tr('energy'),'success');
-    updateMateHUD();
+    if(G.mateActive){showNotif(tr('alreadyTurbo'),'info');return;}
+    G.cons.coffee--;startTurbo(12000,30,'☕ '+tr('coffee')+' +30 '+tr('energy')+' | TURBO');
   } else if(id==='bar'){
     G.cons.bar--;G.energy=Math.min(100,G.energy+20);G.stress=Math.max(0,(G.stress||0)-8);
     SFX.up();showNotif(tr('bar')+' +20 '+tr('energy')+', -8 '+tr('stress'),'success');

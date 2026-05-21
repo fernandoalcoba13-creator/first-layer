@@ -11,7 +11,7 @@ const G={gold:500,rep:50,day:1,lang:'es',makerName:'',shopName:'',phase:'day',st
   get sMult(){return 1+(this.upg.speed1?0.3:0)+(this.upg.speed2?0.3:0);},
   get pMult(){return 1+(this.upg.qual?0.25:0)+(this.emp.caro2?0.15:0);},
   // Mate / Energy
-  energy:100, mateActive:false, mateTimer:0,
+  energy:100, mateActive:false, mateTimer:0, turboMax:0,
   mateCount:3, // mates disponibles por dia
   // Mercado de filamento
   market:{pla:{base:75,cur:75,trend:0},petg:{base:100,cur:100,trend:0},resin:{base:140,cur:140,trend:0},parts:{base:55,cur:55,trend:0}}

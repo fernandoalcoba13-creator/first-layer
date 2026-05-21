@@ -141,6 +141,9 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 .mbg{flex:1;height:5px;background:#0d0a1a;border:1px solid #1a1628;}
 .mfill{height:100%;background:linear-gradient(90deg,#4dff91,#00e5c8);transition:width .4s;}
 .mfill.en{background:linear-gradient(90deg,#ffb347,#ff4d00);}
+.tbg{height:3px;background:#1a1008;margin-top:3px;display:none;}
+.tbg.on{display:block;}
+.tfill{height:100%;background:#ffb347;box-shadow:0 0 8px rgba(255,179,71,.55);transition:width .08s linear;}
 #mhot{font-size:9px;color:#ffb347;text-align:center;display:none;}
 #mhot.on{display:block;animation:blink .4s infinite;}
 #mkt{position:absolute;top:110px;right:10px;background:#0a0816;border:2px solid #ffb347;padding:8px 11px;min-width:140px;pointer-events:none;opacity:0;transition:opacity .4s;z-index:8;}

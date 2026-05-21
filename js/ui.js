@@ -53,6 +53,8 @@ function updateMateHUD(){
   document.getElementById('mfill').style.width=pct+'%';
   document.getElementById('mval').textContent=(G.mateActive?'⚡ TURBO':'🧉 '+G.mateCount)+' | '+Math.round(pct)+'%';
   document.getElementById('mfill').className='mfill'+(G.mateActive?' en':'');
+  const tb=document.querySelector('#mbar .tbg'),tf=document.getElementById('tfill');
+  if(tb&&tf){tb.className='tbg'+(G.mateActive?' on':'');tf.style.width=G.mateActive&&G.turboMax?Math.max(0,Math.min(100,G.mateTimer/G.turboMax*100))+'%':'0%';}
   document.getElementById('mhot').className=G.mateActive?'on':'';
   // Color warning
   if(pct<30)document.getElementById('mbar').style.borderColor='#ff4d6a';
@@ -62,15 +64,18 @@ function updateMateHUD(){
 function energySpeed(){
   const pct=Phaser.Math.Clamp(G.energy||0,0,100);
   const base=.45+pct*.0085;
-  return G.mateActive?base*1.12:base;
+  return G.mateActive?base*1.3:base;
+}
+function startTurbo(ms,energyGain,label){
+  G.mateActive=true;G.turboMax=ms;G.mateTimer=Math.max(G.mateTimer||0,ms);
+  G.energy=Math.min(100,G.energy+energyGain);
+  SFX.up();showNotif(label,'success');updateMateHUD();
 }
 G.tomarMate=function(){
   if(G.mateActive){showNotif('🧉 '+tr('alreadyTurbo'),'info');return;}
   if(G.mateCount<=0){showNotif('😔 '+tr('noMate'),'error');return;}
   if(G.energy>85){showNotif('😎 '+tr('enoughEnergy'),'info');return;}
-  G.mateCount--;G.mateActive=true;G.mateTimer=30000;G.energy=Math.min(100,G.energy+40);
-  SFX.up();showNotif('🧉 '+tr('mateTaken'),'success');
-  updateMateHUD();
+  G.mateCount--;startTurbo(30000,40,'🧉 '+tr('mateTaken'));
 };
 function tickMate(dt){
   if(!G.mateActive){
@@ -78,7 +83,8 @@ function tickMate(dt){
     if(G.phase==='day')G.energy=Math.max(0,G.energy-.008*dt/1000*100);
   } else {
     G.mateTimer-=dt;
-    if(G.mateTimer<=0){G.mateActive=false;G.mateTimer=0;showNotif('☕ '+tr('normalPace'),'info');}
+    if(G.phase==='day')G.energy=Math.max(0,G.energy-.012*dt/1000*100);
+    if(G.mateTimer<=0||G.energy<=5){G.mateActive=false;G.mateTimer=0;G.turboMax=0;showNotif('☕ '+tr('normalPace'),'info');}
   }
   updateMateHUD();
 }
