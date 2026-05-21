@@ -304,6 +304,12 @@ document.addEventListener('keyup',e=>{
   if(k==='alt'){G.holdNozzleInput('needle',false);e.preventDefault();}
   if(k===' '||k==='spacebar'){G.holdNozzleInput('filament',false);e.preventDefault();}
 });
+document.addEventListener('pointerup',()=>{
+  if(isShown('miniGame')&&G._mini&&G._mini.type==='nozzle'){
+    G.holdNozzleInput('needle',false);
+    G.holdNozzleInput('filament',false);
+  }
+});
 applyLang();
 function doTrans(h,p,cb){
   const el=document.getElementById('tr');

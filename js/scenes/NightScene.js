@@ -56,7 +56,7 @@ class NightScene extends Phaser.Scene{
   openPrinterQueue(po){
     const p=po&&po.p;if(!p)return;
     if(p._ev&&!p._ev.resolved){this.showEv(p._ev);G.block=true;return;}
-    if(p.broken){showNotif('P'+(p.id+1)+': '+tr('brokenPrinter'),'error');return;}
+    if(p.broken){this.openBrokenPrinter(p);return;}
     if(p.busy){showNotif('P'+(p.id+1)+': '+p.order.pr.e+' '+p.order.pr.n+' - '+Math.round(p.progress*100)+'%');return;}
     const queued=G.orders.filter(o=>!G.printers.some(x=>x.order===o));
     if(!queued.length){showNotif(tr('noPendingJobs'),'info');return;}
@@ -69,6 +69,25 @@ class NightScene extends Phaser.Scene{
     ).join('');
     document.getElementById('sto').style.display='block';
     setTimeout(()=>focusPanelFirst('#stoActions .eb'),0);
+  }
+  manualRepairCost(p){return 120+G.day*25+(p&&p.order?35:0);}
+  openBrokenPrinter(p){
+    const cost=this.manualRepairCost(p);
+    G.block=true;
+    document.getElementById('sh').textContent='P'+(p.id+1)+' - '+tr('broken');
+    document.getElementById('stoTabs').innerHTML='';
+    document.getElementById('sp').textContent=tr('brokenPrinter')+'\n'+tr('cost')+': $'+cost;
+    document.getElementById('stoActions').innerHTML=
+      '<button class="eb fix"'+(G.gold>=cost?'':' disabled')+' onclick="game.scene.getScene(\'Night\').repairBrokenPrinter('+p.id+')">🔧 '+tr('repair')+' $'+cost+'</button>';
+    document.getElementById('sto').style.display='block';
+    setTimeout(()=>focusPanelFirst('#stoActions .eb'),0);
+  }
+  repairBrokenPrinter(id){
+    const p=G.printers[id],cost=this.manualRepairCost(p);if(!p)return;
+    if(G.gold<cost){showNotif('💸 '+tr('noFunds'),'error');return;}
+    G.gold-=cost;p.broken=false;p._ev=null;p._pau=false;if(p.order)p.busy=true;
+    G.nFixes=(G.nFixes||0)+1;G.stats.fix++;document.getElementById('hg').textContent=G.gold;
+    G.cSto();SFX.fix();showNotif('P'+(p.id+1)+' '+tr('repair')+' OK','success');this.refreshPrinterLabels();doSave(G);
   }
   buildWorld(){
     const W=this.W,H=this.H;
@@ -403,8 +422,8 @@ class NightScene extends Phaser.Scene{
       sHint('Click o [E] '+tr('inventory'));
     } else if(near&&!G.block){
       const free=!near.p.busy&&!near.p.broken&&!near.p._ev;
-      this.iLbl.setVisible(true).setText(free?'Click/E '+tr('loadJob'):'Click/E '+tr('interact')).setPosition(near.px,near.py-88);
-      sHint(free?'Click o [E] '+tr('chooseJob'):'Click o [E] '+tr('inspectPrinter'));
+      this.iLbl.setVisible(true).setText(near.p.broken?'Click/E '+tr('repair'):free?'Click/E '+tr('loadJob'):'Click/E '+tr('interact')).setPosition(near.px,near.py-88);
+      sHint(near.p.broken?'Click o [E] '+tr('repair'):free?'Click o [E] '+tr('chooseJob'):'Click o [E] '+tr('inspectPrinter'));
     } else {
       this.iLbl.setVisible(false);
     }

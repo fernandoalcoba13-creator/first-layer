@@ -88,8 +88,10 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 .mgBtns button{width:34px;height:28px;background:#0a0816;border:1px solid #2a2050;color:#ffb347;font-family:var(--pixel-font);font-size:14px;font-weight:900;cursor:pointer;pointer-events:all;}
 .mgBtns button:hover{border-color:#ffb347;background:#160e18;}
 .nozzleGame{grid-column:1/-1;display:grid;gap:10px;justify-items:center;}
+.nzPhase{color:#5bc8fa;font-size:10px;}
 .nzGauge{position:relative;width:250px;height:14px;background:#120e20;border:1px solid #2a2050;}
-.nzGauge span{position:absolute;left:42%;width:22%;top:0;bottom:0;background:rgba(77,255,145,.28);box-shadow:0 0 10px rgba(77,255,145,.25);}
+.nzGauge span{position:absolute;top:0;bottom:0;background:rgba(77,255,145,.28);box-shadow:0 0 10px rgba(77,255,145,.25);z-index:2;}
+.nzGauge b{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#5bc8fa,#ffb347);z-index:1;}
 .nzGauge i{position:absolute;top:-3px;width:4px;height:18px;background:#ffb347;box-shadow:0 0 10px rgba(255,179,71,.6);}
 .nzCut{position:relative;width:116px;height:250px;background:#090713;border:2px solid #2a2050;overflow:hidden;box-shadow:inset 0 0 30px rgba(91,200,250,.08);}
 .nzTube{position:absolute;left:47px;top:0;width:22px;height:100%;background:linear-gradient(90deg,#08162a,#5bc8fa,#08162a);border-left:2px solid #9de8ff;border-right:2px solid #9de8ff;opacity:.9;}
