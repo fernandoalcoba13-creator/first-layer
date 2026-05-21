@@ -113,7 +113,6 @@ class NightScene extends Phaser.Scene{
       const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
       this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
     });
-    this.selG=this.add.graphics().setDepth(14);
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Press Start 2P',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
   }
   refreshPrinterSprites(){
@@ -370,29 +369,23 @@ class NightScene extends Phaser.Scene{
     const dT=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.tZone.x,this.tZone.y);
     const dS=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.shopZone.x,this.shopZone.y);
     const dI=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.invZone.x,this.invZone.y);
-    let sel=null;
     if(G.pActive&&dT<90&&G.pType&&G.pType.id!=='micro'){
-      sel={x:this.tZone.x,y:this.tZone.y,r:36};
       this.iLbl.setVisible(true).setText('[E] Tablero!').setPosition(this.tZone.x,this.tZone.y-50);
       sHint('[E] Restablecé el tablero!');
     } else if(dS<78&&!G.block){
-      sel={x:this.shopZone.x,y:this.shopZone.y,r:34};
       this.iLbl.setVisible(true).setText('[E] '+tr('shopTitle')).setPosition(this.shopZone.x,this.shopZone.y-44);
       sHint('[E] '+tr('buy')+' '+tr('material'));
     } else if(dI<78&&!G.block){
-      sel={x:this.invZone.x,y:this.invZone.y,r:34};
       this.iLbl.setVisible(true).setText('[E] '+tr('inventory')).setPosition(this.invZone.x,this.invZone.y-44);
       sHint('[E] '+tr('inventory'));
     } else if(near&&!G.block){
       const free=!near.p.busy&&!near.p.broken&&!near.p._ev;
-      sel={x:near.px,y:near.py,r:40};
       this.iLbl.setVisible(true).setText(free?'[E] '+tr('loadJob'):'[E] '+tr('interact')).setPosition(near.px,near.py-88);
       sHint(free?'[E] '+tr('chooseJob'):'[E] '+tr('inspectPrinter'));
     } else {
-      this.selG.clear();
       this.iLbl.setVisible(false);
     }
-    if(sel){const pulse=.55+.35*Math.sin(this.time.now/120);this.selG.clear();this.selG.lineStyle(2,0xff4d6a,pulse);this.selG.strokeCircle(sel.x,sel.y,sel.r+Math.sin(this.time.now/160)*3);this.iLbl.setAlpha(.72+pulse*.28).setScale(1+pulse*.05);}
+    if(this.iLbl.visible){const pulse=.55+.35*Math.sin(this.time.now/120);this.iLbl.setAlpha(.72+pulse*.28).setScale(1+pulse*.05);}
     this.updateHUD();
   }
   updateHUD(){document.getElementById('hg').textContent=G.gold;document.getElementById('hr').textContent=G.rep;}

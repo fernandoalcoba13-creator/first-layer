@@ -175,7 +175,7 @@ const CL_EN_LINES={
 const MOOD_EN={Apurada:'Rushed','Técnico':'Technical',Corporativa:'Corporate',Creativa:'Creative',Influencer:'Influencer',Constructor:'Builder',Urgente:'Urgent',Académico:'Academic',Casual:'Casual',Curiosa:'Curious'};
 const TAG_EN={flexible:'flexible','apuro estetico':'rush finish','tolerancia fina':'tight tolerance',corporativo:'corporate','fan art':'fan art',creativo:'creative',viral:'viral',maqueta:'scale model','contra reloj':'against the clock',academico:'academic',simple:'simple',curiosa:'curious',normal:'normal'};
 const STORY_EN={
-  1:{ti:'🖨️ Day 1 - Opening Day',tx:'KMORRA Print Shop opens.\nToday is basic: eco PLA, a few clients, and a tutorial night.',ob:'Earn $300'},
+  1:{ti:'🖨️ Day 1 - Opening Day',tx:'The shop opens.\nToday is basic: eco PLA, a few clients, and a tutorial night.',ob:'Earn $300'},
   2:{ti:'⏱️ Day 2 - First Pressure',tx:'More jobs arrive and the first outage hits.\nAccept work, but check stock before printing.',ob:'Accept 4 orders'},
   3:{ti:'⚡ Day 3 - Breaking Point',tx:'Tonight gets heavy.\nBuy another printer to maximize production and survive with 2 machines running.',ob:'Survive with 2 printers working'}
 };

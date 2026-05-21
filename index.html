@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>KMORRA Print Shop — First Layer v6 PRO</title>
+<title>First Layer — Print Shop Beta</title>
 <link rel="stylesheet" href="styles.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/phaser/3.60.0/phaser.min.js"></script>
 </head>
 <body>
 <div id="ui">
 
-  <div id="brand">KMORRA PRINT SHOP<small>FIRST LAYER — PROTOTYPE v6</small></div>
+  <div id="brand">PRINT SHOP<small>FIRST LAYER — BETA</small></div>
   <div id="proPanel">
     <h3 id="proTitle">📋 TURNO ACTUAL</h3>
     <p id="proText">Atendé clientes, comprá stock barato y prepará la noche.</p>
@@ -20,7 +20,7 @@
   <div id="quickBtns"><button class="qbtn" id="btnSave" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" id="btnMenu" onclick="openGameMenu()">? Menú</button></div>
   <div id="titleScreen">
     <div class="tsBox">
-      <div class="tsK">KMORRA ORIGINAL GAME</div>
+      <div class="tsK">ORIGINAL GAME</div>
       <h1 class="tsTitle">PRINT SHOP</h1>
       <div class="tsSub">FIRST LAYER · 3D PRINT FARM SIMULATOR</div>
       <div class="langBtns"><button class="langBtn" data-lang="es" onclick="setLang('es')">ES</button><button class="langBtn" data-lang="en" onclick="setLang('en')">EN</button></div>
@@ -71,7 +71,7 @@
       <button class="eb skip" onclick="G.cancelMiniGame()">Abandonar</button>
     </div>
   </div>
-  <div id="shop"><div class="shopHead"><div><h2>🔧 TIENDA KMORRA</h2><p id="shopSub">Mejoras para el taller</p></div><button class="shopClose" onclick="G.cShop()">✕</button></div><div class="shopStats" id="shopStats"></div><div class="sts"><div class="st on" onclick="G.tab('up')">Upgrades</div><div class="st" onclick="G.tab('emp')">Empleados</div><div class="st" onclick="G.tab('stk')">Stock</div></div><div class="sg" id="sg"></div></div>
+  <div id="shop"><div class="shopHead"><div><h2>🔧 TIENDA</h2><p id="shopSub">Mejoras para el taller</p></div><button class="shopClose" onclick="G.cShop()">✕</button></div><div class="shopStats" id="shopStats"></div><div class="sts"><div class="st on" onclick="G.tab('up')">Upgrades</div><div class="st" onclick="G.tab('emp')">Empleados</div><div class="st" onclick="G.tab('stk')">Stock</div></div><div class="sg" id="sg"></div></div>
   <div id="sto"><h2 id="sh"></h2><div id="stoTabs"></div><p id="sp"></p><div id="stoActions"></div><button class="eb fix" onclick="G.cSto()" style="pointer-events:all">▶ Continuar</button></div>
   <div id="dayEnd">
     <div class="deBox">

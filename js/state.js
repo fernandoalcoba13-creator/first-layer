@@ -1,6 +1,6 @@
 // ═══ SAVE ═══
-// localStorage save/load. Save key: kmorra_ps3
-const SK='kmorra_ps3';
+// localStorage save/load.
+const SK='first_layer_save';
 function doSave(G){try{localStorage.setItem(SK,JSON.stringify({gold:G.gold,rep:G.rep,day:G.day,upg:G.upg,emp:G.emp,stk:G.stk,cons:G.cons,orders:G.orders,ss:G.ss,stats:G.stats,lang:G.lang}));const e=document.getElementById('sv');e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}catch(e){}}
 function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null;}catch(e){return null;}}
 

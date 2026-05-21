@@ -72,7 +72,7 @@ first-layer/
 ## Coding conventions
 
 - Single global object `G` holds game state
-- Save key: `kmorra_ps3` in localStorage
+- Save key: `first_layer_save` in localStorage
 - Phaser scenes: `DayScene`, `NightScene`
 - UI in HTML/CSS (overlay), game world in Phaser canvas
 - Procedural graphics in `js/draw.js` will be progressively retired as sprite assets arrive

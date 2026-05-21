@@ -37,7 +37,7 @@ class DayScene extends Phaser.Scene{
     cg.fillStyle(0x28200e);cg.fillRect(W*.23,cY,W*.54,32);
     cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
     cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
-    this.add.text(W*.5,cY+9,'🖨️  KMORRA PRINT SHOP  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
+    this.add.text(W*.5,cY+9,'🖨️  PRINT SHOP  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
     this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'[E] '+tr('counter')});
     const sx=W*.1,sy=H*.47,sg=this.add.graphics();
     sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
@@ -73,7 +73,6 @@ class DayScene extends Phaser.Scene{
       const px=W*.6+i*psp+psp/2;
       this.IA.push({x:px,y:H*.49,type:'printer',pid:i,lbl:'[E] P'+(i+1)+' '+tr('loadJob')});
     });
-    this.selG=this.add.graphics().setDepth(19);
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
   drawTbl(pwr){
@@ -402,11 +401,10 @@ class DayScene extends Phaser.Scene{
     this.near=near;
     if(near){
       const pulse=.55+.35*Math.sin(this.time.now/120);
-      this.selG.clear();this.selG.lineStyle(2,0xffb347,pulse);this.selG.strokeCircle(near.x,near.y,34+Math.sin(this.time.now/160)*3);
       this.iLbl.setVisible(true).setAlpha(.72+pulse*.28).setScale(1+pulse*.05).setText(near.lbl).setPosition(near.x,near.y-42);
       sHint(near.type==='client'?'A/N/R | Esc':'[E] Interactuar');
     }
-    else{this.selG.clear();this.iLbl.setVisible(false);sHint('WASD | E');}
+    else{this.iLbl.setVisible(false);sHint('WASD | E');}
     this.cTimer+=dt;if(this.cTimer>=this.cInt){this.cTimer=0;this.spawn();}
     this.clients.forEach(c=>{
       if(c.served||c.walk)return;

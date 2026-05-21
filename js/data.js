@@ -31,17 +31,17 @@ const PR=[
 const FILAMENTS={
   pla:[
     {id:'eco',n:'K-PLA Barrio',tier:'Eco',tierEn:'Eco',q:1,base:55,risk:.08,clog:.18,rep:-1,de:'Barato, tapa mas.',deEn:'Cheap, clogs more.'},
-    {id:'std',n:'Morratek PLA+',tier:'Taller',tierEn:'Workshop',q:2,base:78,risk:.02,clog:.06,rep:0,de:'Parejo y rendidor.',deEn:'Steady daily stock.'},
+    {id:'std',n:'PrintLab PLA+',tier:'Taller',tierEn:'Workshop',q:2,base:78,risk:.02,clog:.06,rep:0,de:'Parejo y rendidor.',deEn:'Steady daily stock.'},
     {id:'pro',n:'ProtoLux Silk',tier:'Pro',tierEn:'Pro',q:3,base:112,risk:-.03,clog:.02,rep:1,de:'Brillo y bajo riesgo.',deEn:'Glossy, low risk.'}
   ],
   petg:[
     {id:'eco',n:'PET-G Forja',tier:'Eco',tierEn:'Eco',q:1,base:85,risk:.07,clog:.12,rep:-1,de:'Duro, algo sucio.',deEn:'Strong, a bit dirty.'},
-    {id:'std',n:'Morratek PETG+',tier:'Taller',tierEn:'Workshop',q:2,base:115,risk:.025,clog:.05,rep:0,de:'Firme y estable.',deEn:'Firm and stable.'},
+    {id:'std',n:'ForgePETG+',tier:'Taller',tierEn:'Workshop',q:2,base:115,risk:.025,clog:.05,rep:0,de:'Firme y estable.',deEn:'Firm and stable.'},
     {id:'pro',n:'FiberMax Tough',tier:'Pro',tierEn:'Pro',q:3,base:155,risk:-.025,clog:.015,rep:1,de:'Tecnico confiable.',deEn:'Reliable technical stock.'}
   ],
   resin:[
     {id:'basic',n:'K-Resin Basic',tier:'Eco',tierEn:'Eco',q:1,base:120,risk:.05,clog:.03,rep:-1,de:'Detalle justo.',deEn:'Basic detail.'},
-    {id:'std',n:'MorraRes Detail',tier:'Detalle',tierEn:'Detail',q:2,base:155,risk:.015,clog:.01,rep:0,de:'Buen acabado.',deEn:'Clean finish.'},
+    {id:'std',n:'ClearRes Detail',tier:'Detalle',tierEn:'Detail',q:2,base:155,risk:.015,clog:.01,rep:0,de:'Buen acabado.',deEn:'Clean finish.'},
     {id:'pro',n:'CrystalForge Pro',tier:'Pro',tierEn:'Pro',q:3,base:205,risk:-.02,clog:0,rep:1,de:'Alta precision.',deEn:'High precision.'}
   ]
 };
@@ -96,7 +96,7 @@ const EMP=[
   {id:'diego2',n:'Diego (Técnico Full)',de:'Supervisa noche solo',co:800,sal:150,ic:'🔧'},
 ];
 const STORY=[
-  {day:1,ti:'🖨️ Día 1 — La apertura',tx:'Abrís KMORRA Print Shop.\nHoy todo es básico: PLA eco, pocos clientes y una noche tutorial.',ob:'Ganá $300'},
+  {day:1,ti:'🖨️ Día 1 — La apertura',tx:'Abrís el taller.\nHoy todo es básico: PLA eco, pocos clientes y una noche tutorial.',ob:'Ganá $300'},
   {day:2,ti:'⏱️ Día 2 — Primera presión',tx:'Llegan más pedidos y aparece el primer corte.\nAceptá trabajo, pero mirá el stock antes de imprimir.',ob:'Aceptá 4 pedidos'},
   {day:3,ti:'⚡ Día 3 — El quiebre',tx:'La noche se pone pesada.\nComprá otra impresora para maximizar producción y sobrevivir con 2 máquinas andando.',ob:'Sobreviví con 2 impresoras funcionando'},
 ];

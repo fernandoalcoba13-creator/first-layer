@@ -1,4 +1,4 @@
-// ═══ KMORRA PRO PATCH v6 ═══
+// ═══ PRO PATCH v6 ═══
 // Non-invasive UI layer: title screen, side risk panel, pulse warnings.
 // Wraps showNotif to refresh proPanel on every notification.
 (function(){
