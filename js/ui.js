@@ -97,7 +97,7 @@ function setGameMenu(open){
   if(open){const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)maker.value=G.makerName||'';if(shop)shop.value=G.shopName||'';setTimeout(()=>focusPanelFirst('#titleScreen .makerInput,#titleScreen .tsBtn,#titleScreen .langBtn'),0);}
 }
 function openGameMenu(){setGameMenu(true);}
-function closeGameMenu(){const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)G.makerName=maker.value.trim().slice(0,18);if(shop)G.shopName=shop.value.trim().slice(0,22);const obj=document.getElementById('obj');if(obj)obj.textContent=makerDisplayName()+' · '+shopDisplayName();const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=shopDisplayName();doSave(G);setGameMenu(false);SFX.ok();}
+function closeGameMenu(){const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)G.makerName=maker.value.trim().slice(0,18);if(shop)G.shopName=shop.value.trim().slice(0,22);const obj=document.getElementById('obj');if(obj)obj.textContent=makerDisplayName()+' · '+shopDisplayName();const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=G.shopName?shopDisplayName():gameTitle();doSave(G);setGameMenu(false);SFX.ok();}
 function clickButton(sel,idx=0){
   const list=[...document.querySelectorAll(sel)].filter(b=>!b.disabled&&b.offsetParent!==null);
   if(list[idx]){list[idx].click();return true;}

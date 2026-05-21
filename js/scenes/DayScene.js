@@ -111,7 +111,7 @@ class DayScene extends Phaser.Scene{
   checkStory(){
     const e=STORY.find(s=>s.day===G.day&&(BETA_DAYS[G.day]||G.day>G.ss));
     if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>{const st=storyText(e);G.showSto(st.ti,st.tx,st.ob);});}
-    const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=shopDisplayName();
+    const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=G.shopName?shopDisplayName():gameTitle();
     document.getElementById('obj').textContent=makerDisplayName()+' · '+shopDisplayName();
   }
   applyDayMod(){

@@ -69,7 +69,8 @@ function prepareOrderMaterial(o){
 }
 function repPriceMult(){return Phaser.Math.Clamp(.78+(G.rep||0)*.0044,.78,1.24);}
 function repPatienceMult(){return Phaser.Math.Clamp(.82+(G.rep||0)*.0036,.82,1.18);}
-function shopDisplayName(){return (G.shopName||'Print Shop').trim()||'Print Shop';}
+function gameTitle(){return 'First Layer';}
+function shopDisplayName(){return (G.shopName||(G.lang==='en'?'Workshop':'Taller')).trim()||(G.lang==='en'?'Workshop':'Taller');}
 function makerDisplayName(){return (G.makerName||'Maker').trim()||'Maker';}
 function spendFilament(mat,id,units){if(!G.stk[mat]||!G.stk[mat][id]||G.stk[mat][id]<units)return false;G.stk[mat][id]-=units;return true;}
 (()=>{const s=loadSave();if(s){['gold','rep','day','makerName','shopName','upg','emp','stk','cons','orders','ss','stats','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}if(G.day>3){G.day=1;G.orders=[];G.ss=0;}ensureStockShape();ensureConsumables();if(!Array.isArray(G.orders))G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();

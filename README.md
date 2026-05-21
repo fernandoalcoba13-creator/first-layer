@@ -1,6 +1,6 @@
 # First Layer
 
-2D pixel art print shop management game. Inspirado en Dave the Diver — el jugador administra un local de impresión 3D: atiende clientes de día, supervisa impresoras y resuelve fallas de noche.
+2D pixel art game sobre gestionar un taller de impresión 3D. Inspirado en Dave the Diver: el jugador atiende clientes de día, supervisa impresoras y resuelve fallas de noche.
 
 ## Stack
 
