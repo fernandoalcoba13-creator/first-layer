@@ -123,16 +123,16 @@ function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;
   setupPrinterAnims(scene);
   const sp=scene.add.sprite(x,y+38,PRINTER_ASSET,0).setOrigin(.5,1).setScale(3).setDepth(3);
-  sp.play('printer_idle');
   return sp;
 }
 function setPrinterSpriteState(sp,p){
   if(!sp)return;
-  let key='printer_idle';
-  if(p&&p.broken)key='printer_fail';
-  else if(p&&p._ev&&p._ev.id==='run')key='printer_out_filament';
+  let key=null;
+  if(p&&p._ev&&p._ev.id==='run')key='printer_out_filament';
   else if(p&&p._ev)key='printer_fail';
   else if(p&&p.busy&&!p._pau)key='printer_working';
+  else if(p&&p.broken)key='printer_fail';
+  if(!key){if(sp.anims)sp.anims.stop();sp.setTexture(PRINTER_ASSET,0);return;}
   if(sp.anims&&sp.anims.currentAnim&&sp.anims.currentAnim.key===key)return;
   sp.play(key,true);
 }

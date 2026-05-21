@@ -2,11 +2,11 @@
 // Phaser.Game instantiation. Last script to load.
 const game=new Phaser.Game({
   type:Phaser.CANVAS,
-  width:Math.min(window.innerWidth,940),
-  height:Math.min(window.innerHeight,610),
+  width:window.innerWidth,
+  height:window.innerHeight,
   backgroundColor:'#07060f',
   scene:[DayScene,NightScene],
   loader:{imageLoadType:'HTMLImageElement'},
-  scale:{mode:Phaser.Scale.FIT,autoCenter:Phaser.Scale.CENTER_BOTH},
+  scale:{mode:Phaser.Scale.RESIZE,autoCenter:Phaser.Scale.CENTER_BOTH},
   render:{pixelArt:true,antialias:false}
 });

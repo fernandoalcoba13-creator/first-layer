@@ -243,7 +243,12 @@ G.tab=function(t){
       });
     });
     if(betaShopAllows('parts',''))items.push({mat:'parts',f:{id:'',n:tr('partsName'),de:tr('partsDesc'),q:2},c:G.market.parts.cur,ic:'🔩'});
-    s.innerHTML=items.map(o=>G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.tier?tr('tier')+' '+filTier(o.f)+' | '+tr('stock')+' '+(G.stk[o.mat][o.f.id]||0)+' | '+tr('risk')+' '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+filDesc(o.f):tr('stock')+' '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,can:G.gold>=o.c,locked:false,attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
-    s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]');if(d){G.bStk(d.dataset.stk,Number(d.dataset.cost),d.dataset.id);G.tab('stk');}});
+    if(betaShopAllows('cons','coffee'))items.push({cons:'coffee',ic:'☕',n:tr('coffee'),de:tr('coffeeDesc'),c:45});
+    if(betaShopAllows('cons','bar'))items.push({cons:'bar',ic:'🍫',n:tr('bar'),de:tr('barDesc'),c:35});
+    if(betaShopAllows('cons','cleaner'))items.push({cons:'cleaner',ic:'🧽',n:tr('cleaner'),de:tr('cleanerDesc'),c:70});
+    s.innerHTML=items.map(o=>o.cons
+      ?G.shopCard({icon:o.ic,name:o.n,desc:o.de,cost:o.c,done:false,can:G.gold>=o.c,locked:false,attr:'data-cons="'+o.cons+'"'})
+      :G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.tier?tr('tier')+' '+filTier(o.f)+' | '+tr('stock')+' '+(G.stk[o.mat][o.f.id]||0)+' | '+tr('risk')+' '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+filDesc(o.f):tr('stock')+' '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,can:G.gold>=o.c,locked:false,attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
+    s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]'),c=e.target.closest('[data-cons]');if(d){G.bStk(d.dataset.stk,Number(d.dataset.cost),d.dataset.id);G.tab('stk');}else if(c){G.buyConsumable(c.dataset.cons);G.tab('stk');}});
   }
 };

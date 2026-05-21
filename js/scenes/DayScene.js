@@ -67,7 +67,12 @@ class DayScene extends Phaser.Scene{
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
       this.pGfx.push({g:pg,sp,lt,px,py});
     }
-    this.IA.push({x:W*.77,y:H*.38,type:'printers',lbl:'[E] '+tr('printerTitle')});
+    this.IA.push({x:W*.77,y:H*.49,type:'printers',lbl:'[E] '+tr('printerTitle')});
+    G.printers.forEach((p,i)=>{
+      if(p.locked)return;
+      const px=W*.6+i*psp+psp/2;
+      this.IA.push({x:px,y:H*.49,type:'printer',pid:i,lbl:'[E] P'+(i+1)+' '+tr('loadJob')});
+    });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
   drawTbl(pwr){
@@ -227,6 +232,7 @@ class DayScene extends Phaser.Scene{
     SFX.step();
     if(t.type==='client')this.openCounter(t.client);
     else if(t.type==='counter')this.openCounter();
+    else if(t.type==='printer')this.openPrinterQueue(G.printers[t.pid]);
     else if(t.type==='printers')this.openPrinters();
     else if(t.type==='stock')this.openStock();
     else if(t.type==='shop')G.openShop();
@@ -307,6 +313,7 @@ class DayScene extends Phaser.Scene{
        {lb:'🧵 '+petg.n+' $'+pt+(pt<petg.base?' 🔥':''),cb:()=>{G.bStk('petg',pt,petg.id);cDlg();this.openStock();}},
        {lb:'🧪 '+res.n+' $'+rr+(rr<res.base?' 🔥':''),cb:()=>{G.bStk('resin',rr,res.id);cDlg();this.openStock();}},
        {lb:'🔩 '+tr('parts')+' $'+pr,cb:()=>{G.bStk('parts',pr);cDlg();this.openStock();}},
+       {lb:'☕ '+tr('coffee')+' $45',cb:()=>{G.buyConsumable('coffee');cDlg();this.openStock();}},
        {lb:'🧉 '+tr('mateBuy')+' $80 (x'+G.mateCount+')',cb:()=>{if(G.gold<80){showNotif('💸 '+tr('noFunds'),'error');return;}G.gold-=80;G.mateCount++;SFX.coin();showNotif('🧉 '+tr('mateBuy')+' +1','success');cDlg();this.openStock();}},
        {lb:tr('close'),cb:()=>cDlg()}]);
   }
