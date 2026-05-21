@@ -11,6 +11,7 @@ class NightScene extends Phaser.Scene{
     this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.2,y:this.H*.42};
     if(G.syncPrinters)G.syncPrinters();
+    G.printers.forEach(p=>{if(p.order&&!p.broken&&!p.locked){p.busy=true;p._dayLoaded=false;}});
     this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());

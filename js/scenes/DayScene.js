@@ -312,9 +312,9 @@ class DayScene extends Phaser.Scene{
       showNotif(trf('missingOrder',{mat:o.material,units:o.units})+' - '+o.pr.n,'error');
       return false;
     }
-    p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
+    p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;p._dayLoaded=true;
     doSave(G);SFX.ok();G.cSto();
-    showNotif('P'+(p.id+1)+' '+tr('prints')+' '+o.pr.e+' '+o.pr.n,'success');
+    showNotif('P'+(p.id+1)+' '+tr('loaded')+' '+o.pr.e+' '+o.pr.n,'success');
     sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
     return true;
   }
@@ -373,17 +373,16 @@ class DayScene extends Phaser.Scene{
   updatePrinters(dt){
     G.printers.forEach(p=>{
       if(!p.busy||p.broken||p._ev||p._pau)return;
-      p.progress+=dt/1000*G.sMult/(p.order?(p.order.time||p.order.pr.t)*9:100);
-      if(p.progress>=1){p.progress=1;this.completePrint(p);}
+      p.progress=0;
     });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
       const c=p.order?p.order.pr.c:0x5bc8fa;
-      if(pg.sp)setPrinterSpriteState(pg.sp,p);
-      else drawPrinter(pg.g,p.busy,p.broken,p.progress,c);
+      if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:false});
+      else drawPrinter(pg.g,false,p.broken,p.progress,c);
       if(p.locked)pg.lt.setText('🔒').setColor('#222244');
       else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
-      else if(p.busy)pg.lt.setText(p.order.pr.e+' '+Math.round(p.progress*100)+'%').setColor('#5bc8fa');
+      else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
       else pg.lt.setText('LIBRE').setColor('#2a2050');
     });
   }
