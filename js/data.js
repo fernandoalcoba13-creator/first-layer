@@ -2,17 +2,17 @@
 // Static game data. Globals: CL (clients), PR (products), NE (night events / failures),
 // PE (power events / outages), UPG (upgrades), EMP (employees), STORY (story beats).
 const CL=[
-  {id:'marcos',n:'Marcos',e:'😎',c:0x4466ff,m:'Chill',pat:26,gr:.9,d:['Dale, mandámelo cuando puedas.','¿Le ponemos mi logo?'],ac:'Buena onda.',rf:'Okey.',dn:'¡Quedó épico!'},
+  {id:'marcos',n:'Marcos',e:'😎',c:0x4466ff,m:'Chill',pat:26,gr:.9,d:['Dale, mandámelo cuando puedas.','¿Le ponemos el logo de {shop}?'],ac:'Buena onda.',rf:'Okey.',dn:'¡Quedó épico!'},
   {id:'sofi',n:'Sofi',e:'🌸',c:0xff66aa,m:'Apurada',pat:13,gr:1.15,d:['¡Lo necesito para mañana!','¿Tenés colores más lindos?'],ac:'Perfecto.',rf:'Me dejás mal...',dn:'¡Por fin!'},
   {id:'diego',n:'Diego',e:'🔧',c:0x44aaff,m:'Técnico',pat:22,gr:1.05,d:['Tolerancia ±0.1mm.','¿Qué material recomendás?'],ac:'No me falles.',rf:'Me decepcionás.',dn:'Exacto.'},
   {id:'valeria',n:'Valeria',e:'💼',c:0xffaa44,m:'Corporativa',pat:18,gr:1.2,d:['Presentación corporativa.','¿Descuento por volumen?'],ac:'Excelente.',rf:'Buscaré otra opción.',dn:'Impecable.'},
-  {id:'nico',n:'Nico',e:'🎮',c:0x44ff88,m:'Gamer',pat:24,gr:.85,d:['Igual que en el juego.','¡Sos un crack!'],ac:'¡Lo más!',rf:'Ugh...',dn:'¡ÉPICO!'},
+  {id:'nico',n:'Nico',e:'🎮',c:0x44ff88,m:'Gamer',pat:24,gr:.85,d:['Igual que en el juego.','¡{maker}, sos un crack!'],ac:'¡Lo más!',rf:'Ugh...',dn:'¡ÉPICO!'},
   {id:'laura',n:'Laura',e:'🎨',c:0xff44ff,m:'Creativa',pat:21,gr:.95,d:['Diseñé esto yo misma.','Me encanta el proceso.'],ac:'Qué bueno.',rf:'Qué lástima.',dn:'¡Hermosa!'},
   {id:'juli',n:'Juli',e:'🌟',c:0xffff44,m:'Influencer',pat:11,gr:1.3,d:['¿Puedo filmarte?','¡Etiquetame!'],ac:'¡Divino!',rf:'Busco otro...',dn:'¡Ya lo subo!'},
   {id:'tomas',n:'Tomás',e:'🏗️',c:0xff8844,m:'Constructor',pat:20,gr:1.1,d:['Para maqueta.','Tengo 10 piezas más.'],ac:'Trabajo confirmado.',rf:'Gracias igual.',dn:'A escala.'},
   {id:'ramiro',n:'Ramiro',e:'⚽',c:0x88ff44,m:'Urgente',pat:9,gr:1.4,d:['¡Apurate, partido!','¿Para las 5?'],ac:'¡Te debo una!',rf:'No me hagas esto.',dn:'¡A tiempo!'},
   {id:'pablo',n:'Pablo',e:'📚',c:0xaaaaff,m:'Académico',pat:28,gr:.9,d:['Estudio FDM.','Interesante.'],ac:'Tomo nota.',rf:'Entendido.',dn:'¿Me explicás?'},
-  {id:'meli',n:'Meli',e:'🐱',c:0xee88ff,m:'Casual',pat:19,gr:1.0,d:['Me recomendaron.','¡Lindo taller!'],ac:'Primera vez.',rf:'Okey.',dn:'¡Bonito!'},
+  {id:'meli',n:'Meli',e:'🐱',c:0xee88ff,m:'Casual',pat:19,gr:1.0,d:['Me recomendaron {shop}.','¡Lindo taller!'],ac:'Primera vez.',rf:'Okey.',dn:'¡Bonito!'},
   {id:'caro',n:'Caro',e:'🌺',c:0xff6688,m:'Curiosa',pat:22,gr:.95,d:['¿Qué filamentos tenés?','Cualquier color.'],ac:'Qué lindo.',rf:'Qué pena.',dn:'¡Me encantó!'},
 ];
 const PR=[

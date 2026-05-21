@@ -37,7 +37,7 @@ class DayScene extends Phaser.Scene{
     cg.fillStyle(0x28200e);cg.fillRect(W*.23,cY,W*.54,32);
     cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
     cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
-    this.add.text(W*.5,cY+9,'🖨️  PRINT SHOP  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
+    this.shopSign=this.add.text(W*.5,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
     this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'[E] '+tr('counter')});
     const sx=W*.1,sy=H*.47,sg=this.add.graphics();
     sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
@@ -100,7 +100,8 @@ class DayScene extends Phaser.Scene{
   checkStory(){
     const e=STORY.find(s=>s.day===G.day&&(BETA_DAYS[G.day]||G.day>G.ss));
     if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>{const st=storyText(e);G.showSto(st.ti,st.tx,st.ob);});}
-    document.getElementById('obj').textContent=G.makerName||'';
+    const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=shopDisplayName();
+    document.getElementById('obj').textContent=makerDisplayName()+' · '+shopDisplayName();
   }
   applyDayMod(){
     if(BETA_DAYS[G.day])return;

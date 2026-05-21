@@ -21,7 +21,7 @@
     const riskVal=Math.min(100,Math.round((G.stress||0)*.55+broken*18+queue*4+(G.pActive?25:0)));
     risk.style.width=riskVal+'%';
     const repBoost=Math.round((repPriceMult()-1)*100);
-    const maker=G.makerName?G.makerName+' · ':'';
+    const maker=(G.makerName||G.shopName)?makerDisplayName()+' / '+shopDisplayName()+' · ':'';
     if(G.phase==='night'){
       txt.textContent=maker+tr('nightActive')+': '+queue+' '+tr('orders')+' / '+broken+' '+tr('failures')+'. REP '+G.rep+' ('+(repBoost>=0?'+':'')+repBoost+'% $)';
       tip.textContent=G.pActive?'⚡ '+tr('runBreaker'):tr('inspectPrinters');

@@ -11,7 +11,7 @@ const TXT={
     negotiate:'Negociar',reject:'Rechazar',repair:'Reparar',mate:'Mate',
     continue:'CONTINUAR',reset:'BORRAR PARTIDA',
     objective:'Objetivo: hacer crecer tu print shop sin fundirte ni quemar las maquinas.',
-    makerName:'Nombre del maker',
+    makerName:'Nombre del maker',shopName:'Nombre del taller',
     keyEsc:'Esc menu',keyPick:'1-6 elegir',keyAccept:'A aceptar',keyNeg:'N negociar',keyReject:'R rechazar',keyMate:'I inventario',keyRepair:'O tienda',
     cash:'Caja',printers:'Impresoras',stock:'Stock',team:'Equipo',
     ready:'LISTO',locked:'BLOQUEADO',buy:'COMPRAR',noMoney:'SIN FONDOS',
@@ -91,7 +91,7 @@ const TXT={
     negotiate:'Negotiate',reject:'Reject',repair:'Repair',mate:'Mate',
     continue:'CONTINUE',reset:'DELETE SAVE',
     objective:'Goal: grow your print shop without going broke or burning machines.',
-    makerName:'Maker name',
+    makerName:'Maker name',shopName:'Shop name',
     keyEsc:'Esc menu',keyPick:'1-6 pick',keyAccept:'A accept',keyNeg:'N bargain',keyReject:'R reject',keyMate:'I inventory',keyRepair:'O shop',
     cash:'Cash',printers:'Printers',stock:'Stock',team:'Team',
     ready:'READY',locked:'LOCKED',buy:'BUY',noMoney:'NO CASH',
@@ -163,17 +163,17 @@ const TXT={
 function tr(k){return (TXT[G.lang]&&TXT[G.lang][k])||TXT.es[k]||k;}
 function trf(k,vars){return tr(k).replace(/\{(\w+)\}/g,(_,v)=>vars&&vars[v]!==undefined?vars[v]:'');}
 const CL_EN_LINES={
-  marcos:['Send it whenever you can.','Can we add my logo?'],
+  marcos:['Send it whenever you can.','Can we add the {shop} logo?'],
   sofi:['I need it for tomorrow!','Do you have nicer colors?'],
   diego:['Tolerance plus/minus 0.1mm.','What material do you recommend?'],
   valeria:['Corporate presentation.','Volume discount?'],
-  nico:['Just like in the game.','You are a legend!'],
+  nico:['Just like in the game.','{maker}, you are a legend!'],
   laura:['I designed this myself.','I love the process.'],
   juli:['Can I film you?','Tag me!'],
   tomas:['For a scale model.','I have 10 more parts.'],
   ramiro:['Hurry, match day!','Can it be ready by 5?'],
   pablo:['I study FDM.','Interesting.'],
-  meli:['Someone recommended you.','Nice workshop!'],
+  meli:['Someone recommended {shop}.','Nice workshop!'],
   caro:['What filaments do you have?','Any color works.']
 };
 const MOOD_EN={Apurada:'Rushed','Técnico':'Technical',Corporativa:'Corporate',Creativa:'Creative',Influencer:'Influencer',Constructor:'Builder',Urgente:'Urgent',Académico:'Academic',Casual:'Casual',Curiosa:'Curious'};
@@ -201,7 +201,8 @@ const PE_EN={
   norm:{ti:'⚡ POWER OUTAGE',de:'Neighborhood outage.\nRestore the breaker panel.'},
   long:{ti:'⚡ LONG OUTAGE',de:'Extended outage.\nFull breaker reset.'}
 };
-function clLine(cl){const lines=G.lang==='en'&&CL_EN_LINES[cl.id];return lines?lines[Math.floor(Math.random()*lines.length)]:cl.d[Math.floor(Math.random()*cl.d.length)];}
+function personalizeLine(s){return s.replace(/\{shop\}/g,shopDisplayName()).replace(/\{maker\}/g,makerDisplayName());}
+function clLine(cl){const lines=G.lang==='en'&&CL_EN_LINES[cl.id],src=lines?lines[Math.floor(Math.random()*lines.length)]:cl.d[Math.floor(Math.random()*cl.d.length)];return personalizeLine(src);}
 function moodName(m){return G.lang==='en'?(MOOD_EN[m]||m):m;}
 function tagName(t){return G.lang==='en'?(TAG_EN[t]||t):t;}
 function storyText(s){return G.lang==='en'&&STORY_EN[s.day]?STORY_EN[s.day]:s;}
@@ -243,8 +244,11 @@ function applyLang(){
   set('deStart','▶ '+tr('startNight'));
   set('tsObjective',tr('objective'));
   set('makerLabel',tr('makerName'));
+  set('shopNameLabel',tr('shopName'));
   const maker=document.getElementById('makerName');
   if(maker){maker.placeholder=tr('makerName');maker.value=G.makerName||'';}
+  const shop=document.getElementById('shopName');
+  if(shop){shop.placeholder=tr('shopName');shop.value=G.shopName||'';}
   const st=document.querySelectorAll('#shop .st');
   [tr('upgradesTab'),tr('employeesTab'),tr('stockTab')].forEach((v,i)=>{if(st[i])st[i].textContent=v;});
   const kh=document.querySelectorAll('#keyHelp span');
