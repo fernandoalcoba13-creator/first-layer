@@ -22,6 +22,8 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 #hint{color:#ffb347;font-size:11px;}
 #keyHelp{position:absolute;right:12px;bottom:39px;z-index:11;display:flex;gap:5px;pointer-events:none;flex-wrap:wrap;justify-content:flex-end;max-width:560px;}
 #keyHelp span{background:#0a0816;border:1px solid #241a40;color:#7f739b;font-size:9px;padding:3px 6px;}
+#musicBtn{position:absolute;right:12px;bottom:66px;z-index:12;background:#0a0816;border:1px solid #ffb347;color:#ffb347;font-family:var(--pixel-font);font-size:9px;padding:4px 7px;pointer-events:all;cursor:pointer;box-shadow:2px 2px 0 #03020a;}
+#musicBtn.off{border-color:#3a2a60;color:#7f739b;}
 #pov{position:absolute;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s;z-index:5;}
 #pov.on{background:rgba(0,0,0,.86);}
 #phud{position:absolute;top:52px;left:50%;transform:translateX(-50%);background:#0a0010;border:2px solid #f00;padding:12px 22px;text-align:center;display:none;pointer-events:none;z-index:6;min-width:270px;}

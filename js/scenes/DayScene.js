@@ -6,6 +6,7 @@ class DayScene extends Phaser.Scene{
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
+    BGM.playDay();
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};ensureStockShape();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;

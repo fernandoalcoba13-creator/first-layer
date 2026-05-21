@@ -7,6 +7,7 @@ class NightScene extends Phaser.Scene{
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='night';G.block=false;
+    BGM.stop();
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
     this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.2,y:this.H*.42};
