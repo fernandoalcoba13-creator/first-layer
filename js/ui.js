@@ -36,7 +36,7 @@ function updateMarket(){
   const mkt=document.getElementById('mkt');mkt.classList.add('on');
   setTimeout(()=>mkt.classList.remove('on'),4000);
   // Log if any price is notable
-  if(M.pla.cur<M.pla.base*.85)sLog('📈 '+tr('cheapPla')+' $'+M.pla.cur+' — '+tr('stockUp'));
+  if(M.pla.cur<M.pla.base*.85){sLog('📈 '+tr('cheapPla')+' $'+M.pla.cur+' — '+tr('stockUp')+'. '+tr('cheapPlaRisk'));showNotif('🧵 '+tr('cheapPlaRisk'),'info');}
   else if(M.pla.cur>M.pla.base*1.2)sLog('📈 '+tr('expensivePla')+' ($'+M.pla.cur+'). '+tr('useStock'));
 }
 function getPrice(k){return G.market[k]?G.market[k].cur:(k==='pla'?75:k==='petg'?100:k==='resin'?140:55);}

@@ -73,6 +73,7 @@ class DayScene extends Phaser.Scene{
       const px=W*.6+i*psp+psp/2;
       this.IA.push({x:px,y:H*.49,type:'printer',pid:i,lbl:'[E] P'+(i+1)+' '+tr('loadJob')});
     });
+    this.selG=this.add.graphics().setDepth(19);
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
   drawTbl(pwr){
@@ -218,6 +219,7 @@ class DayScene extends Phaser.Scene{
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 '+tr('lucasAccepted')+': '+c.pr.e+' '+c.pr.n);
     sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — '+(canPrint?tr('orderReady'):trf('missingOrder',{mat:c.order.material,units:c.order.units}))+'. '+tr('queueCount')+': '+G.orders.length);
+    if(G.day===1&&G.dayOrd===1)this.time.delayedCall(500,()=>{showNotif(tr('firstPrintTip'),'info');sHint(tr('firstPrintTip'));});
     doSave(G);
     return true;
   }
@@ -398,8 +400,13 @@ class DayScene extends Phaser.Scene{
       if(d<md){md=d;near=it;}
     });
     this.near=near;
-    if(near){this.iLbl.setVisible(true).setText(near.lbl).setPosition(near.x,near.y-42);sHint(near.type==='client'?'A/N/R | Esc':'[E] Interactuar');}
-    else{this.iLbl.setVisible(false);sHint('WASD | E');}
+    if(near){
+      const pulse=.55+.35*Math.sin(this.time.now/120);
+      this.selG.clear();this.selG.lineStyle(2,0xffb347,pulse);this.selG.strokeCircle(near.x,near.y,34+Math.sin(this.time.now/160)*3);
+      this.iLbl.setVisible(true).setAlpha(.72+pulse*.28).setScale(1+pulse*.05).setText(near.lbl).setPosition(near.x,near.y-42);
+      sHint(near.type==='client'?'A/N/R | Esc':'[E] Interactuar');
+    }
+    else{this.selG.clear();this.iLbl.setVisible(false);sHint('WASD | E');}
     this.cTimer+=dt;if(this.cTimer>=this.cInt){this.cTimer=0;this.spawn();}
     this.clients.forEach(c=>{
       if(c.served||c.walk)return;
