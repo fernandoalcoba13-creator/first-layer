@@ -30,19 +30,24 @@ const PR=[
 ];
 const FILAMENTS={
   pla:[
-    {id:'eco',n:'K-PLA Barrio',tier:'Eco',tierEn:'Eco',q:1,base:55,risk:.08,clog:.18,rep:-1,de:'Barato, tapa mas.',deEn:'Cheap, clogs more.'},
-    {id:'std',n:'PrintLab PLA+',tier:'Taller',tierEn:'Workshop',q:2,base:78,risk:.02,clog:.06,rep:0,de:'Parejo y rendidor.',deEn:'Steady daily stock.'},
-    {id:'pro',n:'ProtoLux Silk',tier:'Pro',tierEn:'Pro',q:3,base:112,risk:-.03,clog:.02,rep:1,de:'Brillo y bajo riesgo.',deEn:'Glossy, low risk.'}
+    {id:'eco',n:'PLA Basic',tier:'Basic',tierEn:'Basic',q:1,base:52,risk:.1,clog:.2,rep:-1,de:'Barato, se tapa mas.',deEn:'Cheap, clogs more.'},
+    {id:'std',n:'PLA Premium',tier:'Premium',tierEn:'Premium',q:2,base:82,risk:.015,clog:.055,rep:0,de:'Parejo y rendidor.',deEn:'Steady daily stock.'},
+    {id:'pro',n:'PLA Crystal',tier:'Pro',tierEn:'Pro',q:3,base:118,risk:-.035,clog:.018,rep:1,de:'Brillo y bajo riesgo.',deEn:'Glossy, low risk.'}
   ],
   petg:[
-    {id:'eco',n:'PET-G Forja',tier:'Eco',tierEn:'Eco',q:1,base:85,risk:.07,clog:.12,rep:-1,de:'Duro, algo sucio.',deEn:'Strong, a bit dirty.'},
-    {id:'std',n:'ForgePETG+',tier:'Taller',tierEn:'Workshop',q:2,base:115,risk:.025,clog:.05,rep:0,de:'Firme y estable.',deEn:'Firm and stable.'},
-    {id:'pro',n:'FiberMax Tough',tier:'Pro',tierEn:'Pro',q:3,base:155,risk:-.025,clog:.015,rep:1,de:'Tecnico confiable.',deEn:'Reliable technical stock.'}
+    {id:'eco',n:'PETG Basic',tier:'Basic',tierEn:'Basic',q:1,base:88,risk:.07,clog:.12,rep:-1,de:'Duro, algo sucio.',deEn:'Strong, a bit dirty.'},
+    {id:'std',n:'PETG Premium',tier:'Premium',tierEn:'Premium',q:2,base:122,risk:.02,clog:.045,rep:0,de:'Firme y estable.',deEn:'Firm and stable.'},
+    {id:'pro',n:'PETG Tough',tier:'Pro',tierEn:'Pro',q:3,base:165,risk:-.03,clog:.012,rep:1,de:'Tecnico confiable.',deEn:'Reliable technical stock.'}
+  ],
+  tpu:[
+    {id:'basic',n:'TPU Basic',tier:'Basic',tierEn:'Basic',q:1,base:130,risk:.08,clog:.1,rep:-1,de:'Flexible, delicado.',deEn:'Flexible, fussy.'},
+    {id:'premium',n:'TPU Premium',tier:'Premium',tierEn:'Premium',q:2,base:180,risk:.02,clog:.04,rep:0,de:'Flexible estable.',deEn:'Stable flexible stock.'},
+    {id:'pro',n:'TPU Flex Pro',tier:'Pro',tierEn:'Pro',q:3,base:235,risk:-.02,clog:.015,rep:1,de:'Flexible fino.',deEn:'Clean flexible prints.'}
   ],
   resin:[
-    {id:'basic',n:'K-Resin Basic',tier:'Eco',tierEn:'Eco',q:1,base:120,risk:.05,clog:.03,rep:-1,de:'Detalle justo.',deEn:'Basic detail.'},
-    {id:'std',n:'ClearRes Detail',tier:'Detalle',tierEn:'Detail',q:2,base:155,risk:.015,clog:.01,rep:0,de:'Buen acabado.',deEn:'Clean finish.'},
-    {id:'pro',n:'CrystalForge Pro',tier:'Pro',tierEn:'Pro',q:3,base:205,risk:-.02,clog:0,rep:1,de:'Alta precision.',deEn:'High precision.'}
+    {id:'basic',n:'Resina Basic',tier:'Basic',tierEn:'Basic',q:1,base:120,risk:.05,clog:.03,rep:-1,de:'Detalle justo.',deEn:'Basic detail.'},
+    {id:'std',n:'Resina Premium',tier:'Premium',tierEn:'Premium',q:2,base:160,risk:.015,clog:.01,rep:0,de:'Buen acabado.',deEn:'Clean finish.'},
+    {id:'pro',n:'Resina Pro',tier:'Pro',tierEn:'Pro',q:3,base:215,risk:-.02,clog:0,rep:1,de:'Alta precision.',deEn:'High precision.'}
   ]
 };
 const NE=[
@@ -64,9 +69,9 @@ const PE=[
   {id:'long',ti:'⚡ CORTE PROLONGADO',de:'Corte extendido.\nReset completo del tablero.',dur:35000,pen:.7},
 ];
 const BETA_DAYS={
-  1:{title:'La apertura',goal:'Ganá $300',duration:90000,maxClients:3,firstSpawn:1800,secondSpawn:12000,interval:21000,shop:['pla:eco','parts','coffee'],forcedPower:[],forcedFails:[{at:9000,id:'clog'}],hint:'Tutorial: aceptá pedidos, cargá una impresora y comprá stock barato antes del cierre.'},
-  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',duration:115000,maxClients:5,firstSpawn:1200,secondSpawn:8000,interval:16000,shop:['pla:eco','pla:std','parts','coffee','bar'],forcedPower:[{at:12000,id:'micro'},{at:33000,id:'norm'}],forcedFails:[{at:18000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido espera hasta comprarlo.'},
-  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',duration:140000,maxClients:7,firstSpawn:1200,secondSpawn:6500,interval:13000,shop:['pla:eco','pla:std','petg:eco','parts','unlock2','coffee','bar','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'random'},{at:42000,id:'random'}],hint:'Comprá la segunda impresora y cargá trabajos temprano para maximizar producción.'}
+  1:{title:'La apertura',goal:'Ganá $300',duration:90000,maxClients:3,firstSpawn:1800,secondSpawn:12000,interval:21000,shop:['pla:eco'],forcedPower:[],forcedFails:[{at:9000,id:'clog'}],hint:'Tutorial: aceptá pedidos, cargá una impresora y comprá PLA Basic. Es barato, pero tapa más la boquilla.'},
+  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',duration:115000,maxClients:5,firstSpawn:1200,secondSpawn:8000,interval:16000,shop:['pla:eco','pla:std','petg:eco','parts','coffee','bar'],forcedPower:[{at:12000,id:'micro'},{at:33000,id:'norm'}],forcedFails:[{at:18000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido espera hasta comprarlo.'},
+  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',duration:140000,maxClients:7,firstSpawn:1200,secondSpawn:6500,interval:13000,shop:['pla:eco','pla:std','pla:pro','petg:eco','petg:std','petg:pro','tpu:basic','resin:basic','parts','unlock2','coffee','bar','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'random'},{at:42000,id:'random'}],hint:'Comprá la segunda impresora y cargá trabajos temprano para maximizar producción.'}
 };
 const UPG=[
   {id:'speed1',n:'Perfil velocidad',de:'+30% velocidad',co:300,ic:'⚡'},

@@ -17,8 +17,8 @@ function shakeUI(){const c=document.getElementById('ui');c.classList.remove('sha
 // ═══ MERCADO DE FILAMENTO ═══
 function updateMarket(){
   const M=G.market;
-  const keys=['pla','petg','resin','parts'];
-  const names=['pla','petg','res','pts'];
+  const keys=['pla','petg','tpu','resin','parts'];
+  const names=['pla','petg','tpu','res','pts'];
   keys.forEach((k,i)=>{
     const item=M[k];
     // Fluctuación basada en día + random
@@ -39,7 +39,7 @@ function updateMarket(){
   if(M.pla.cur<M.pla.base*.85){sLog('📈 '+tr('cheapPla')+' $'+M.pla.cur+' — '+tr('stockUp')+'. '+tr('cheapPlaRisk'));showNotif('🧵 '+tr('cheapPlaRisk'),'info');}
   else if(M.pla.cur>M.pla.base*1.2)sLog('📈 '+tr('expensivePla')+' ($'+M.pla.cur+'). '+tr('useStock'));
 }
-function getPrice(k){return G.market[k]?G.market[k].cur:(k==='pla'?75:k==='petg'?100:k==='resin'?140:55);}
+function getPrice(k){return G.market[k]?G.market[k].cur:(k==='pla'?75:k==='petg'?100:k==='tpu'?160:k==='resin'?140:55);}
 function getFilPrice(mat,id){
   const f=filDef(mat,id),m=G.market[mat];
   if(!f)return getPrice(mat);

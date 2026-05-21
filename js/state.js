@@ -6,7 +6,7 @@ function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):
 
 // ═══ GAME STATE ═══
 // Single global G. All gameplay reads/writes go through here.
-const G={gold:500,rep:50,day:1,lang:'es',makerName:'',shopName:'',phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3},cons:{coffee:1,bar:1,cleaner:0},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,dayPrints:0,nightDone:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
+const G={gold:500,rep:50,day:1,lang:'es',makerName:'',shopName:'',phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3},cons:{coffee:1,bar:1,cleaner:0},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,dayPrints:0,nightDone:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
   get pCount(){return this.upg.unlock4?4:this.upg.unlock3?3:this.upg.unlock2?2:1;},
   get sMult(){return 1+(this.upg.speed1?0.3:0)+(this.upg.speed2?0.3:0);},
   get pMult(){return 1+(this.upg.qual?0.25:0)+(this.emp.caro2?0.15:0);},
@@ -14,10 +14,10 @@ const G={gold:500,rep:50,day:1,lang:'es',makerName:'',shopName:'',phase:'day',st
   energy:100, mateActive:false, mateTimer:0, turboMax:0,
   mateCount:3, // mates disponibles por dia
   // Mercado de filamento
-  market:{pla:{base:75,cur:75,trend:0},petg:{base:100,cur:100,trend:0},resin:{base:140,cur:140,trend:0},parts:{base:55,cur:55,trend:0}}
+  market:{pla:{base:75,cur:75,trend:0},petg:{base:100,cur:100,trend:0},tpu:{base:160,cur:160,trend:0},resin:{base:140,cur:140,trend:0},parts:{base:55,cur:55,trend:0}}
 };
 function ensureStockShape(){
-  const defs={pla:'std',petg:'std',resin:'std'};
+  const defs={pla:'std',petg:'std',tpu:'premium',resin:'std'};
   Object.keys(defs).forEach(k=>{
     if(typeof G.stk[k]==='number')G.stk[k]={[defs[k]]:G.stk[k]};
     if(!G.stk[k])G.stk[k]={};

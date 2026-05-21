@@ -17,7 +17,7 @@
     const loaded=(G.printers||[]).filter(p=>p.busy||p.order).length;
     const activePrinters=(G.printers||[]).filter(p=>!p.locked&&!p.broken).length;
     const printed=(G.dayPrints||0)+(G.nightDone||0);
-    const material=matStock('pla')+matStock('petg')+matStock('resin');
+    const material=matStock('pla')+matStock('petg')+matStock('tpu')+matStock('resin');
     const riskVal=Math.min(100,Math.round((G.stress||0)*.55+broken*18+queue*4+(G.pActive?25:0)));
     risk.style.width=riskVal+'%';
     const repBoost=Math.round((repPriceMult()-1)*100);

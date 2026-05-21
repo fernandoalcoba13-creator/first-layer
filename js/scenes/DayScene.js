@@ -8,7 +8,7 @@ class DayScene extends Phaser.Scene{
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     BGM.playDay();
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
-    if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};ensureStockShape();}
+    if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};ensureStockShape();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
@@ -87,7 +87,7 @@ class DayScene extends Phaser.Scene{
     }
     this.tblG.setDepth(2);
   }
-  stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
+  stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'  TPU:'+matStock('tpu')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
   createPlayer(){
     this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
@@ -335,17 +335,7 @@ class DayScene extends Phaser.Scene{
     doSave(G);
   }
   openStock(){
-    const pla=(FILAMENTS.pla||[])[1],petg=(FILAMENTS.petg||[])[1],res=(FILAMENTS.resin||[])[1];
-    const pp=getFilPrice('pla',pla.id),pt=getFilPrice('petg',petg.id),rr=getFilPrice('resin',res.id),pr=getPrice('parts');
-    this.oDlg('📦 '+tr('stockTitle'),'',
-      stockLine('pla')+'\n'+stockLine('petg')+'\n'+stockLine('resin')+'\n'+tr('partsName')+': '+G.stk.parts+'\n\n'+tr('quickStock'),
-      [{lb:'🧵 '+pla.n+' $'+pp+(pp<pla.base?' 🔥':''),cls:'ok',cb:()=>{G.bStk('pla',pp,pla.id);cDlg();this.openStock();}},
-       {lb:'🧵 '+petg.n+' $'+pt+(pt<petg.base?' 🔥':''),cb:()=>{G.bStk('petg',pt,petg.id);cDlg();this.openStock();}},
-       {lb:'🧪 '+res.n+' $'+rr+(rr<res.base?' 🔥':''),cb:()=>{G.bStk('resin',rr,res.id);cDlg();this.openStock();}},
-       {lb:'🔩 '+tr('parts')+' $'+pr,cb:()=>{G.bStk('parts',pr);cDlg();this.openStock();}},
-       {lb:'☕ '+tr('coffee')+' $45',cb:()=>{G.buyConsumable('coffee');cDlg();this.openStock();}},
-       {lb:'🧉 '+tr('mateBuy')+' $80 (x'+G.mateCount+')',cb:()=>{if(G.gold<80){showNotif('💸 '+tr('noFunds'),'error');return;}G.gold-=80;G.mateCount++;SFX.coin();showNotif('🧉 '+tr('mateBuy')+' +1','success');cDlg();this.openStock();}},
-       {lb:tr('close'),cb:()=>cDlg()}]);
+    G.openShop('stk');
   }
   openTab(){
     this.oDlg('⚡ '+tr('boardTitle'),'',
