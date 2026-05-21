@@ -300,19 +300,18 @@ class NightScene extends Phaser.Scene{
   }
   showEv(ev){
     document.getElementById('et').textContent=ev.ic+' '+ev.ti;
-    const ct=(ev.g>0?'\n'+tr('cost')+': $'+ev.g:'')+(ev.pts>0?'\n'+tr('parts')+': '+ev.pts:'');
+    const ct=(ev.g>0?'\n'+tr('cost')+': $'+ev.g:'')+(ev.pts>0&&ev.id!=='clog'?'\n'+tr('parts')+': '+ev.pts:'')+(ev.id==='clog'?'\n'+tr('cleaner')+': '+((G.cons&&G.cons.cleaner)||0):'');
     document.getElementById('ed').textContent=ev.desc+ct;
-    const canFix=(ev.g===0||G.gold>=ev.g)&&(ev.pts===0||G.stk.parts>=ev.pts);
+    const canFix=ev.id==='clog'?!!(G.day===1||(G.cons&&G.cons.cleaner>0)):(ev.g===0||G.gold>=ev.g)&&(ev.pts===0||G.stk.parts>=ev.pts);
     const auto=G.emp.rodri&&['jam','blob','humid'].includes(ev.id);
     let buttons=auto
       ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 '+tr('autoRepair')+'</button>'
       :(ev.id==='clog'
-        ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startNozzleMini()">🚫 '+tr('nozzleMini')+(ev.pts>0?' (-'+ev.pts+' '+tr('parts')+')':'')+'</button>'
+        ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startNozzleMini()">🚫 '+tr('nozzleMini')+'</button>'
         :ev.id==='bed'
         ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startBedMini()">📐 '+tr('bedMini')+(ev.g>0?' (-$'+ev.g+')':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
         +'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>';
-    if(!auto&&['clog','blob'].includes(ev.id)&&G.cons&&G.cons.cleaner>0)buttons='<button class="eb fix" onclick="G.useConsumable(\'cleaner\')">'+tr('cleanNozzle')+' (-1)</button>'+buttons;
     document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
     setTimeout(()=>focusPanelFirst('#ebs .eb'),0);

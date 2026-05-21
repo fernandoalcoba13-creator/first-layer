@@ -27,9 +27,9 @@ const TXT={
     coffee:'Cafe de turno',bar:'Barrita cereal',cleaner:'Aguja destapadora',
     coffeeDesc:'+30 energia y turbo corto.',
     barDesc:'+20 energia y baja estres.',
-    cleanerDesc:'Salta una limpieza de boquilla.',
+    cleanerDesc:'Herramienta para limpiar boquillas.',
     use:'Usar',missingMaterial:'falta material',noQueuedOrders:'Sin pedidos en cola.',
-    consHint:'Cafe recupera energia y activa turbo corto. La barrita baja estres. La aguja salta una boquilla tapada durante la noche.'
+    consHint:'Cafe recupera energia y activa turbo corto. La barrita baja estres. La aguja se usa en el minijuego de boquilla.'
     ,nightActive:'Noche activa',orders:'pedidos',failures:'fallas',box:'caja',
     runBreaker:'Corre al tablero electrico.',inspectPrinters:'Inspecciona impresoras antes de acelerar.',
     dayDyn:'Dia',queue:'cola',drinkMate:'Toma mate o baja ritmo.',buyCheap:'Compra stock cuando el mercado este barato.',
@@ -76,7 +76,7 @@ const TXT={
     nozzleTitle:'Limpiar pico',nozzleDesc:'Espera la zona verde y limpia el nozzle.',nozzleTemp:'Temperatura del pico',
     clean:'Limpiar',goodCleans:'Limpiezas buenas',greenZone:'Zona verde',perfectClean:'Limpieza perfecta',scratchNozzle:'Rayaste el nozzle. -tiempo',
     nozzleFailed:'El pico quedo obstruido. La impresora queda fuera.',nowBreaker:'Ahora el {num}',completed:'Completado!',wrongOrder:'Orden incorrecto. Empeza de nuevo.',
-    energy:'energia',stress:'estres',saveForNozzle:'Guardalo para boquilla tapada o blob.',nozzleCleaned:'Pico limpio sin gastar repuesto.',
+    energy:'energia',stress:'estres',saveForNozzle:'La aguja se usa durante el minijuego de boquilla.',nozzleCleaned:'Boquilla destapada sin cambiar repuesto.',
     bedMini:'Minijuego: adherir cama',bedTitle:'Ajustar cama',bedDesc:'Toca las esquinas en el orden indicado para recuperar la primera capa.',bedFail:'La pieza se despego. La impresora queda fuera.'
   },
   en:{
@@ -107,9 +107,9 @@ const TXT={
     coffee:'Shift coffee',bar:'Cereal bar',cleaner:'Nozzle needle',
     coffeeDesc:'+30 energy and short turbo.',
     barDesc:'+20 energy and lowers stress.',
-    cleanerDesc:'Skips one nozzle cleaning.',
+    cleanerDesc:'Tool for cleaning nozzles.',
     use:'Use',missingMaterial:'missing material',noQueuedOrders:'No queued orders.',
-    consHint:'Coffee restores energy and triggers short turbo. Cereal bars reduce stress. Nozzle needles skip one clogged nozzle during night shift.',
+    consHint:'Coffee restores energy and triggers short turbo. Cereal bars reduce stress. The needle is used in the nozzle mini-game.',
     nightActive:'Night shift',orders:'orders',failures:'failures',box:'cash',
     runBreaker:'Run to the breaker panel.',inspectPrinters:'Inspect printers before rushing.',
     dayDyn:'Day',queue:'queue',drinkMate:'Drink mate or slow down.',buyCheap:'Buy stock when the market is cheap.',
@@ -156,7 +156,7 @@ const TXT={
     nozzleTitle:'Clean nozzle',nozzleDesc:'Wait for the green zone and clean the nozzle.',nozzleTemp:'Nozzle temperature',
     clean:'Clean',goodCleans:'Good cleans',greenZone:'Green zone',perfectClean:'Perfect clean',scratchNozzle:'You scratched the nozzle. -time',
     nozzleFailed:'The nozzle stayed clogged. The printer is out.',nowBreaker:'Now {num}',completed:'Completed!',wrongOrder:'Wrong order. Start again.',
-    energy:'energy',stress:'stress',saveForNozzle:'Save it for a clogged nozzle or blob.',nozzleCleaned:'Nozzle cleaned without spending a spare.',
+    energy:'energy',stress:'stress',saveForNozzle:'The needle is used during the nozzle mini-game.',nozzleCleaned:'Nozzle cleared without replacing a spare.',
     bedMini:'Mini-game: bed adhesion',bedTitle:'Adjust bed',bedDesc:'Tap the corners in order to recover the first layer.',bedFail:'The part lifted. The printer is out.'
   }
 };

@@ -17,51 +17,73 @@ G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
 G.startNozzleMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
-  if(G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}
+  ensureConsumables();
+  if(G.day===1&&G.cons.cleaner<1)G.cons.cleaner=1;
+  if((G.cons.cleaner||0)<=0){showNotif('🪡 '+tr('missing')+tr('cleaner'),'error');return;}
   document.getElementById('evp').style.display='none';
-  const maze=[
-    'S...#',
-    '###.#',
-    '#...#',
-    '#.###',
-    '#...E'
-  ];
-  G._mini={type:'maze',ev,time:30000,max:30000,maze,x:0,y:0,done:false,tick:null};
+  G._mini={type:'nozzle',ev,time:30000,max:30000,needle:96,filament:4,clog:52,heat:18,clear:0,sense:50,sDir:1,needleHeld:false,filamentHeld:false,done:false,tick:null};
   document.getElementById('miniGame').style.display='flex';
   document.getElementById('mgTitle').textContent='🚫 '+tr('nozzleTitle')+' - P'+(ev.printer.id+1);
-  document.getElementById('mgDesc').textContent=G.lang==='en'?'Guide the filament through the 5x5 duct before 30s.':'Guiá el filamento por el conducto 5x5 antes de 30s.';
+  document.getElementById('mgDesc').textContent=G.lang==='en'?'Use the needle from below and push filament from above. Work inside the sensitivity zone.':'Usá la aguja desde abajo y empujá filamento desde arriba. Trabajá dentro de la zona sensible.';
   document.getElementById('mgTimerFill').style.width='100%';
   G.renderNozzleMini();
   G._mini.tick=setInterval(()=>{
     if(!G._mini)return;
     const m=G._mini;
     m.time-=250;
+    m.sense+=m.sDir*8;
+    if(m.sense>=92||m.sense<=8){m.sense=Phaser.Math.Clamp(m.sense,8,92);m.sDir*=-1;}
+    if(m.needleHeld)G.applyNozzleMove('needle',1);
+    if(m.filamentHeld)G.applyNozzleMove('filament',1);
+    m.heat=Math.max(0,m.heat-.7);
     document.getElementById('mgTimerFill').style.width=Math.max(0,m.time/m.max*100)+'%';
     G.renderNozzleMini();
-    if(m.time<=0)G.failNozzleMini();
+    if(m.heat>=100||m.time<=0)G.failNozzleMini();
   },250);
   SFX.clk();
 };
 G.renderNozzleMini=function(){
   if(!G._mini)return;
   const m=G._mini;
-  if(m.type==='maze'){
-    document.getElementById('mgGrid').innerHTML=m.maze.map((row,y)=>row.split('').map((cell,x)=>{
-      const here=m.x===x&&m.y===y,cls=cell==='#'?'wall':cell==='E'?'exit':'path';
-      return '<button class="mgCell '+cls+(here?' here':'')+'" onclick="G.moveNozzleMazeTo('+x+','+y+')">'+(here?'●':cell==='E'?'✓':cell==='#'?'':'·')+'</button>';
-    }).join('')).join('')+
-    '<div class="mgBtns" style="grid-column:1/-1"><button onclick="G.moveNozzleMaze(0,-1)">↑</button><button onclick="G.moveNozzleMaze(-1,0)">←</button><button onclick="G.moveNozzleMaze(1,0)">→</button><button onclick="G.moveNozzleMaze(0,1)">↓</button></div>';
-    document.getElementById('mgHint').textContent=(G.lang==='en'?'Move with arrows/WASD. Time: ':'Flechitas/WASD. Tiempo: ')+Math.ceil(m.time/1000)+'s';
+  if(m.type==='nozzle'){
+    const inZone=m.sense>=42&&m.sense<=64;
+    document.getElementById('mgGrid').innerHTML=
+      '<div class="nozzleGame">'+
+        '<div class="nzGauge"><span></span><i style="left:'+m.sense+'%"></i></div>'+
+        '<div class="nzCut">'+
+          '<div class="nzTube"></div><div class="nzHeat" style="opacity:'+(m.heat/100)+'"></div>'+
+          '<div class="nzClog" style="top:'+m.clog+'%"></div>'+
+          '<div class="nzFilament" style="height:'+m.filament+'%"></div>'+
+          '<div class="nzNeedle" style="height:'+(100-m.needle)+'%"></div>'+
+        '</div>'+
+        '<div class="nzStats">'+
+          '<b>'+tr('clean')+' '+Math.floor(m.clear)+'%</b><b class="'+(m.heat>70?'hot':'')+'">'+(G.lang==='en'?'Burn ':'Quemadura ')+Math.floor(m.heat)+'%</b>'+
+        '</div>'+
+        '<div class="mgBtns"><button onmousedown="G.holdNozzleInput(\'needle\',true)" onmouseup="G.holdNozzleInput(\'needle\',false)" onmouseleave="G.holdNozzleInput(\'needle\',false)" onclick="G.applyNozzleMove(\'needle\',2)">ALT ↑</button><button onmousedown="G.holdNozzleInput(\'filament\',true)" onmouseup="G.holdNozzleInput(\'filament\',false)" onmouseleave="G.holdNozzleInput(\'filament\',false)" onclick="G.applyNozzleMove(\'filament\',2)">SPACE ↓</button></div>'+
+      '</div>';
+    document.getElementById('mgHint').textContent=(inZone?'✓ ':'⚠ ')+(G.lang==='en'?'Green zone: ALT needle up / SPACE filament down. ':'Zona verde: ALT aguja arriba / ESPACIO filamento abajo. ')+Math.ceil(m.time/1000)+'s';
     return;
   }
 };
-G.moveNozzleMaze=function(dx,dy){
-  const m=G._mini;if(!m||m.done||m.type!=='maze')return;
-  const nx=m.x+dx,ny=m.y+dy,row=m.maze[ny];if(!row||!row[nx]||row[nx]==='#'){SFX.err();shakeUI();return;}
-  m.x=nx;m.y=ny;SFX.clk();G.renderNozzleMini();
-  if(row[nx]==='E'){m.done=true;setTimeout(()=>G.winNozzleMini(),120);}
+G.holdNozzleInput=function(which,on){
+  const m=G._mini;if(!m||m.type!=='nozzle')return;
+  if(which==='needle')m.needleHeld=on;
+  if(which==='filament')m.filamentHeld=on;
 };
-G.moveNozzleMazeTo=function(x,y){const m=G._mini;if(!m)return;const dx=x-m.x,dy=y-m.y;if(Math.abs(dx)+Math.abs(dy)!==1)return;G.moveNozzleMaze(dx,dy);};
+G.applyNozzleMove=function(which,power){
+  const m=G._mini;if(!m||m.done||m.type!=='nozzle')return;
+  const inZone=m.sense>=42&&m.sense<=64,step=(power||1)*(inZone?7:4);
+  if(which==='needle')m.needle=Math.max(24,m.needle-step);
+  if(which==='filament')m.filament=Math.min(76,m.filament+step);
+  const needleTip=m.needle,filTip=m.filament;
+  const contact=Math.abs(needleTip-m.clog)<14||Math.abs(filTip-m.clog)<14||needleTip<=filTip+8;
+  if(contact&&inZone){m.clear=Math.min(100,m.clear+(which==='needle'?7:5)*(power||1));m.heat=Math.max(0,m.heat-3);SFX.clk();}
+  else{m.heat=Math.min(100,m.heat+(contact?10:5)*(power||1));SFX.err();shakeUI();}
+  if(m.clear>=100){m.done=true;setTimeout(()=>G.winNozzleMini(),160);}
+  G.renderNozzleMini();
+};
+G.moveNozzleMaze=function(dx,dy){if(G._mini&&G._mini.type==='nozzle')G.applyNozzleMove(dy<0?'needle':'filament',1);};
+G.moveNozzleMazeTo=function(){};
 G.scrapeNozzle=function(){};
 G.startBedMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='bed')return;
@@ -88,7 +110,18 @@ G.tapBedMini=function(i){
   if(m.seq[m.idx]!==i){m.idx=0;SFX.err();shakeUI();G.renderBedMini();return;}
   m.idx++;SFX.clk();if(m.idx>=m.seq.length){m.done=true;setTimeout(()=>G.winNozzleMini(),120);}else G.renderBedMini();
 };
-G.winNozzleMini=function(){if(!G._mini)return;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';G.nFix();};
+G.winNozzleMini=function(){
+  if(!G._mini)return;
+  const type=G._mini.type,ev=G._mini.ev;
+  clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';
+  if(type==='nozzle'&&ev){
+    ev.printer._ev=null;ev.printer._pau=false;
+    const ns=game.scene.getScene('Night');if(ns)ns.aEv=null;
+    document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
+    SFX.fix();showNotif('🪡 '+tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));return;
+  }
+  G.nFix();
+};
 G.failNozzleMini=function(){if(!G._mini)return;const type=G._mini.type;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif(type==='bed'?tr('bedFail'):tr('nozzleFailed'),'error');G.nSkip();};
 G.cancelMiniGame=function(){G.failNozzleMini();};
 G._bk=function(seq){
@@ -164,13 +197,7 @@ G.useConsumable=function(id){
     SFX.up();showNotif(tr('bar')+' +20 '+tr('energy')+', -8 '+tr('stress'),'success');
     updateMateHUD();
   } else if(id==='cleaner'){
-    const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;
-    if(!ev||!['clog','blob'].includes(ev.id)){showNotif(tr('saveForNozzle'),'info');return;}
-    G.cons.cleaner--;
-    ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;
-    document.getElementById('evp').style.display='none';
-    G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
-    SFX.fix();showNotif(tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));
+    showNotif(tr('saveForNozzle'),'info');return;
   }
   doSave(G);
   if(typeof isShown==='function'&&isShown('sto'))G.showInventory('cons');

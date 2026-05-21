@@ -256,6 +256,10 @@ document.addEventListener('keydown',e=>{
     if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd'))openGameMenu();
     e.preventDefault();return;
   }
+  if(isShown('miniGame')&&G._mini&&G._mini.type==='nozzle'){
+    if(k==='alt'){G.holdNozzleInput('needle',true);e.preventDefault();return;}
+    if(k===' '||k==='spacebar'){G.holdNozzleInput('filament',true);e.preventDefault();return;}
+  }
   if(isShown('miniGame')&&G._mini&&G._mini.type==='maze'){
     const mv={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
     if(mv){G.moveNozzleMaze(mv[0],mv[1]);e.preventDefault();return;}
@@ -293,6 +297,12 @@ document.addEventListener('keydown',e=>{
   if(k==='m'){G.tomarMate();e.preventDefault();return;}
   if(k==='q'){doSave(G);showNotif(tr('savedManual'),'success');e.preventDefault();return;}
   if(k==='h'){openGameMenu();e.preventDefault();}
+});
+document.addEventListener('keyup',e=>{
+  if(!isShown('miniGame')||!G._mini||G._mini.type!=='nozzle')return;
+  const k=e.key.toLowerCase();
+  if(k==='alt'){G.holdNozzleInput('needle',false);e.preventDefault();}
+  if(k===' '||k==='spacebar'){G.holdNozzleInput('filament',false);e.preventDefault();}
 });
 applyLang();
 function doTrans(h,p,cb){
