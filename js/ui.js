@@ -88,10 +88,10 @@ function setGameMenu(open){
   const el=document.getElementById('titleScreen');
   if(!el)return;
   el.style.display=open?'flex':'none';
-  if(open)setTimeout(()=>focusPanelFirst('#titleScreen .tsBtn,#titleScreen .langBtn'),0);
+  if(open){const maker=document.getElementById('makerName');if(maker)maker.value=G.makerName||'';setTimeout(()=>focusPanelFirst('#titleScreen .makerInput,#titleScreen .tsBtn,#titleScreen .langBtn'),0);}
 }
 function openGameMenu(){setGameMenu(true);}
-function closeGameMenu(){setGameMenu(false);SFX.ok();}
+function closeGameMenu(){const maker=document.getElementById('makerName');if(maker)G.makerName=maker.value.trim().slice(0,18);const obj=document.getElementById('obj');if(obj)obj.textContent=G.makerName||'';doSave(G);setGameMenu(false);SFX.ok();}
 function clickButton(sel,idx=0){
   const list=[...document.querySelectorAll(sel)].filter(b=>!b.disabled&&b.offsetParent!==null);
   if(list[idx]){list[idx].click();return true;}

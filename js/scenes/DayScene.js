@@ -5,7 +5,7 @@ class DayScene extends Phaser.Scene{
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
-    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
+    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};ensureStockShape();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
@@ -100,7 +100,7 @@ class DayScene extends Phaser.Scene{
   checkStory(){
     const e=STORY.find(s=>s.day===G.day&&(BETA_DAYS[G.day]||G.day>G.ss));
     if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>{const st=storyText(e);G.showSto(st.ti,st.tx,st.ob);});}
-    document.getElementById('obj').textContent=G.cObj?'🎯 '+storyText(G.cObj).ob:'';
+    document.getElementById('obj').textContent=G.makerName||'';
   }
   applyDayMod(){
     if(BETA_DAYS[G.day])return;
@@ -142,9 +142,9 @@ class DayScene extends Phaser.Scene{
     const dayMul=1+Math.min(.8,(G.day-1)*.045);
     const diff=Phaser.Math.Clamp(style.diff*dayMul*(urg?1.18:1),.75,2.6);
     const mod=G.dayMod||{};
-    const pay=Math.round(pr.p*G.pMult*cl.gr*(urg?1.5:1)*(0.82+diff*.26)*(mod.pay||1));
+    const pay=Math.round(pr.p*G.pMult*repPriceMult()*cl.gr*(urg?1.5:1)*(0.82+diff*.26)*(mod.pay||1));
     const time=Math.max(1.2,pr.t*(0.82+diff*.28)*(urg?.86:1));
-    const pat=Math.max(6,(cl.pat*style.pat-(G.day-1)*.28+(urg?-4:0))*(mod.pat||1));
+    const pat=Math.max(6,(cl.pat*style.pat-(G.day-1)*.28+(urg?-4:0))*repPatienceMult()*(mod.pat||1));
     const risk=Phaser.Math.Clamp(.035+(diff-1)*.07+G.day*.006+(urg?.035:0)+(mod.risk||0),.02,.42);
     const material=pr.cat==='art'?'resin':(pr.cat==='util'&&diff>1.15?'petg':'pla');
     const units=Math.max(1,Math.ceil(pr.t*diff/3));
@@ -292,7 +292,7 @@ class DayScene extends Phaser.Scene{
   }
   completePrint(p){
     const o=p.order,earned=o.pay,repGain=1+(o.filament&&o.filament.rep||0);
-    G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;G.dayEarn+=earned;
+    G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;G.dayEarn+=earned;G.dayPrints++;
     G.orders=G.orders.filter(x=>x!==o);
     p.busy=false;p.order=null;p.progress=0;p._ev=null;p._pau=false;
     SFX.coin();

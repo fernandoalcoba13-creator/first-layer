@@ -15,6 +15,7 @@
     <h3 id="proTitle">📋 TURNO ACTUAL</h3>
     <p id="proText">Atendé clientes, comprá stock barato y prepará la noche.</p>
     <div class="miniBar"><i id="proRisk"></i></div>
+    <div id="objList" class="objList"></div>
     <p id="proTip">TIP: si hay urgentes, priorizalos antes del cierre.</p>
   </div>
   <div id="quickBtns"><button class="qbtn" id="btnSave" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" id="btnMenu" onclick="openGameMenu()">? Menú</button></div>
@@ -23,6 +24,8 @@
       <div class="tsK">ORIGINAL GAME</div>
       <h1 class="tsTitle">PRINT SHOP</h1>
       <div class="tsSub">FIRST LAYER · 3D PRINT FARM SIMULATOR</div>
+      <label class="makerLabel" id="makerLabel" for="makerName">Maker</label>
+      <input id="makerName" class="makerInput" maxlength="18" placeholder="Tu nombre" oninput="G.makerName=this.value;doSave(G)">
       <div class="langBtns"><button class="langBtn" data-lang="es" onclick="setLang('es')">ES</button><button class="langBtn" data-lang="en" onclick="setLang('en')">EN</button></div>
       <div class="tsGrid">
         <div class="tsCard"><b id="tsDay">☀️ DÍA</b><span id="tsDayDesc">Atendé clientes, negociá pedidos y cargá trabajo para la noche.</span></div>

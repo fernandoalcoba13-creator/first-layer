@@ -8,7 +8,7 @@ class NightScene extends Phaser.Scene{
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='night';G.block=false;
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
-    this.earn=0;this.done=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
+    this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.07,y:this.H*.42};
     if(G.syncPrinters)G.syncPrinters();
     this.buildWorld();this.createPlayer();this.setupKeys();
@@ -296,7 +296,7 @@ class NightScene extends Phaser.Scene{
   completePrint(p){
     const o=p.order,earned=o.pay;
     const repGain=2+(o.filament&&o.filament.rep||0);
-    G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;this.earn+=earned;this.done++;
+    G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;this.earn+=earned;this.done++;G.nightDone=this.done;
     G.orders=G.orders.filter(x=>x!==o);
     p.busy=false;p.order=null;p.progress=0;p._ev=null;p._pau=false;
     SFX.coin();

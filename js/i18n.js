@@ -11,6 +11,7 @@ const TXT={
     negotiate:'Negociar',reject:'Rechazar',repair:'Reparar',mate:'Mate',
     continue:'CONTINUAR',reset:'BORRAR PARTIDA',
     objective:'Objetivo: hacer crecer tu print shop sin fundirte ni quemar las maquinas.',
+    makerName:'Nombre del maker',
     keyEsc:'Esc menu',keyPick:'1-6 elegir',keyAccept:'A aceptar',keyNeg:'N negociar',keyReject:'R rechazar',keyMate:'I inventario',keyRepair:'O tienda',
     cash:'Caja',printers:'Impresoras',stock:'Stock',team:'Equipo',
     ready:'LISTO',locked:'BLOQUEADO',buy:'COMPRAR',noMoney:'SIN FONDOS',
@@ -71,6 +72,7 @@ const TXT={
     savedManual:'Guardado manual',shopTitle:'TIENDA',inventoryShort:'INV',counter:'Mostrador',
     upgradesTab:'Upgrades',employeesTab:'Empleados',stockTab:'Stock',startNight:'Arrancar la noche',objectiveLabel:'Objetivo',
     cost:'Costo',autoRepair:'Rodrigo repara solo',nozzleMini:'Minijuego: limpiar pico',ignore:'Ignorar',cleanNozzle:'Limpia pico',
+    objAccept:'Aceptar pedidos',objLoad:'Cargar/imprimir',objEarn:'Valor en pedidos',objStock:'Material disponible',objPrinter2:'Comprar impresora 2',objActive2:'2 impresoras sanas',objPrint2:'Terminar trabajos',
     nozzleTitle:'Limpiar pico',nozzleDesc:'Espera la zona verde y limpia el nozzle.',nozzleTemp:'Temperatura del pico',
     clean:'Limpiar',goodCleans:'Limpiezas buenas',greenZone:'Zona verde',perfectClean:'Limpieza perfecta',scratchNozzle:'Rayaste el nozzle. -tiempo',
     nozzleFailed:'El pico quedo obstruido. La impresora queda fuera.',nowBreaker:'Ahora el {num}',completed:'Completado!',wrongOrder:'Orden incorrecto. Empeza de nuevo.',
@@ -89,6 +91,7 @@ const TXT={
     negotiate:'Negotiate',reject:'Reject',repair:'Repair',mate:'Mate',
     continue:'CONTINUE',reset:'DELETE SAVE',
     objective:'Goal: grow your print shop without going broke or burning machines.',
+    makerName:'Maker name',
     keyEsc:'Esc menu',keyPick:'1-6 pick',keyAccept:'A accept',keyNeg:'N bargain',keyReject:'R reject',keyMate:'I inventory',keyRepair:'O shop',
     cash:'Cash',printers:'Printers',stock:'Stock',team:'Team',
     ready:'READY',locked:'LOCKED',buy:'BUY',noMoney:'NO CASH',
@@ -149,6 +152,7 @@ const TXT={
     savedManual:'Manual save',shopTitle:'SHOP',inventoryShort:'INV',counter:'Counter',
     upgradesTab:'Upgrades',employeesTab:'Staff',stockTab:'Stock',startNight:'Start night',objectiveLabel:'Goal',
     cost:'Cost',autoRepair:'Rodrigo fixes it',nozzleMini:'Mini-game: clean nozzle',ignore:'Ignore',cleanNozzle:'Nozzle wipe',
+    objAccept:'Accept orders',objLoad:'Load/print jobs',objEarn:'Order value',objStock:'Material available',objPrinter2:'Buy printer 2',objActive2:'2 healthy printers',objPrint2:'Finish jobs',
     nozzleTitle:'Clean nozzle',nozzleDesc:'Wait for the green zone and clean the nozzle.',nozzleTemp:'Nozzle temperature',
     clean:'Clean',goodCleans:'Good cleans',greenZone:'Green zone',perfectClean:'Perfect clean',scratchNozzle:'You scratched the nozzle. -time',
     nozzleFailed:'The nozzle stayed clogged. The printer is out.',nowBreaker:'Now {num}',completed:'Completed!',wrongOrder:'Wrong order. Start again.',
@@ -238,6 +242,9 @@ function applyLang(){
   set('shopSub',G.stab==='emp'?tr('empSub'):G.stab==='stk'?tr('stkSub'):tr('upSub'));
   set('deStart','▶ '+tr('startNight'));
   set('tsObjective',tr('objective'));
+  set('makerLabel',tr('makerName'));
+  const maker=document.getElementById('makerName');
+  if(maker){maker.placeholder=tr('makerName');maker.value=G.makerName||'';}
   const st=document.querySelectorAll('#shop .st');
   [tr('upgradesTab'),tr('employeesTab'),tr('stockTab')].forEach((v,i)=>{if(st[i])st[i].textContent=v;});
   const kh=document.querySelectorAll('#keyHelp span');
