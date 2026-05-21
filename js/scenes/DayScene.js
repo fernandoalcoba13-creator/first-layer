@@ -8,7 +8,7 @@ class DayScene extends Phaser.Scene{
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.dayBought=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     BGM.playDay();
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
-    if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:3,std:0,pro:0},petg:{eco:1,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,bar:1,cleaner:1};ensureStockShape();ensureConsumables();}
+    if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:1,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,bar:1,cleaner:1};ensureStockShape();ensureConsumables();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
@@ -160,7 +160,8 @@ class DayScene extends Phaser.Scene{
     const risk=Phaser.Math.Clamp(.035+(diff-1)*.07+G.day*.006+(urg?.035:0)+(mod.risk||0),.02,.42);
     let material=pr.cat==='art'?'resin':(pr.cat==='util'&&diff>1.15?'petg':'pla');
     if(G.day===1&&material==='resin')material='pla';
-    const units=Math.max(1,Math.ceil(pr.t*diff/3));
+    if(G.day===1&&G.dayCli===0)material='pla';
+    const units=G.day===1&&G.dayCli===0?1:Math.max(1,Math.ceil(pr.t*diff/3));
     return {pay,time,diff,risk,pat,tag:style.tag,material,units};
   }
   spawn(){

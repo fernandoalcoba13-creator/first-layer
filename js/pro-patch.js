@@ -39,7 +39,7 @@
         ?[
           {txt:es?'Atender al primer cliente':'Serve the first client',done:(G.dayOrd||0)>=1},
           {txt:es?'Cargar un trabajo para la noche':'Load one job for the night',done:loaded>=1},
-          {txt:es?'Comprar stock si sobra caja':'Buy stock if cash allows',done:(G.dayBought||0)>=1}
+          {txt:es?'Comprar PLA Basic para imprimir':'Buy PLA Basic to print',done:(G.stk&&G.stk.pla&&G.stk.pla.eco||0)>0||(G.dayBought||0)>=1}
         ]
         :G.day===2
         ?[
