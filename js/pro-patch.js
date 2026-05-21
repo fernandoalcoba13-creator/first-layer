@@ -11,7 +11,7 @@
   }
   window.updateProPanel=function(){
     const title=document.getElementById('proTitle'), txt=document.getElementById('proText'), risk=document.getElementById('proRisk'), tip=document.getElementById('proTip'), list=document.getElementById('objList');
-    if(!txt||!risk||!tip||!window.G)return;
+    if(!txt||!risk||!tip||typeof G==='undefined')return;
     const broken=(G.printers||[]).filter(p=>p.broken).length;
     const queue=(G.orders||[]).length;
     const loaded=(G.printers||[]).filter(p=>p.busy||p.order).length;
