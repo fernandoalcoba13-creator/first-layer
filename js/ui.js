@@ -257,8 +257,8 @@ document.addEventListener('keydown',e=>{
     e.preventDefault();return;
   }
   if(isShown('miniGame')&&G._mini&&G._mini.type==='nozzle'){
-    if(k==='alt'){G.holdNozzleInput('needle',true);e.preventDefault();return;}
-    if(k===' '||k==='spacebar'){G.holdNozzleInput('filament',true);e.preventDefault();return;}
+    if(k==='alt'){G.applyNozzleMove('needle',1);e.preventDefault();return;}
+    if(k===' '||k==='spacebar'){G.applyNozzleMove('filament',1);e.preventDefault();return;}
   }
   if(isShown('miniGame')&&G._mini&&G._mini.type==='maze'){
     const mv={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];

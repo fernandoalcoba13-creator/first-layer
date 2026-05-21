@@ -22,7 +22,7 @@ G.startNozzleMini=function(){
   if(G.day===1&&G.cons.cleaner<1)G.cons.cleaner=1;
   if((G.cons.cleaner||0)<=0){showNotif('🪡 '+tr('missing')+tr('cleaner'),'error');return;}
   document.getElementById('evp').style.display='none';
-  G._mini={type:'nozzle',ev,time:36000,max:36000,phase:'needle',hits:0,needHits:3,power:0,targetA:66,targetB:82,heat:12,needleHeld:false,filamentHeld:false,done:false,tick:null};
+  G._mini={type:'nozzle',ev,time:36000,max:36000,phase:'needle',hits:0,needHits:3,power:0,targetA:66,targetB:82,hold:0,holdNeed:1100,heat:12,needleHeld:false,filamentHeld:false,done:false,tick:null};
   document.getElementById('miniGame').style.display='flex';
   document.getElementById('mgTitle').textContent='🚫 '+tr('nozzleTitle')+' - P'+(ev.printer.id+1);
   document.getElementById('mgDesc').textContent=G.lang==='en'?'Use the needle from below and push filament from above. Work inside the sensitivity zone.':'Usá la aguja desde abajo y empujá filamento desde arriba. Trabajá dentro de la zona sensible.';
@@ -32,9 +32,15 @@ G.startNozzleMini=function(){
     if(!G._mini)return;
     const m=G._mini;
     m.time-=250;
-    const holding=(m.phase==='needle'&&m.needleHeld)||(m.phase==='filament'&&m.filamentHeld);
-    if(holding)G.applyNozzleMove(m.phase,1);
-    else m.power=Math.max(0,m.power-5);
+    m.power=Math.max(0,m.power-3.6);
+    const inZone=m.power>=m.targetA&&m.power<=m.targetB;
+    if(inZone){
+      m.hold+=250;
+      if(m.hold>=m.holdNeed)G.completeNozzleHold();
+    } else {
+      m.hold=Math.max(0,m.hold-350);
+      if(m.power>m.targetB)m.heat=Math.min(100,m.heat+2.5);
+    }
     m.heat=Math.max(0,m.heat-.45);
     document.getElementById('mgTimerFill').style.width=Math.max(0,m.time/m.max*100)+'%';
     G.renderNozzleMini();
@@ -47,7 +53,8 @@ G.renderNozzleMini=function(){
   const m=G._mini;
   if(m.type==='nozzle'){
     const isNeedle=m.phase==='needle',phaseName=G.lang==='en'?(isNeedle?'Needle':'Filament'):(isNeedle?'Aguja':'Filamento');
-    const key=G.lang==='en'?(isNeedle?'Hold ALT':'Hold SPACE'):(isNeedle?'Mantené ALT':'Mantené ESPACIO');
+    const key=G.lang==='en'?(isNeedle?'Tap ALT':'Tap SPACE'):(isNeedle?'Apreta ALT':'Apreta ESPACIO');
+    const stable=Math.min(100,m.hold/m.holdNeed*100);
     document.getElementById('mgGrid').innerHTML=
       '<div class="nozzleGame">'+
         '<div class="nzPhase">'+phaseName+' '+m.hits+'/'+m.needHits+'</div>'+
@@ -59,11 +66,11 @@ G.renderNozzleMini=function(){
           '<div class="nzNeedle" style="height:'+(isNeedle?Math.max(10,m.power*.78):10)+'%"></div>'+
         '</div>'+
         '<div class="nzStats">'+
-          '<b>'+key+'</b><b class="'+(m.heat>70?'hot':'')+'">'+(G.lang==='en'?'Burn ':'Quemadura ')+Math.floor(m.heat)+'%</b>'+
+          '<b>'+key+' | '+Math.floor(stable)+'%</b><b class="'+(m.heat>70?'hot':'')+'">'+(G.lang==='en'?'Burn ':'Quemadura ')+Math.floor(m.heat)+'%</b>'+
         '</div>'+
-        '<div class="mgBtns"><button onmousedown="G.holdNozzleInput(\'needle\',true)" onmouseup="G.holdNozzleInput(\'needle\',false)" onmouseleave="G.holdNozzleInput(\'needle\',false)">ALT ↑</button><button onmousedown="G.holdNozzleInput(\'filament\',true)" onmouseup="G.holdNozzleInput(\'filament\',false)" onmouseleave="G.holdNozzleInput(\'filament\',false)">SPACE ↓</button></div>'+
+        '<div class="mgBtns"><button onclick="G.applyNozzleMove(\'needle\',1)">ALT ↑</button><button onclick="G.applyNozzleMove(\'filament\',1)">SPACE ↓</button></div>'+
       '</div>';
-    document.getElementById('mgHint').textContent=(G.lang==='en'?'Release before overshooting the target. ':'Soltá antes de pasarte de la meta. ')+Math.ceil(m.time/1000)+'s';
+    document.getElementById('mgHint').textContent=(G.lang==='en'?'Tap to fill, then keep it inside the green target. ':'Apreta para llenar y mantenela en la meta verde. ')+Math.ceil(m.time/1000)+'s';
     return;
   }
 };
@@ -75,17 +82,18 @@ G.holdNozzleInput=function(which,on){
 G.applyNozzleMove=function(which,power){
   const m=G._mini;if(!m||m.done||m.type!=='nozzle')return;
   if(which!==m.phase){m.heat=Math.min(100,m.heat+3);G.renderNozzleMini();return;}
-  m.power=Math.min(110,m.power+(power||1)*7.5);
-  if(m.power>=m.targetA&&m.power<=m.targetB){
-    m.hits++;m.power=0;m.heat=Math.max(0,m.heat-4);SFX.clk();
-    if(m.hits>=m.needHits){
-      if(m.phase==='needle'){m.phase='filament';m.hits=0;m.power=0;showNotif(G.lang==='en'?'Needle pass clear. Push filament.':'Aguja lista. Ahora empujá filamento.','success');}
-      else{m.done=true;setTimeout(()=>G.winNozzleMini(),160);}
-    }
-  } else if(m.power>m.targetB){
-    m.power=0;m.hits=Math.max(0,m.hits-1);m.heat=Math.min(100,m.heat+22);SFX.err();shakeUI();
-  }
+  m.power=Math.min(112,m.power+(power||1)*9.5);
+  if(m.power>m.targetB){m.heat=Math.min(100,m.heat+4);SFX.err();}
+  else SFX.clk();
   G.renderNozzleMini();
+};
+G.completeNozzleHold=function(){
+  const m=G._mini;if(!m||m.done||m.type!=='nozzle')return;
+  m.hits++;m.power=0;m.hold=0;m.heat=Math.max(0,m.heat-6);SFX.ok();
+  if(m.hits>=m.needHits){
+    if(m.phase==='needle'){m.phase='filament';m.hits=0;showNotif(G.lang==='en'?'Needle pass clear. Push filament.':'Aguja lista. Ahora empuja filamento.','success');}
+    else{m.done=true;setTimeout(()=>G.winNozzleMini(),160);}
+  }
 };
 G.moveNozzleMaze=function(dx,dy){if(G._mini&&G._mini.type==='nozzle')G.applyNozzleMove(dy<0?'needle':'filament',1);};
 G.moveNozzleMazeTo=function(){};
