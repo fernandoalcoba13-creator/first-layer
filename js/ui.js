@@ -249,9 +249,19 @@ function handleDialogKeys(k,e){
   }
   return false;
 }
+function isTextEntryTarget(el){
+  if(!el)return false;
+  const tag=(el.tagName||'').toLowerCase();
+  return tag==='input'||tag==='textarea'||el.isContentEditable;
+}
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   const k=e.key.toLowerCase();
+  if(isTextEntryTarget(e.target)){
+    if(k==='escape'){closeTopPanel();e.preventDefault();}
+    else if(k==='enter'&&isShown('titleScreen')){closeGameMenu();e.preventDefault();}
+    return;
+  }
   if(k==='escape'){
     if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd'))openGameMenu();
     e.preventDefault();return;
