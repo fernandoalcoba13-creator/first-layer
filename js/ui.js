@@ -254,10 +254,20 @@ function isTextEntryTarget(el){
   const tag=(el.tagName||'').toLowerCase();
   return tag==='input'||tag==='textarea'||el.isContentEditable;
 }
+function isTypingInTextField(e){
+  return isTextEntryTarget(e.target)||isTextEntryTarget(document.activeElement);
+}
+window.addEventListener('keydown',e=>{
+  if(!isTypingInTextField(e))return;
+  const k=e.key.toLowerCase();
+  if(k==='escape'){closeTopPanel();e.preventDefault();}
+  else if(k==='enter'&&isShown('titleScreen')){closeGameMenu();e.preventDefault();}
+  e.stopImmediatePropagation();
+},true);
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   const k=e.key.toLowerCase();
-  if(isTextEntryTarget(e.target)){
+  if(isTypingInTextField(e)){
     if(k==='escape'){closeTopPanel();e.preventDefault();}
     else if(k==='enter'&&isShown('titleScreen')){closeGameMenu();e.preventDefault();}
     return;
