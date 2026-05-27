@@ -11,7 +11,9 @@ G.bStk=function(k,c,id){
   if(G.phase==='day')G.dayBought=(G.dayBought||0)+1;
   const f=id&&filDef(k,id);
   SFX.coin();showNotif('✅ '+(f?f.n:k)+' comprado. $'+G.gold,'money');
+  if(G.phase==='day'&&G.day===1&&k==='pla'&&id==='eco'){showNotif(tr('dayOneLoadTip'),'info');sHint(tr('dayOneLoadTip'));}
   document.getElementById('hg').textContent=G.gold;
+  doSave(G);
 };
 G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
 G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};

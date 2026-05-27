@@ -172,10 +172,17 @@ class DayScene extends Phaser.Scene{
     if(!this.clientQueue.length)this.clientQueue=this._shuffleCL();
     const qi=this.clientQueue.findIndex(c=>!activeIds.includes(c.id));
     if(qi<0)return;
-    const cl=this.clientQueue.splice(qi,1)[0];
-    const style=this.clientStyle(cl);
-    const pr=this.pickProduct(style);
-    const urg=cl.m==='Urgente'||Math.random()<.18;
+    let cl=this.clientQueue.splice(qi,1)[0];
+    let style=this.clientStyle(cl);
+    let pr=this.pickProduct(style);
+    let urg=cl.m==='Urgente'||Math.random()<.18;
+    if(G.day===1&&G.dayCli===0){
+      cl=CL.find(x=>x.id==='meli')||cl;
+      pr=PR.find(x=>x.n==='Logo')||pr;
+      style={diff:.9,pat:1.25,tag:'simple'};
+      urg=false;
+      this.clientQueue=this.clientQueue.filter(x=>x.id!==cl.id);
+    }
     const order=this.makeOrder(cl,pr,urg,style);
     let pay=order.pay;
     if(G.upg.ams&&(pr.cat==='fig'||pr.cat==='art'))pay=Math.round(pay*1.5);
@@ -249,7 +256,10 @@ class DayScene extends Phaser.Scene{
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 '+tr('lucasAccepted')+': '+c.pr.e+' '+c.pr.n);
     sLog('✅ '+c.cl.n+': '+c.pr.e+' '+c.pr.n+' — '+(canPrint?tr('orderReady'):trf('missingOrder',{mat:c.order.material,units:c.order.units}))+'. '+tr('queueCount')+': '+G.orders.length);
-    if(G.day===1&&G.dayOrd===1)this.time.delayedCall(500,()=>{showNotif(tr('firstPrintTip'),'info');sHint(tr('firstPrintTip'));});
+    if(G.day===1&&G.dayOrd===1)this.time.delayedCall(500,()=>{
+      showNotif(tr('dayOneShopTip'),'info');sHint(tr('dayOneShopTip'));
+      this.time.delayedCall(900,()=>{if(G.phase==='day'&&!matStock('pla'))G.openShop('stk');});
+    });
     doSave(G);
     return true;
   }
@@ -319,6 +329,7 @@ class DayScene extends Phaser.Scene{
     doSave(G);SFX.ok();G.cSto();
     showNotif('P'+(p.id+1)+' '+tr('loaded')+' '+o.pr.e+' '+o.pr.n,'success');
     sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
+    if(G.day===1){showNotif(tr('dayOnePrintTip'),'info');sHint(tr('dayOnePrintTip'));}
     return true;
   }
   completePrint(p){
