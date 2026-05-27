@@ -294,7 +294,10 @@ class DayScene extends Phaser.Scene{
   }
   openPrinters(){
     const ps=G.printers.filter(p=>!p.locked);
-    const choices=ps.map(p=>({lb:'P'+(p.id+1)+' - '+(p.busy?p.order.pr.e+' '+Math.round(p.progress*100)+'%':tr('loadJob')),cls:p.busy?'':'ok',cb:()=>{cDlg();this.openPrinterQueue(p);}}));
+    const choices=ps.map(p=>{
+      const dayLocked=p.id>0;
+      return {lb:'P'+(p.id+1)+' - '+(p.busy?p.order.pr.e+' '+Math.round(p.progress*100)+'%':dayLocked?tr('nightTitle'):tr('loadJob')),cls:p.busy||dayLocked?'':'ok',cb:()=>{cDlg();this.openPrinterQueue(p);}};
+    });
     choices.push({lb:tr('close'),cb:()=>cDlg()});
     this.oDlg('🖨️ '+tr('printerTitle'),'',
       tr('free')+': '+G.printers.filter(p=>!p.busy&&!p.broken&&!p.locked).length+
@@ -304,6 +307,7 @@ class DayScene extends Phaser.Scene{
   }
   openPrinterQueue(p){
     if(!p||p.locked)return;
+    if(G.phase==='day'&&p.id>0){showNotif(tr('dayPrinterLimit'),'info');sHint(tr('dayPrinterLimit'));return;}
     if(p.busy){showNotif('P'+(p.id+1)+': '+p.order.pr.e+' '+p.order.pr.n+' - '+Math.round(p.progress*100)+'%');return;}
     const queued=G.orders.filter(o=>!G.printers.some(x=>x.order===o));
     if(!queued.length){showNotif(tr('noPendingJobs'),'info');return;}
@@ -319,6 +323,7 @@ class DayScene extends Phaser.Scene{
   }
   assignOrderToPrinter(p,o){
     if(!p||!o||p.busy||p.locked)return false;
+    if(G.phase==='day'&&p.id>0){showNotif(tr('dayPrinterLimit'),'info');return false;}
     if(G.printers.some(x=>x.order===o)){showNotif(tr('jobLoaded'),'info');return false;}
     if(!prepareOrderMaterial(o)){
       o.waitingMaterial=true;doSave(G);
