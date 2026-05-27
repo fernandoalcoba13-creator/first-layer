@@ -333,11 +333,15 @@ class DayScene extends Phaser.Scene{
       return false;
     }
     p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;p._dayLoaded=true;
+    p._dayPrintMs=G.day===1?(G.dayPrints>=2?999999:24000):Math.max(14000,o.time*8500);
     if(G.day===1&&o.material==='pla'&&o.filament&&o.filament.id==='eco')G.dayUsedPlaBasic=true;
     doSave(G);SFX.ok();G.cSto();
     showNotif('P'+(p.id+1)+' '+tr('loaded')+' '+o.pr.e+' '+o.pr.n,'success');
     sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
-    if(G.day===1){showNotif(tr('dayOnePrintTip'),'info');sHint(tr('dayOnePrintTip'));}
+    if(G.day===1){
+      const msg=G.dayPrints>=2?tr('dayOneNightJobTip'):tr('dayOnePrintTip');
+      showNotif(msg,'info');sHint(msg);
+    }
     return true;
   }
   completePrint(p){
@@ -386,7 +390,7 @@ class DayScene extends Phaser.Scene{
     G.printers.forEach(p=>{
       if(!p.busy||p.broken||p._ev||p._pau)return;
       if(p.id>0)return;
-      p.progress+=dt/(p.order.time*1000)*G.sMult*energySpeed();
+      p.progress+=dt/(p._dayPrintMs||Math.max(14000,p.order.time*8500))*G.sMult*energySpeed();
       if(p.progress>=1)this.completePrint(p);
     });
     this.pGfx.forEach((pg,i)=>{

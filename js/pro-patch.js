@@ -37,10 +37,11 @@
       const es=G.lang!=='en';
       const dayTasks=G.day===1
         ?[
-          {txt:es?'Atender al primer cliente':'Serve the first client',done:(G.dayOrd||0)>=1},
+          {txt:es?'Aceptar 3 pedidos':'Accept 3 orders',done:(G.dayOrd||0)>=3},
           {txt:es?'Comprar PLA Basic para imprimir':'Buy PLA Basic to print',done:!!G.dayBoughtPlaBasic||(G.stk&&G.stk.pla&&G.stk.pla.eco||0)>0||!!G.dayUsedPlaBasic},
-          {txt:es?'Cargar un trabajo en P1':'Load one job into P1',done:loaded>=1},
-          {txt:es?'Cobrar al menos un trabajo':'Cash out at least one job',done:(G.dayPrints||0)>=1}
+          {txt:es?'Cargar un trabajo en P1':'Load one job into P1',done:loaded>=1||(G.dayPrints||0)>=1},
+          {txt:es?'Cobrar 2 trabajos':'Cash out 2 jobs',done:(G.dayPrints||0)>=2},
+          {txt:es?'Dejar 1 trabajo para la noche':'Leave 1 job for night',done:(G.dayOrd||0)>=3&&(G.orders||[]).length>=1}
         ]
         :G.day===2
         ?[
