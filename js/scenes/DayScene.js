@@ -10,7 +10,7 @@ class DayScene extends Phaser.Scene{
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     const freshDayOne=G.day===1&&!(G.orders&&G.orders.length)&&!G.dayBoughtPlaBasic&&!G.dayUsedPlaBasic;
     if(G.day!==1){G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;}
-    if(freshDayOne){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:1,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;ensureStockShape();ensureConsumables();}
+    if(freshDayOne){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;ensureStockShape();ensureConsumables();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
@@ -161,8 +161,7 @@ class DayScene extends Phaser.Scene{
     const pat=Math.max(6,(cl.pat*style.pat-(G.day-1)*.28+(urg?-4:0))*repPatienceMult()*(mod.pat||1));
     const risk=Phaser.Math.Clamp(.035+(diff-1)*.07+G.day*.006+(urg?.035:0)+(mod.risk||0),.02,.42);
     let material=pr.cat==='art'?'resin':(pr.cat==='util'&&diff>1.15?'petg':'pla');
-    if(G.day===1&&material==='resin')material='pla';
-    if(G.day===1&&G.dayCli===0)material='pla';
+    if(G.day===1)material='pla';
     const units=G.day===1&&G.dayCli===0?1:Math.max(1,Math.ceil(pr.t*diff/3));
     return {pay,time,diff,risk,pat,tag:style.tag,material,units};
   }
@@ -326,6 +325,7 @@ class DayScene extends Phaser.Scene{
   assignOrderToPrinter(p,o){
     if(!p||!o||p.busy||p.locked)return false;
     if(G.phase==='day'&&p.id>0){showNotif(tr('dayPrinterLimit'),'info');return false;}
+    if(G.day===1&&!G.dayBoughtPlaBasic){showNotif(tr('dayOneShopTip'),'info');sHint(tr('dayOneShopTip'));G.openShop('stk');return false;}
     if(G.printers.some(x=>x.order===o)){showNotif(tr('jobLoaded'),'info');return false;}
     if(!prepareOrderMaterial(o)){
       o.waitingMaterial=true;doSave(G);
