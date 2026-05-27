@@ -8,7 +8,9 @@ class DayScene extends Phaser.Scene{
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.dayBought=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     BGM.playDay();
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
-    if(G.day===1&&G.stats.ord===0){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:1,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};ensureStockShape();ensureConsumables();}
+    const freshDayOne=G.day===1&&!(G.orders&&G.orders.length)&&!G.dayBoughtPlaBasic&&!G.dayUsedPlaBasic;
+    if(G.day!==1){G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;}
+    if(freshDayOne){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:1,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;ensureStockShape();ensureConsumables();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
@@ -331,6 +333,7 @@ class DayScene extends Phaser.Scene{
       return false;
     }
     p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;p._dayLoaded=true;
+    if(G.day===1&&o.material==='pla'&&o.filament&&o.filament.id==='eco')G.dayUsedPlaBasic=true;
     doSave(G);SFX.ok();G.cSto();
     showNotif('P'+(p.id+1)+' '+tr('loaded')+' '+o.pr.e+' '+o.pr.n,'success');
     sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
@@ -382,15 +385,19 @@ class DayScene extends Phaser.Scene{
   updatePrinters(dt){
     G.printers.forEach(p=>{
       if(!p.busy||p.broken||p._ev||p._pau)return;
-      p.progress=0;
+      if(p.id>0)return;
+      p.progress+=dt/(p.order.time*1000)*G.sMult*energySpeed();
+      if(p.progress>=1)this.completePrint(p);
     });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
       const c=p.order?p.order.pr.c:0x5bc8fa;
-      if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:false});
-      else drawPrinter(pg.g,false,p.broken,p.progress,c);
+      const activeDay=p.busy&&p.id===0;
+      if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
+      else drawPrinter(pg.g,activeDay,p.broken,p.progress,c);
       if(p.locked)pg.lt.setText('🔒').setColor('#222244');
       else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
+      else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
       else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
       else pg.lt.setText('LIBRE').setColor('#2a2050');
     });

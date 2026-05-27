@@ -11,7 +11,7 @@ G.bStk=function(k,c,id){
   if(G.phase==='day')G.dayBought=(G.dayBought||0)+1;
   const f=id&&filDef(k,id);
   SFX.coin();showNotif('✅ '+(f?f.n:k)+' comprado. $'+G.gold,'money');
-  if(G.phase==='day'&&G.day===1&&k==='pla'&&id==='eco'){showNotif(tr('dayOneLoadTip'),'info');sHint(tr('dayOneLoadTip'));}
+  if(G.phase==='day'&&G.day===1&&k==='pla'&&id==='eco'){G.dayBoughtPlaBasic=true;showNotif(tr('dayOneLoadTip'),'info');sHint(tr('dayOneLoadTip'));}
   document.getElementById('hg').textContent=G.gold;
   doSave(G);
 };

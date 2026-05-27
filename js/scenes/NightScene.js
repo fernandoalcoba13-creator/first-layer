@@ -266,7 +266,11 @@ class NightScene extends Phaser.Scene{
   }
   trigEv(forceId,forced=false){
     if(G.phase!=='night')return;
-    const busy=G.printers.filter(p=>p.busy&&!p.broken&&!p._ev&&!p._pau);
+    let busy=G.printers.filter(p=>p.busy&&!p.broken&&!p._ev&&!p._pau);
+    if(forced&&G.day===1&&forceId==='clog'&&!busy.length&&G.dayUsedPlaBasic){
+      const p=G.printers.find(x=>!x.locked&&!x.broken&&!x._ev);
+      if(p)busy=[p];
+    }
     if(!busy.length){if(forced)this.time.delayedCall(3500,()=>this.trigEv(forceId,true));return;}
     const avgRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||0),0)/busy.length;
     if(!forced&&Math.random()>Math.min(.9,.22+G.day*.025+avgRisk))return;
@@ -308,7 +312,7 @@ class NightScene extends Phaser.Scene{
       wr-=w;if(wr<=0){def=e;break;}
     }
     const defLabel=evText(def);
-    const matLine=fil?(G.lang==='en'?'\nMaterial used: ':'\nMaterial usado: ')+fil.n:'';
+    const matLine=fil?(G.lang==='en'?'\nMaterial used: ':'\nMaterial usado: ')+fil.n:(G.day===1&&forceId==='clog'&&G.dayUsedPlaBasic?(G.lang==='en'?'\nMaterial used earlier: PLA Basic':'\nMaterial usado antes: PLA Basic'):'');
     const ev={...defLabel,printer:tgt,desc:defLabel.de.replace('{P','P'+(tgt.id+1))+matLine,resolved:false};
     tgt._ev=ev;this.aEv=ev;G.block=true;SFX.alm();
     const po=this.pObjs.find(o=>o.p===tgt);
