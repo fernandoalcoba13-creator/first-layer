@@ -2,15 +2,27 @@
 // DOM-side helpers used across scenes and G methods.
 function sLog(m){document.getElementById('log').innerHTML=m;}
 function sHint(m){document.getElementById('hint').textContent=m;}
+function notifTitle(type){
+  if(type==='money')return tr('notifPurchase');
+  if(type==='success')return tr('notifSuccess');
+  if(type==='error')return tr('notifWarning');
+  return tr('notifTip');
+}
 function showNotif(m,type='info'){
-  // Stagger existing notifs down
-  document.querySelectorAll('.ntf').forEach((n,i)=>{n.style.top=(52+26*(i+1))+'px';});
+  let stack=document.getElementById('notifStack');
+  if(!stack){
+    stack=document.createElement('div');
+    stack.id='notifStack';
+    document.getElementById('ui').appendChild(stack);
+  }
   const n=document.createElement('div');
   n.className='ntf '+type;
-  n.innerHTML='<div class="ntfdot"></div><span>'+m+'</span>';
-  document.getElementById('ui').appendChild(n);
-  n.animate([{transform:'translateX(20px)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:220});
-  setTimeout(()=>{n.animate([{opacity:1},{opacity:0,transform:'translateX(12px)'}],{duration:280,fill:'forwards'});setTimeout(()=>n.remove(),280);},3200);
+  n.innerHTML='<div class="ntfdot"></div><div class="ntfBody"><b>'+notifTitle(type)+'</b><span>'+m+'</span></div>';
+  stack.prepend(n);
+  const all=[...stack.querySelectorAll('.ntf')];
+  all.slice(5).forEach(x=>x.remove());
+  n.animate([{transform:'translateX(22px)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:220,easing:'ease-out'});
+  setTimeout(()=>{n.animate([{opacity:1},{opacity:0,transform:'translateX(14px)'}],{duration:280,fill:'forwards'});setTimeout(()=>n.remove(),280);},4300);
 }
 function shakeUI(){const c=document.getElementById('ui');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),400);}
 

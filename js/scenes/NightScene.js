@@ -432,7 +432,20 @@ class NightScene extends Phaser.Scene{
       this.iLbl.setVisible(false);
     }
     if(this.iLbl.visible){const pulse=.55+.35*Math.sin(this.time.now/120);this.iLbl.setAlpha(.72+pulse*.28).setScale(1+pulse*.05);}
-    this.updateHUD();
+    this.updateHUD();this.maybeFastCloseNight();
+  }
+  nightObjectiveReady(){
+    if(G.day!==1)return false;
+    const active=(G.printers||[]).some(p=>p.busy&&!p.broken&&!p._ev);
+    return (G.nFixes||0)>=1&&(G.nightDone||0)>=1&&!G.pActive&&!active;
+  }
+  maybeFastCloseNight(){
+    if(this.fastCloseNight||G.block||G.phase!=='night')return;
+    if(!this.nightObjectiveReady())return;
+    this.fastCloseNight=true;
+    showNotif(tr('nightGoalComplete'),'success');
+    sLog('✅ '+tr('nightGoalComplete'));
+    this.time.delayedCall(1100,()=>{if(G.phase==='night'&&!G.block)this.endNight();});
   }
   updateHUD(){document.getElementById('hg').textContent=G.gold;document.getElementById('hr').textContent=G.rep;}
   endNight(){

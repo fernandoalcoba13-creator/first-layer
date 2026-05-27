@@ -421,6 +421,19 @@ class DayScene extends Phaser.Scene{
     document.getElementById('htf').style.width=(Math.max(0,this.timer/this.dur)*100)+'%';
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
   }
+  dayObjectiveReady(){
+    if(G.day!==1)return false;
+    const queued=(G.orders||[]).length;
+    return (G.dayOrd||0)>=3&&(G.dayPrints||0)>=2&&queued>=1&&(G.dayBoughtPlaBasic||G.dayUsedPlaBasic);
+  }
+  maybeFastCloseDay(){
+    if(this.fastCloseDay||G.block||G.phase!=='day')return;
+    if(!this.dayObjectiveReady())return;
+    this.fastCloseDay=true;
+    showNotif(tr('dayGoalComplete'),'success');
+    sHint(tr('dayGoalComplete'));
+    this.time.delayedCall(1000,()=>{if(G.phase==='day'&&!G.block)this.endDay();});
+  }
   update(_t,dt){
     if(G.phase!=='day'||G.block)return;
     this.timer-=dt;if(this.timer<=0){this.endDay();return;}
@@ -464,7 +477,7 @@ class DayScene extends Phaser.Scene{
       c.pbF.width=46*p;c.pbF.fillColor=p<.35?0xff4d6a:p<.65?0xffe566:0x4dff91;
       if(c.pat<=0)this.leaveClient(c,true);
     });
-    tickMate(dt);this.updatePrinters(dt);this.updateHUD();
+    tickMate(dt);this.updatePrinters(dt);this.updateHUD();this.maybeFastCloseDay();
   }
   endDay(){
     if(G.phase!=='day')return;
