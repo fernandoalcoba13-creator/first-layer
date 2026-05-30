@@ -46,6 +46,7 @@ function renderRepHUD(){
 function notifTitle(type){
   if(type==='money')return tr('notifPurchase');
   if(type==='success')return tr('notifSuccess');
+  if(type==='warning')return tr('notifWarning');
   if(type==='error')return tr('notifWarning');
   return tr('notifTip');
 }

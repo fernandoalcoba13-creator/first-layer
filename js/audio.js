@@ -19,21 +19,24 @@ var BGM={
   night:null,
   _btn(){return document.getElementById('musicBtn');},
   _syncBtn(){const b=this._btn();if(!b)return;b.textContent=this.on?'♪ Música ON':'♪ Música OFF';b.classList.toggle('off',!this.on);},
-  _day(){if(!this.day){this.day=new Audio('assets/audio/day-theme.mp3');this.day.loop=true;this.day.volume=.38;}return this.day;},
-  // Fernando: cuando tengas la música de noche, dejá el archivo en assets/audio/night-theme.mp3.
-  // Hasta entonces la noche queda en silencio (el .play() falla silencioso). Nada más que tocar acá.
-  _night(){if(!this.night){this.night=new Audio('assets/audio/night-theme.mp3');this.night.loop=true;this.night.volume=.32;}return this.night;},
+  // El tema de día ya existe y suena. Para la noche: cuando tengas el .mp3, dejalo en
+  // assets/audio/night-theme.mp3 y completá nightSrc acá. Mientras esté vacío NO se crea
+  // ningún Audio ni se hace request — así no quedan 404 en la beta.
+  daySrc:'assets/audio/day-theme.mp3',
+  nightSrc:'', // 'assets/audio/night-theme.mp3'
+  _day(){if(!this.daySrc)return null;if(!this.day){this.day=new Audio(this.daySrc);this.day.loop=true;this.day.volume=.38;}return this.day;},
+  _night(){if(!this.nightSrc)return null;if(!this.night){this.night=new Audio(this.nightSrc);this.night.loop=true;this.night.volume=.32;}return this.night;},
   playDay(){
     this.phase='day';this._syncBtn();
     if(this.night)this.night.pause();
     if(!this.on)return;
-    this._day().play().catch(()=>{});
+    const a=this._day();if(a)a.play().catch(()=>{});
   },
   playNight(){
     this.phase='night';this._syncBtn();
     if(this.day)this.day.pause();
     if(!this.on)return;
-    this._night().play().catch(()=>{});
+    const a=this._night();if(a)a.play().catch(()=>{});
   },
   stop(){if(this.day){this.day.pause();this.day.currentTime=0;}if(this.night){this.night.pause();this.night.currentTime=0;}this.phase=null;this._syncBtn();},
   toggle(){

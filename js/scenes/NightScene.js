@@ -267,10 +267,8 @@ class NightScene extends Phaser.Scene{
   trigEv(forceId,forced=false){
     if(G.phase!=='night')return;
     let busy=G.printers.filter(p=>p.busy&&!p.broken&&!p._ev&&!p._pau);
-    if(forced&&G.day===1&&forceId==='clog'&&!busy.length&&G.dayUsedPlaBasic){
-      const p=G.printers.find(x=>!x.locked&&!x.broken&&!x._ev);
-      if(p)busy=[p];
-    }
+    // A failure can only hit a printer that's actually printing. If nothing's running yet,
+    // a forced (beta) fail waits and retries until the player has a job on a printer.
     if(!busy.length){if(forced)this.time.delayedCall(3500,()=>this.trigEv(forceId,true));return;}
     const avgRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||0),0)/busy.length;
     if(!forced&&Math.random()>Math.min(.9,.22+G.day*.025+avgRisk))return;
@@ -339,6 +337,7 @@ class NightScene extends Phaser.Scene{
         ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startBedMini()">📐 '+tr('bedMini')+(ev.g>0?' (-$'+ev.g+')':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
         +(beta?'':'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>');
+    if(beta&&(ev._fails||0)>=2)buttons+='<button class="eb skip" onclick="G.nForceRepair()">🛠️ '+tr('repairAnyway')+' (-'+ev.rp+' REP)</button>';
     document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
     setTimeout(()=>focusPanelFirst('#ebs .eb'),0);

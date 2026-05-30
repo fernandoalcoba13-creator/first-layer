@@ -143,12 +143,28 @@ G.failNozzleMini=function(){
   clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';
   if(BETA_DAYS[G.day]&&ev){
     // Beta: the minigame can't be skipped — re-present the failure so the player retries the job.
+    // Track attempts so showEv can offer a paid "repair anyway" escape valve after 2 fails.
+    ev._fails=(ev._fails||0)+1;
     SFX.err();shakeUI();showNotif((type==='bed'?tr('bedFail'):tr('nozzleFailed'))+' — '+tr('tryAgain'),'error');
     const ns=game.scene.getScene('Night');
     if(ns){ns.aEv=ns.aEv||ev;ev.printer._ev=ev;G.block=true;if(ns.showEv)ns.showEv(ns.aEv);}
     return;
   }
   showNotif(type==='bed'?tr('bedFail'):tr('nozzleFailed'),'error');G.nSkip();
+};
+// Beta escape valve: after 2 failed minigame attempts the player can pay reputation to get
+// unstuck. The printer keeps working (no break, no soft-lock) — rep is the price for not
+// finishing the repair properly. Rep can't run out the way gold/parts can, so no dead-end.
+G.nForceRepair=function(){
+  const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;
+  G.rep=Math.max(0,G.rep-ev.rp);
+  ev.printer._ev=null;ev.printer._pau=false;if(ev.printer.order)ev.printer.busy=true;
+  ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;
+  G.nFixes=(G.nFixes||0)+1;if(G.stats)G.stats.fix++;
+  SFX.fix();shakeUI();
+  showNotif(tr('repairAnyway')+' — -'+ev.rp+' REP','warning');
+  sLog('🛠️ '+ev.ti+' — -'+ev.rp+' REP');
+  renderRepHUD();doSave(G);
 };
 G.cancelMiniGame=function(){G.failNozzleMini();};
 G._bk=function(seq){
