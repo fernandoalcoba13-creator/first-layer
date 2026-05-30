@@ -16,20 +16,31 @@ var BGM={
   on:localStorage.getItem('first_layer_music')!=='off',
   phase:null,
   day:null,
+  night:null,
   _btn(){return document.getElementById('musicBtn');},
   _syncBtn(){const b=this._btn();if(!b)return;b.textContent=this.on?'♪ Música ON':'♪ Música OFF';b.classList.toggle('off',!this.on);},
   _day(){if(!this.day){this.day=new Audio('assets/audio/day-theme.mp3');this.day.loop=true;this.day.volume=.38;}return this.day;},
+  // Fernando: cuando tengas la música de noche, dejá el archivo en assets/audio/night-theme.mp3.
+  // Hasta entonces la noche queda en silencio (el .play() falla silencioso). Nada más que tocar acá.
+  _night(){if(!this.night){this.night=new Audio('assets/audio/night-theme.mp3');this.night.loop=true;this.night.volume=.32;}return this.night;},
   playDay(){
     this.phase='day';this._syncBtn();
+    if(this.night)this.night.pause();
     if(!this.on)return;
-    const a=this._day();
-    a.play().catch(()=>{});
+    this._day().play().catch(()=>{});
   },
-  stop(){if(this.day){this.day.pause();this.day.currentTime=0;}this.phase=null;this._syncBtn();},
+  playNight(){
+    this.phase='night';this._syncBtn();
+    if(this.day)this.day.pause();
+    if(!this.on)return;
+    this._night().play().catch(()=>{});
+  },
+  stop(){if(this.day){this.day.pause();this.day.currentTime=0;}if(this.night){this.night.pause();this.night.currentTime=0;}this.phase=null;this._syncBtn();},
   toggle(){
     this.on=!this.on;localStorage.setItem('first_layer_music',this.on?'on':'off');this._syncBtn();
-    if(this.on&&this.phase==='day')this.playDay();else if(!this.on&&this.day)this.day.pause();
+    if(this.on){if(this.phase==='day')this.playDay();else if(this.phase==='night')this.playNight();}
+    else{if(this.day)this.day.pause();if(this.night)this.night.pause();}
   }
 };
-document.addEventListener('pointerdown',()=>{if(BGM.on&&BGM.phase==='day')BGM.playDay();},{once:true});
+document.addEventListener('pointerdown',()=>{if(BGM.on){if(BGM.phase==='day')BGM.playDay();else if(BGM.phase==='night')BGM.playNight();}},{once:true});
 document.addEventListener('DOMContentLoaded',()=>BGM._syncBtn());

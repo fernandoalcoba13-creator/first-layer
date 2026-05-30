@@ -25,7 +25,7 @@ class DayScene extends Phaser.Scene{
     document.getElementById('ptag').className='ptag day';
     document.getElementById('ptag').textContent='☀️ '+tr('day')+' '+G.day;
     document.getElementById('hday').textContent='📅 '+tr('dayDyn')+' '+G.day;
-    updateMarket();this.applyDayMod();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
+    updateMarket();this.applyDayMod();this.cInt=Math.max(7000,Math.round(this.cInt*repStanding().flow));this.announceStanding();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
     sHint('Click objetos | WASD + E');
     doSave(G);
   }
@@ -65,7 +65,7 @@ class DayScene extends Phaser.Scene{
     this.pGfx=[];const psp=(W*.37)/4;
     for(let i=0;i<4;i++){
       const px=W*.6+i*psp+psp/2,py=H*.49;
-      const sp=createPrinterSprite(this,px,py);
+      const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(3.5);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
       this.pGfx.push({g:pg,sp,lt,px,py});
@@ -95,7 +95,7 @@ class DayScene extends Phaser.Scene{
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
     this.player.add(this.pGr);this.pSp=null;this.pDir='down';
   }
-  refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,false);if(this.pSp)this.pGr.setVisible(false);}
+  refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,false);if(this.pSp){this.pSp.setScale(2.6);this.pGr.setVisible(false);}}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
     this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
@@ -115,6 +115,12 @@ class DayScene extends Phaser.Scene{
     if(e){G.ss=G.day;G.cObj=e;this.time.delayedCall(600,()=>{const st=storyText(e);G.showSto(st.ti,st.tx,st.ob);});}
     const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=G.shopName?shopDisplayName():gameTitle();
     document.getElementById('obj').textContent=makerDisplayName()+' · '+shopDisplayName();
+  }
+  announceStanding(){
+    const s=repStanding();
+    const label={bad:'⚠️ '+tr('repBad'),norm:'• '+tr('repNorm'),good:'⭐ '+tr('repGood')}[s.key];
+    const note={bad:tr('repBadNote'),norm:tr('repNormNote'),good:tr('repGoodNote')}[s.key];
+    showNotif(label+': '+note,s.key==='bad'?'warning':s.key==='good'?'success':'info');
   }
   applyDayMod(){
     if(BETA_DAYS[G.day])return;
@@ -191,7 +197,7 @@ class DayScene extends Phaser.Scene{
     const tX=this.W*.24+slot*86,yP=this.H*.71;
     const pat=order.pat*1000;
     const ct=this.add.container(-50,yP).setDepth(4);
-    const cs=createClientSprite(this,cl,idx);
+    const cs=createClientSprite(this,cl,idx);if(cs)cs.setScale(2.6);
     const cg=this.add.graphics();if(cs)ct.add(cs);else{drawClient(cg,cl,idx);ct.add(cg);}
     const bb=this.add.graphics();bb.fillStyle(0xf8f8f8,.97);bb.fillRoundedRect(-42,-116,84,34,4);bb.fillTriangle(-6,-82,6,-82,0,-74);ct.add(bb);
     ct.add(this.add.text(0,-101,pr.e+' $'+pay,{fontSize:'10px',color:'#111',fontFamily:'Press Start 2P'}).setOrigin(.5));
@@ -411,12 +417,12 @@ class DayScene extends Phaser.Scene{
     this.pGfx.forEach(pg=>{
       if(pg.sp||!this.textures.exists(PRINTER_ASSET))return;
       pg.sp=createPrinterSprite(this,pg.px,pg.py);
-      if(pg.sp)pg.g.setVisible(false);
+      if(pg.sp){pg.sp.setScale(3.5);pg.g.setVisible(false);}
     });
   }
   updateHUD(){
     document.getElementById('hg').textContent=G.gold;
-    document.getElementById('hr').textContent=G.rep;
+    renderRepHUD();
     document.getElementById('hs').textContent=G.stress;
     document.getElementById('htf').style.width=(Math.max(0,this.timer/this.dur)*100)+'%';
     if(this.sLbl)this.sLbl.setText(this.stkTxt());

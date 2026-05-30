@@ -21,11 +21,12 @@ G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(
 G.startNozzleMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
   ensureConsumables();
-  if(G.day===1&&G.cons.cleaner<1)G.cons.cleaner=1;
+  if(BETA_DAYS[G.day]&&G.cons.cleaner<1)G.cons.cleaner=1;
   if((G.cons.cleaner||0)<=0){showNotif('🪡 '+tr('missing')+tr('cleaner'),'error');return;}
   document.getElementById('evp').style.display='none';
   G._mini={type:'nozzle',ev,time:36000,max:36000,phase:'needle',hits:0,needHits:3,power:0,targetA:66,targetB:82,hold:0,holdNeed:1100,heat:12,needleHeld:false,filamentHeld:false,done:false,tick:null};
   document.getElementById('miniGame').style.display='flex';
+  {const ab=document.getElementById('mgAbandon');if(ab)ab.style.display=BETA_DAYS[G.day]?'none':'';}
   document.getElementById('mgTitle').textContent='🚫 '+tr('nozzleTitle')+' - P'+(ev.printer.id+1);
   document.getElementById('mgDesc').textContent=G.lang==='en'?'Use the needle from below and push filament from above. Work inside the sensitivity zone.':'Usá la aguja desde abajo y empujá filamento desde arriba. Trabajá dentro de la zona sensible.';
   document.getElementById('mgTimerFill').style.width='100%';
@@ -98,8 +99,6 @@ G.completeNozzleHold=function(){
   }
 };
 G.moveNozzleMaze=function(dx,dy){if(G._mini&&G._mini.type==='nozzle')G.applyNozzleMove(dy<0?'needle':'filament',1);};
-G.moveNozzleMazeTo=function(){};
-G.scrapeNozzle=function(){};
 G.startBedMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='bed')return;
   if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}
@@ -107,6 +106,7 @@ G.startBedMini=function(){
   const seq=[0,1,2,3].sort(()=>Math.random()-.5);
   G._mini={type:'bed',ev,time:25000,max:25000,seq,idx:0,done:false,tick:null};
   document.getElementById('miniGame').style.display='flex';
+  {const ab=document.getElementById('mgAbandon');if(ab)ab.style.display=BETA_DAYS[G.day]?'none':'';}
   document.getElementById('mgTitle').textContent='📐 '+tr('bedTitle')+' - P'+(ev.printer.id+1);
   document.getElementById('mgDesc').textContent=tr('bedDesc');
   document.getElementById('mgTimerFill').style.width='100%';
@@ -137,7 +137,19 @@ G.winNozzleMini=function(){
   }
   G.nFix();
 };
-G.failNozzleMini=function(){if(!G._mini)return;const type=G._mini.type;clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';showNotif(type==='bed'?tr('bedFail'):tr('nozzleFailed'),'error');G.nSkip();};
+G.failNozzleMini=function(){
+  if(!G._mini)return;
+  const type=G._mini.type,ev=G._mini.ev;
+  clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';
+  if(BETA_DAYS[G.day]&&ev){
+    // Beta: the minigame can't be skipped — re-present the failure so the player retries the job.
+    SFX.err();shakeUI();showNotif((type==='bed'?tr('bedFail'):tr('nozzleFailed'))+' — '+tr('tryAgain'),'error');
+    const ns=game.scene.getScene('Night');
+    if(ns){ns.aEv=ns.aEv||ev;ev.printer._ev=ev;G.block=true;if(ns.showEv)ns.showEv(ns.aEv);}
+    return;
+  }
+  showNotif(type==='bed'?tr('bedFail'):tr('nozzleFailed'),'error');G.nSkip();
+};
 G.cancelMiniGame=function(){G.failNozzleMini();};
 G._bk=function(seq){
   const ns=game.scene.getScene('Night');if(!ns)return;
@@ -164,8 +176,8 @@ G.syncPrinters=function(){
   }
 };
 G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;setTimeout(()=>focusPanelFirst('#shop .st.on,#shop .st,#sg .si:not(.sb),#shop .shopClose'),0);};
-G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(!betaShopAllows('upg',id)){showNotif('🔒 '+tr('lockedToday'),'info');return;}if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
-G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(!betaShopAllows('emp',id)){showNotif('🔒 '+tr('lockedToday'),'info');return;}if(G.gold<e.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' OK');doSave(G);G.tab('emp');};
+G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(!betaShopAllows('upg',id)){showNotif(betaEverAllows('upg',id)?'🔒 '+tr('lockedToday'):'⭐ '+tr('fullGameMsg'),'info');return;}if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
+G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(!betaShopAllows('emp',id)){showNotif(betaEverAllows('emp',id)?'🔒 '+tr('lockedToday'):'⭐ '+tr('fullGameMsg'),'info');return;}if(G.gold<e.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' OK');doSave(G);G.tab('emp');};
 G.cShop=function(){
   document.getElementById('shop').style.display='none';G.block=false;
 };
@@ -284,9 +296,10 @@ G.shopStats=function(){
   ].map(([k,v])=>'<div class="shopStat"><b>'+k+'</b><span>'+v+'</span></div>').join('');
 };
 G.shopCard=function(o){
-  const cls='si '+(o.done?'sb':o.locked?'sl':o.can?'sa':'');
-  const action=o.done?tr('ready'):o.locked?tr('locked'):o.can?tr('buy'):tr('noMoney');
-  const meta=o.done?'<div class="stg">'+(o.doneText||'Listo')+'</div>':o.locked?'<div class="slock">'+o.lockedText+'</div>':'<div class="sc">$'+o.cost+'</div>';
+  const fg=o.fullGame&&!o.done;
+  const cls='si '+(o.done?'sb':fg?'sl sfg':o.locked?'sl':o.can?'sa':'');
+  const action=o.done?tr('ready'):fg?'★':o.locked?tr('locked'):o.can?tr('buy'):tr('noMoney');
+  const meta=o.done?'<div class="stg">'+(o.doneText||'Listo')+'</div>':(fg||o.locked)?'<div class="slock">'+(o.lockedText||'')+'</div>':'<div class="sc">$'+o.cost+'</div>';
   return '<div class="'+cls+'" tabindex="0" '+o.attr+'><div class="siTop"><div class="siIc">'+o.icon+'</div><div><h4>'+o.name+'</h4><p>'+o.desc+'</p></div></div><div class="siFoot">'+meta+'<span class="sact">'+action+'</span></div></div>';
 };
 function betaShopAllows(kind,id){
@@ -297,6 +310,19 @@ function betaShopAllows(kind,id){
   if(kind==='emp')return b.shop.includes('emp:'+id);
   return b.shop.includes(kind+':'+id);
 }
+// True if the item appears in ANY beta day's shop. If not, it's full-game-only content
+// (the 3-day demo never sells it) — we surface that honestly instead of "bloqueado hoy".
+function betaEverAllows(kind,id){
+  for(const d in BETA_DAYS){
+    const b=BETA_DAYS[d];if(!b||!b.shop)return true;
+    if(kind==='parts'){if(b.shop.includes('parts'))return true;}
+    else if(kind==='emp'){if(b.shop.includes('emp:'+id))return true;}
+    else if(kind==='cons'){if(b.shop.includes(id))return true;}
+    else if(kind==='upg'){if(b.shop.includes(id))return true;}
+    else if(b.shop.includes(kind+':'+id))return true;
+  }
+  return false;
+}
 G.tab=function(t){
   G.stab=t;
   document.querySelectorAll('.st').forEach((el,i)=>el.classList.toggle('on',['up','emp','stk'][i]===t));
@@ -306,11 +332,11 @@ G.tab=function(t){
   const s=sgNew;
   if(t==='up'){
     s.style.gridTemplateColumns='repeat(3,1fr)';
-    s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],dayLock=!betaShopAllows('upg',u.id),reqLock=u.req&&!G.upg[u.req],lk=dayLock||reqLock,af=G.gold>=u.co;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,can:af&&!lk,locked:lk,lockedText:dayLock?tr('lockedToday'):tr('needs')+u.req,doneText:tr('installed'),attr:'data-upg="'+u.id+'"'});}).join('');
+    s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],dayLock=!betaShopAllows('upg',u.id),fg=!betaEverAllows('upg',u.id),reqLock=u.req&&!G.upg[u.req],lk=dayLock||reqLock,af=G.gold>=u.co;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,can:af&&!lk,locked:lk,fullGame:fg,lockedText:fg?tr('fullGameMsg'):dayLock?tr('lockedToday'):tr('needs')+u.req,doneText:tr('installed'),attr:'data-upg="'+u.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-upg]');if(d)G._bUpg(d.dataset.upg);});
   } else if(t==='emp'){
     s.style.gridTemplateColumns='repeat(3,1fr)';
-    s.innerHTML=EMP.map(e=>{const h=!!G.emp[e.id],dayLock=!betaShopAllows('emp',e.id),af=G.gold>=e.co;return G.shopCard({icon:e.ic,name:e.n,desc:e.de+' | '+tr('salary')+' $'+e.sal+'/noche',cost:e.co,done:h,can:af&&!dayLock,locked:dayLock,lockedText:tr('lockedToday'),doneText:tr('hired'),attr:'data-emp="'+e.id+'"'});}).join('');
+    s.innerHTML=EMP.map(e=>{const h=!!G.emp[e.id],dayLock=!betaShopAllows('emp',e.id),fg=!betaEverAllows('emp',e.id),af=G.gold>=e.co;return G.shopCard({icon:e.ic,name:e.n,desc:e.de+' | '+tr('salary')+' $'+e.sal+'/noche',cost:e.co,done:h,can:af&&!dayLock,locked:dayLock,fullGame:fg,lockedText:fg?tr('fullGameMsg'):tr('lockedToday'),doneText:tr('hired'),attr:'data-emp="'+e.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-emp]');if(d)G._hEmp(d.dataset.emp);});
   } else {
     s.style.gridTemplateColumns='repeat(3,1fr)';

@@ -15,6 +15,11 @@
     <h3 id="proTitle">📋 TURNO ACTUAL</h3>
     <p id="proText">Atendé clientes, comprá stock barato y prepará la noche.</p>
     <div class="miniBar"><i id="proRisk"></i></div>
+    <div class="repMeter" id="repMeter" data-tier="norm">
+      <div class="repZones"><span class="rz bad" id="rzBad">Mala fama</span><span class="rz norm" id="rzNorm">Normal</span><span class="rz good" id="rzGood">Prestigio</span></div>
+      <div class="repTrack"><div class="repGoalMark" id="repGoalMark"></div><div class="repMark" id="repMark"></div></div>
+      <div class="repGoalTxt" id="repGoalTxt"></div>
+    </div>
     <div id="objList" class="objList"></div>
     <p id="proTip">TIP: si hay urgentes, priorizalos antes del cierre.</p>
   </div>
@@ -53,7 +58,7 @@
   <div class="ht">
     <span class="ptag day" id="ptag">☀️ DÍA 1</span>
     <div class="pill g">🪙<span id="hg">500</span></div>
-    <div class="pill r">💬<span id="hr">50</span></div>
+    <div class="pill rep" id="repChip" data-tier="norm"><span id="repIcon">💬</span><b id="repTier">Normal</b><span id="hr">50</span><i class="repMini"><b id="repMiniFill"></b></i></div>
     <div class="pill s">😰<span id="hs">0</span>%</div>
     <div class="tw"><div class="tf" id="htf" style="width:100%"></div></div>
     <span id="obj"></span>
@@ -74,7 +79,7 @@
       <div class="mgTimer"><div id="mgTimerFill"></div></div>
       <div class="mgGrid" id="mgGrid"></div>
       <div id="mgHint">Objetivo: 3 limpiezas perfectas</div>
-      <button class="eb skip" onclick="G.cancelMiniGame()">Abandonar</button>
+      <button class="eb skip" id="mgAbandon" onclick="G.cancelMiniGame()">Abandonar</button>
     </div>
   </div>
   <div id="shop"><div class="shopHead"><div><h2>🔧 TIENDA</h2><p id="shopSub">Mejoras para el taller</p></div><button class="shopClose" onclick="G.cShop()">✕</button></div><div class="shopStats" id="shopStats"></div><div class="sts"><div class="st on" onclick="G.tab('up')">Upgrades</div><div class="st" onclick="G.tab('emp')">Empleados</div><div class="st" onclick="G.tab('stk')">Stock</div></div><div class="sg" id="sg"></div></div>
@@ -87,6 +92,18 @@
       <div class="deGrid" id="deStats"></div>
       <div class="deNote" id="deNote"></div>
       <button class="deBtn" id="deStart" onclick="G.continueToNight()">&#9654; Arrancar la noche</button>
+    </div>
+  </div>
+  <div id="betaEnd">
+    <div class="deBox beBox">
+      <div class="deK" id="beK">GRACIAS POR JUGAR</div>
+      <h2 id="beTitle">Terminaste la beta de 3 días</h2>
+      <p id="beMood"></p>
+      <div class="beTease" id="beTease"></div>
+      <div class="beBtns">
+        <button class="deBtn beWishlist" id="beWishlist" onclick="G.betaWishlist()">★ Sumá el juego a tu lista de deseos en Steam</button>
+        <button class="deBtn beMenuBtn" id="beMenu" onclick="G.betaToMenu()">Volver al menú</button>
+      </div>
     </div>
   </div>
   <div id="tr"><h1 id="trh"></h1><p id="trp"></p></div>

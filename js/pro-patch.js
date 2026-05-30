@@ -12,6 +12,7 @@
   window.updateProPanel=function(){
     const title=document.getElementById('proTitle'), txt=document.getElementById('proText'), risk=document.getElementById('proRisk'), tip=document.getElementById('proTip'), list=document.getElementById('objList');
     if(!txt||!risk||!tip||typeof G==='undefined')return;
+    try{renderRepHUD();}catch(e){}
     const broken=(G.printers||[]).filter(p=>p.broken).length;
     const queue=(G.orders||[]).length;
     const loaded=(G.printers||[]).filter(p=>p.busy||p.order).length;
@@ -21,16 +22,19 @@
     const riskVal=Math.min(100,Math.round((G.stress||0)*.55+broken*18+queue*4+(G.pActive?25:0)));
     risk.style.width=riskVal+'%';
     const repBoost=Math.round((repPriceMult()-1)*100);
+    const patBoost=Math.round((repPatienceMult()-1)*100);
+    const stnd=(typeof repStanding==='function')?repStanding():{key:'norm'};
+    const stName=(stnd.key==='good'?'⭐ ':stnd.key==='bad'?'⚠️ ':'')+tr(stnd.key==='good'?'repGood':stnd.key==='bad'?'repBad':'repNorm');
     const maker=(G.makerName||G.shopName)?makerDisplayName()+' / '+shopDisplayName()+' · ':'';
     if(title){
       const b=BETA_DAYS[G.day]||{};
       title.textContent=(G.phase==='night'?'NOCHE ':'DIA ')+G.day+(b.title?' - '+b.title:'');
     }
     if(G.phase==='night'){
-      txt.textContent=maker+tr('nightActive')+': '+queue+' '+tr('orders')+' / '+broken+' '+tr('failures')+'. REP '+G.rep+' ('+(repBoost>=0?'+':'')+repBoost+'% $)';
+      txt.textContent=maker+tr('nightActive')+': '+queue+' '+tr('orders')+' / '+broken+' '+tr('failures')+'. '+stName+' REP '+G.rep+' ('+(repBoost>=0?'+':'')+repBoost+'% $ / '+(patBoost>=0?'+':'')+patBoost+'% ⏱)';
       tip.textContent=G.pActive?'⚡ '+tr('runBreaker'):tr('inspectPrinters');
     }else{
-      txt.textContent=maker+tr('dayDyn')+' '+G.day+': $'+G.gold+' · REP '+G.rep+' ('+(repBoost>=0?'+':'')+repBoost+'% $) · '+tr('queue')+' '+queue+'.';
+      txt.textContent=maker+tr('dayDyn')+' '+G.day+': $'+G.gold+' · '+stName+' REP '+G.rep+' ('+(repBoost>=0?'+':'')+repBoost+'% $ / '+(patBoost>=0?'+':'')+patBoost+'% ⏱) · '+tr('queue')+' '+queue+'.';
       tip.textContent=G.energy<35?'🧉 '+tr('drinkMate'):tr('buyCheap');
     }
     if(list){
@@ -47,8 +51,7 @@
         ?[
           {txt:es?'Aceptar cuatro pedidos':'Accept four orders',done:(G.dayOrd||0)>=4},
           {txt:es?'Cargar al menos tres trabajos':'Load at least three jobs',done:loaded>=3},
-          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:material>=2},
-          {txt:es?'Llegar con reputacion estable':'Reach night with stable reputation',done:(G.rep||0)>=45}
+          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:material>=2}
         ]
         :[
           {txt:es?'Comprar la segunda impresora':'Buy the second printer',done:G.pCount>=2},
@@ -76,6 +79,8 @@
           {txt:es?'Terminar dos trabajos':'Finish two jobs',done:printed>=2}
         ];
       const tasks=G.phase==='night'?nightTasks:dayTasks;
+      const _rg=(typeof repGoal==='function')?repGoal():45;
+      tasks.push({txt:(es?'Mantené la fama ≥ ':'Keep fame ≥ ')+_rg,done:(G.rep||0)>=_rg});
       list.innerHTML=tasks.map(t=>
         '<div class="objRow '+(t.done?'done':'')+'"><span>'+(t.done?'✓':'□')+'</span><b>'+t.txt+'</b><em>'+(t.done?'OK':'')+'</em></div>'
       ).join('');

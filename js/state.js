@@ -67,8 +67,15 @@ function prepareOrderMaterial(o){
   o.waitingMaterial=false;
   return true;
 }
-function repPriceMult(){return Phaser.Math.Clamp(.78+(G.rep||0)*.0044,.78,1.24);}
-function repPatienceMult(){return Phaser.Math.Clamp(.82+(G.rep||0)*.0036,.82,1.18);}
+function repPriceMult(){return Phaser.Math.Clamp(.72+(G.rep||0)*.005,.72,1.24);}
+function repPatienceMult(){return Phaser.Math.Clamp(.76+(G.rep||0)*.0042,.76,1.18);}
+// Reputation standing — single source of truth for the stakes system. Drives the day-start
+// banner, the proPanel readout, and client arrival speed (flow). Rails: no game-over; flow only
+// shifts arrival cadence, never the scripted client cap, and fixed first/second spawns keep a floor.
+function repStanding(){const r=G.rep||0;if(r<30)return{key:'bad',flow:1.18};if(r>65)return{key:'good',flow:.86};return{key:'norm',flow:1};}
+// Visible daily reputation target. A floor to hold (no fail state — purely an on-screen goal that
+// makes the rep number feel like it matters). Rises gently across the 3 beta days.
+function repGoal(){return ({1:45,2:50,3:55})[G.day]||50;}
 function gameTitle(){return 'First Layer';}
 function shopDisplayName(){return (G.shopName||(G.lang==='en'?'Workshop':'Taller')).trim()||(G.lang==='en'?'Workshop':'Taller');}
 function makerDisplayName(){return (G.makerName||'Maker').trim()||'Maker';}

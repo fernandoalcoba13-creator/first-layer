@@ -7,7 +7,7 @@ class NightScene extends Phaser.Scene{
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='night';G.block=false;
-    BGM.stop();
+    BGM.playNight();
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
     this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.2,y:this.H*.42};
@@ -313,7 +313,10 @@ class NightScene extends Phaser.Scene{
     }
     const defLabel=evText(def);
     const matLine=fil?(G.lang==='en'?'\nMaterial used: ':'\nMaterial usado: ')+fil.n:(G.day===1&&forceId==='clog'&&G.dayUsedPlaBasic?(G.lang==='en'?'\nMaterial used earlier: PLA Basic':'\nMaterial usado antes: PLA Basic'):'');
-    const ev={...defLabel,printer:tgt,desc:defLabel.de.replace('{P','P'+(tgt.id+1))+matLine,resolved:false};
+    const ev={...defLabel,printer:tgt,desc:defLabel.de.replace('{P}','P'+(tgt.id+1))+matLine,resolved:false};
+    // Beta: fixes are always free and the nozzle minigame always has its consumable, so the player
+    // can never get soft-locked once the skip button is removed (see showEv).
+    if(BETA_DAYS[G.day]){ev.g=0;ev.pts=0;if(ev.id==='clog'){ensureConsumables();if(G.cons.cleaner<1)G.cons.cleaner=1;}}
     tgt._ev=ev;this.aEv=ev;G.block=true;SFX.alm();
     const po=this.pObjs.find(o=>o.p===tgt);
     if(po){po.wn.setText('⚠️');this.tweens.add({targets:po.wn,alpha:{from:1,to:0},duration:350,yoyo:true,repeat:5});}
@@ -325,7 +328,8 @@ class NightScene extends Phaser.Scene{
     document.getElementById('et').textContent=ev.ic+' '+ev.ti;
     const ct=(ev.g>0?'\n'+tr('cost')+': $'+ev.g:'')+(ev.pts>0&&ev.id!=='clog'?'\n'+tr('parts')+': '+ev.pts:'')+(ev.id==='clog'?'\n'+tr('cleaner')+': '+((G.cons&&G.cons.cleaner)||0):'');
     document.getElementById('ed').textContent=ev.desc+ct;
-    const canFix=ev.id==='clog'?!!(G.day===1||(G.cons&&G.cons.cleaner>0)):(ev.g===0||G.gold>=ev.g)&&(ev.pts===0||G.stk.parts>=ev.pts);
+    const beta=!!BETA_DAYS[G.day];
+    const canFix=beta?true:ev.id==='clog'?!!(G.day===1||(G.cons&&G.cons.cleaner>0)):(ev.g===0||G.gold>=ev.g)&&(ev.pts===0||G.stk.parts>=ev.pts);
     const auto=G.emp.rodri&&['jam','blob','humid'].includes(ev.id);
     let buttons=auto
       ?'<button class="eb fix" onclick="G.nAutoFix()">🤖 '+tr('autoRepair')+'</button>'
@@ -334,7 +338,7 @@ class NightScene extends Phaser.Scene{
         :ev.id==='bed'
         ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startBedMini()">📐 '+tr('bedMini')+(ev.g>0?' (-$'+ev.g+')':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
-        +'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>';
+        +(beta?'':'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>');
     document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
     setTimeout(()=>focusPanelFirst('#ebs .eb'),0);
@@ -447,7 +451,7 @@ class NightScene extends Phaser.Scene{
     sLog('✅ '+tr('nightGoalComplete'));
     this.time.delayedCall(1100,()=>{if(G.phase==='night'&&!G.block)this.endNight();});
   }
-  updateHUD(){document.getElementById('hg').textContent=G.gold;document.getElementById('hr').textContent=G.rep;}
+  updateHUD(){document.getElementById('hg').textContent=G.gold;renderRepHUD();}
   endNight(){
     if(G.phase!=='night')return;
     G.phase='transition';G.block=true;
@@ -457,7 +461,7 @@ class NightScene extends Phaser.Scene{
     const sub=(G.lang==='en'?'Completed':'Completados')+': '+this.done+' | '+(G.lang==='en'?'Earned':'Ganado')+': $'+this.earn+'\nREP: '+G.rep+(sal?' | '+(G.lang==='en'?'Wages':'Salarios')+': -$'+sal:'');
     this.scene.pause();
     if(G.day>=3){
-      doTrans('🏁 BETA PRE-LAUNCH',sub+'\n'+(G.lang==='en'?'End of the 3-day beta structure.':'Fin de la estructura beta de 3 dias.'),()=>{setGameMenu(true);});
+      doTrans('🏁 '+(G.lang==='en'?'BETA COMPLETE':'BETA COMPLETA'),(G.lang==='en'?'End of the 3-day beta.':'Fin de la beta de 3 días.'),()=>{G.showBetaEnd(sub);});
       return;
     }
     G.day++;

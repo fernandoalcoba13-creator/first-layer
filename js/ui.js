@@ -2,6 +2,47 @@
 // DOM-side helpers used across scenes and G methods.
 function sLog(m){document.getElementById('log').innerHTML=m;}
 function sHint(m){document.getElementById('hint').textContent=m;}
+// ── Reputation HUD ──
+// Single renderer for the rep tier chip (top bar) + tramos meter (proPanel) + daily goal.
+// Detects rep changes against G._repShown to fire a floating ±REP number and flash the chip.
+function spawnRepFloat(d){
+  const chip=document.getElementById('repChip');if(!chip||!d)return;
+  const f=document.createElement('span');
+  f.className='repFloat '+(d>0?'up':'down');
+  f.textContent=(d>0?'+':'')+d+' REP';
+  chip.appendChild(f);
+  setTimeout(()=>f.remove(),1150);
+}
+function renderRepHUD(){
+  if(typeof G==='undefined')return;
+  const rep=G.rep||0,st=(typeof repStanding==='function')?repStanding():{key:'norm'},goal=(typeof repGoal==='function')?repGoal():50;
+  const pct=Math.max(0,Math.min(100,rep));
+  const name=tr(st.key==='good'?'repGood':st.key==='bad'?'repBad':'repNorm');
+  const hr=document.getElementById('hr');if(hr)hr.textContent=rep;
+  const chip=document.getElementById('repChip');
+  if(chip){
+    chip.dataset.tier=st.key;
+    const tl=document.getElementById('repTier');if(tl)tl.textContent=name;
+    const ic=document.getElementById('repIcon');if(ic)ic.textContent=st.key==='good'?'⭐':st.key==='bad'?'⚠️':'💬';
+    const mf=document.getElementById('repMiniFill');if(mf)mf.style.width=Math.max(4,pct)+'%';
+  }
+  const meter=document.getElementById('repMeter');
+  if(meter){
+    meter.dataset.tier=st.key;
+    const mark=document.getElementById('repMark');if(mark)mark.style.left=pct+'%';
+    const gm=document.getElementById('repGoalMark');if(gm)gm.style.left=Math.max(0,Math.min(100,goal))+'%';
+    const rb=document.getElementById('rzBad');if(rb)rb.textContent=tr('repBad');
+    const rn=document.getElementById('rzNorm');if(rn)rn.textContent=tr('repNorm');
+    const rg=document.getElementById('rzGood');if(rg)rg.textContent=tr('repGood');
+    const gt=document.getElementById('repGoalTxt');if(gt)gt.textContent='🎯 '+tr('repGoalLabel')+' ≥ '+goal+(rep>=goal?' ✓':'');
+  }
+  if(G._repShown===undefined){G._repShown=rep;return;}
+  if(rep!==G._repShown){
+    spawnRepFloat(rep-G._repShown);
+    if(chip){chip.classList.remove('repFlash');void chip.offsetWidth;chip.classList.add('repFlash');}
+    G._repShown=rep;
+  }
+}
 function notifTitle(type){
   if(type==='money')return tr('notifPurchase');
   if(type==='success')return tr('notifSuccess');
@@ -285,14 +326,14 @@ document.addEventListener('keydown',e=>{
     return;
   }
   if(k==='escape'){
-    if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd'))openGameMenu();
+    if(!closeTopPanel()&&!isShown('miniGame')&&!isShown('evp')&&!isShown('bkg')&&!isShown('dayEnd')&&!isShown('betaEnd'))openGameMenu();
     e.preventDefault();return;
   }
   if(isShown('miniGame')&&G._mini&&G._mini.type==='nozzle'){
     if(k==='alt'){G.applyNozzleMove('needle',1);e.preventDefault();return;}
     if(k===' '||k==='spacebar'){G.applyNozzleMove('filament',1);e.preventDefault();return;}
   }
-  if(isShown('miniGame')&&G._mini&&G._mini.type==='maze'){
+  if(isShown('miniGame')&&G._mini&&G._mini.type==='nozzle'){
     const mv={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
     if(mv){G.moveNozzleMaze(mv[0],mv[1]);e.preventDefault();return;}
   }
@@ -382,3 +423,35 @@ G.continueToNight=function(){
   if(cb)cb();
 };
 window.resetGame=()=>{localStorage.removeItem(SK);location.reload();};
+
+// ═══ FIN DE LA BETA — cartel de conversión a Steam ═══
+// Fernando: cuando publiques la página de Steam, pegá su URL acá (ej: 'https://store.steampowered.com/app/XXXXXX/').
+// Dejala en '' hasta entonces: el botón mostrará "próximamente" y no navega a ningún lado.
+const STEAM_PAGE_URL='';
+G.showBetaEnd=function(stats){
+  const el=document.getElementById('betaEnd');
+  if(!el){setGameMenu(true);return;}
+  const set=(id,txt)=>{const n=document.getElementById(id);if(n)n.textContent=txt;};
+  set('beK',tr('betaThanksK'));
+  set('beTitle',tr('betaEndTitle'));
+  set('beMood',stats||'');
+  const tease=document.getElementById('beTease');if(tease)tease.innerHTML=tr('betaTease');
+  set('beWishlist',tr('betaWishlistBtn'));
+  set('beMenu',tr('betaMenuBtn'));
+  el.style.display='flex';
+  setTimeout(()=>focusPanelFirst('#betaEnd .deBtn'),0);
+  SFX.ok();
+};
+G.betaWishlist=function(){
+  if(!STEAM_PAGE_URL){
+    showNotif(tr('betaSoon'),'warning');
+    console.warn('[First Layer] STEAM_PAGE_URL vacío en js/ui.js — pegá la URL de tu página de Steam para activar el botón de wishlist.');
+    return;
+  }
+  window.open(STEAM_PAGE_URL,'_blank','noopener');
+};
+G.betaToMenu=function(){
+  const el=document.getElementById('betaEnd');
+  if(el)el.style.display='none';
+  setGameMenu(true);
+};
