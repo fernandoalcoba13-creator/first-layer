@@ -91,7 +91,7 @@ class NightScene extends Phaser.Scene{
   }
   buildWorld(){
     const W=this.W,H=this.H;
-    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,true);
+    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,true);this.bgImg=applyRoomBackground(this,this.bgG,W,H,true);
     const nbg=this.add.rectangle(W/2,20,300,7,0x0d0a20).setOrigin(.5);
     this.nBf=this.add.rectangle(W/2-150,20,0,7,0x9d7fe3).setOrigin(0,.5).setDepth(20);
     this.add.text(W/2,30,tr('nightActive').toUpperCase(),{fontSize:'7px',color:'#2a2040',fontFamily:'Press Start 2P'}).setOrigin(.5,0).setDepth(20);

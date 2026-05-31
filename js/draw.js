@@ -10,6 +10,8 @@ const PLAYER_DOWN='player_walk_s';
 const PLAYER_LEFT='player_walk_a';
 const PLAYER_RIGHT='player_walk_d';
 const PLAYER_UP='player_walk_w';
+const ENV_BG_ASSET='env_fondo';
+const ENV_BG_PATH='assets/environment/fondo.png';
 const CLIENT_ASSETS=[
   {key:'client_personaje1',src:'assets/characters/clients/personaje1.png'},
   {key:'client_personaje2',src:'assets/characters/clients/personaje2.png'},
@@ -63,7 +65,7 @@ function setupPlayerAnims(scene){
   scene.anims.create({key:'player_walk_down',frames:scene.anims.generateFrameNumbers(PLAYER_DOWN,{start:0,end:9}),frameRate:8,repeat:-1});
   scene.anims.create({key:'player_walk_left',frames:scene.anims.generateFrameNumbers(PLAYER_LEFT,{start:0,end:9}),frameRate:8,repeat:-1});
   scene.anims.create({key:'player_walk_right',frames:scene.anims.generateFrameNumbers(PLAYER_RIGHT,{start:0,end:9}),frameRate:8,repeat:-1});
-  scene.anims.create({key:'player_walk_up',frames:[{key:PLAYER_UP,frame:0}],frameRate:1,repeat:-1});
+  scene.anims.create({key:'player_walk_up',frames:scene.anims.generateFrameNumbers(PLAYER_UP,{start:0,end:9}),frameRate:8,repeat:-1});
 }
 function loadPlayerAssetsAsync(scene,onReady){
   if(scene.textures.exists(PLAYER_DOWN)){setupPlayerAnims(scene);if(onReady)onReady();return;}
@@ -78,7 +80,7 @@ function createPlayerSprite(scene,parent,night){
   if(!scene.textures.exists(PLAYER_DOWN))return null;
   setupPlayerAnims(scene);
   const sp=scene.add.sprite(0,24,PLAYER_DOWN,0).setOrigin(.5,1).setScale(2.1).setDepth(6);
-  parent.add(sp);sp.play('player_walk_down');return sp;
+  parent.add(sp);return sp;
 }
 function setPlayerSpriteState(sp,vx,vy,lastDir){
   if(!sp)return lastDir||'down';
@@ -88,9 +90,14 @@ function setPlayerSpriteState(sp,vx,vy,lastDir){
   else if(vy<0)dir='up';
   else if(vy>0)dir='down';
   const moving=!!(vx||vy),key='player_walk_'+dir;
+  const idleTex={down:PLAYER_DOWN,left:PLAYER_LEFT,right:PLAYER_RIGHT,up:PLAYER_UP}[dir]||PLAYER_DOWN;
+  if(!moving){
+    if(sp.anims)sp.anims.stop();
+    if(sp.texture.key!==idleTex||sp.frame.name!==0)sp.setTexture(idleTex,0);
+    return dir;
+  }
   if(sp.anims&&(!sp.anims.currentAnim||sp.anims.currentAnim.key!==key))sp.play(key,true);
-  if(!moving&&sp.anims)sp.anims.pause();
-  else if(moving&&sp.anims)sp.anims.resume();
+  else if(sp.anims)sp.anims.resume();
   return dir;
 }
 function loadClientAssetsAsync(scene,onReady){
@@ -207,4 +214,21 @@ function drawBG(g,W,H,night){
     g.fillStyle(0xff4d00,.7);g.fillRect(W*.12+4,H*.08+4,62,8);
     g.fillStyle(0x5bc8fa,.5);g.fillRect(W*.12+4,H*.08+14,62,28);
   }
+}
+function applyRoomBackground(scene,g,W,H,night){
+  const add=()=>{
+    if(!scene.textures.exists(ENV_BG_ASSET))return;
+    if(g)g.setVisible(false);
+    const tex=scene.textures.get(ENV_BG_ASSET).getSourceImage();
+    const scale=W/tex.width;
+    const bg=scene.add.image(Math.round(W/2),8,ENV_BG_ASSET).setOrigin(.5,0).setScale(scale).setDepth(-20);
+    if(night)bg.setTint(0x5f638a).setAlpha(.55);
+    return bg;
+  };
+  if(scene.textures.exists(ENV_BG_ASSET))return add();
+  const img=new Image();
+  img.onload=()=>{if(!scene.textures.exists(ENV_BG_ASSET))scene.textures.addImage(ENV_BG_ASSET,img);add();};
+  img.onerror=()=>console.warn('Environment background failed to load: '+ENV_BG_PATH);
+  img.src=ENV_BG_PATH;
+  return null;
 }

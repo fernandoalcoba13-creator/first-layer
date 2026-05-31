@@ -35,16 +35,15 @@ class DayScene extends Phaser.Scene{
   }
   buildWorld(){
     const W=this.W,H=this.H;
-    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,false);
+    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,false);this.bgImg=applyRoomBackground(this,this.bgG,W,H,false);
     const cY=H*.75,cg=this.add.graphics();
-    cg.fillStyle(0x28200e);cg.fillRect(W*.23,cY,W*.54,32);
-    cg.fillStyle(0x7a5a18);cg.fillRect(W*.23,cY,W*.54,4);
-    cg.fillStyle(0x1a1010);cg.fillRect(W*.23+18,cY-20,28,18);
+    cg.fillStyle(0x28200e,.55);cg.fillRect(W*.23,cY,W*.54,32);
+    cg.fillStyle(0x7a5a18,.75);cg.fillRect(W*.23,cY,W*.54,4);
+    cg.fillStyle(0x1a1010,.45);cg.fillRect(W*.23+18,cY-20,28,18);
     this.shopSign=this.add.text(W*.5,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
     this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'Click/E '+tr('counter')});
     const sx=W*.25,sy=H*.47,sg=this.add.graphics();
-    sg.fillStyle(0x10101e);sg.fillRect(sx-44,sy-68,88,88);
-    sg.lineStyle(1,0x2a2040);sg.strokeRect(sx-44,sy-68,88,88);
+    sg.lineStyle(1,0x2a2040,.5);sg.strokeRect(sx-44,sy-68,88,88);
     [0x5bc8fa,0xff7eb3,0x4dff91,0xffe566,0x9d7fe3,0xff6644].forEach((c,i)=>{
       const x=sx-28+i%3*28,y=sy-56+Math.floor(i/3)*30;
       sg.fillStyle(c,.8);sg.fillCircle(x,y,9);sg.fillStyle(0x07060f);sg.fillCircle(x,y,4);
@@ -52,29 +51,26 @@ class DayScene extends Phaser.Scene{
     this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
     this.IA.push({x:sx,y:sy,type:'stock',lbl:'Click/E '+tr('stockTitle')});
     const ux=W*.41,uy=H*.31,ug=this.add.graphics();
-    ug.fillStyle(0x0c180c);ug.fillRect(ux-40,uy-28,80,52);
-    ug.lineStyle(1,0x2a4a2a);ug.strokeRect(ux-40,uy-28,80,52);
-    this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#4dff91',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
+    ug.fillStyle(0x07110a,.14);ug.fillRect(ux-40,uy-28,80,52);
+    ug.lineStyle(1,0x2aff72,.55);ug.strokeRect(ux-40,uy-28,80,52);
+    this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#1eff72',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
     this.IA.push({x:ux,y:uy,type:'shop',lbl:'Click/E '+tr('shopTitle')});
     const tx=W*.29,ty=H*.35;this.tZone={x:tx,y:ty};this.tblG=this.add.graphics();this.drawTbl(false);
     this.IA.push({x:tx,y:ty,type:'tab',lbl:'Click/E '+tr('boardTitle')});
-    const paG=this.add.graphics();
-    paG.fillStyle(0x0a0818);paG.fillRect(W*.56,H*.18,W*.43,H*.44);
-    paG.lineStyle(1,0x1a1628);paG.strokeRect(W*.56,H*.18,W*.43,H*.44);
-    this.add.text(W*.78,H*.2,'— '+tr('printerTitle').toUpperCase()+' —',{fontSize:'8px',color:'#1e1a30',fontFamily:'Press Start 2P'}).setOrigin(.5);
     this.pGfx=[];const psp=(W*.37)/4;
     for(let i=0;i<4;i++){
-      const px=W*.6+i*psp+psp/2,py=H*.49;
+      const px=i===0?W*.67:W*.6+i*psp+psp/2,py=H*.55;
       const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(3.5);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
+      if(i>0)this.hideDayPrinter(pg,sp,lt);
       this.pGfx.push({g:pg,sp,lt,px,py});
     }
-    this.IA.push({x:W*.77,y:H*.49,type:'printers',lbl:'Click/E '+tr('printerTitle')});
+    this.IA.push({x:W*.67,y:H*.55,type:'printers',lbl:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
-      if(p.locked)return;
-      const px=W*.6+i*psp+psp/2;
-      this.IA.push({x:px,y:H*.49,type:'printer',pid:i,lbl:'Click/E P'+(i+1)+' '+tr('loadJob')});
+      if(p.locked||i>0)return;
+      const px=i===0?W*.67:W*.6+i*psp+psp/2;
+      this.IA.push({x:px,y:H*.55,type:'printer',pid:i,lbl:'Click/E P'+(i+1)+' '+tr('loadJob')});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
@@ -90,6 +86,11 @@ class DayScene extends Phaser.Scene{
     this.tblG.setDepth(2);
   }
   stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'  TPU:'+matStock('tpu')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
+  hideDayPrinter(g,sp,lt){
+    if(sp)sp.setVisible(false);
+    if(g)g.setVisible(false);
+    if(lt)lt.setVisible(false);
+  }
   createPlayer(){
     this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
@@ -401,6 +402,7 @@ class DayScene extends Phaser.Scene{
     });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
+      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt);return;}
       const c=p.order?p.order.pr.c:0x5bc8fa;
       const activeDay=p.busy&&p.id===0;
       if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
@@ -418,6 +420,8 @@ class DayScene extends Phaser.Scene{
       if(pg.sp||!this.textures.exists(PRINTER_ASSET))return;
       pg.sp=createPrinterSprite(this,pg.px,pg.py);
       if(pg.sp){pg.sp.setScale(3.5);pg.g.setVisible(false);}
+      const i=this.pGfx.indexOf(pg);
+      if(i>0)this.hideDayPrinter(pg.g,pg.sp,pg.lt);
     });
   }
   updateHUD(){
