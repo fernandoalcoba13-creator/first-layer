@@ -2,6 +2,40 @@
 // Day phase: clients arrive, player accepts/negotiates/rejects orders, manages stock & shop.
 class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
+  room(){
+    const s=Math.min(this.W/420,this.H/270);
+    return {s,ox:(this.W-420*s)/2,oy:8};
+  }
+  rp(x,y){
+    const r=this.room();
+    return {x:r.ox+x*r.s,y:r.oy+y*r.s,s:r.s};
+  }
+  solidRects(){
+    const s=this.room().s,R=(x,y,w,h)=>{
+      const p=this.rp(x,y);
+      return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
+    };
+    return [
+      R(32,105,30,36),R(134,125,36,54),R(232,128,54,36),R(310,126,58,54),R(362,126,38,54),
+      R(185,204,26,24),R(225,204,30,24),R(268,199,42,26),R(176,153,24,12),
+      R(47,166,26,22),R(381,166,26,22),R(178,88,38,24),R(112,89,14,14)
+    ];
+  }
+  footRect(x=this.player.x,y=this.player.y){
+    const s=this.room().s;
+    return new Phaser.Geom.Rectangle(x-5*s,y-7*s,10*s,7*s);
+  }
+  hitsSolid(x,y){
+    const f=this.footRect(x,y);
+    return this.solidRects().some(r=>Phaser.Geom.Intersects.RectangleToRectangle(f,r));
+  }
+  movePlayer(dx,dy){
+    const minY=this.H*.28,maxY=this.H*.82,minX=28,maxX=this.W-28;
+    const nx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX);
+    if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
+    const ny=Phaser.Math.Clamp(this.player.y+dy,minY,maxY);
+    if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
+  }
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
@@ -19,6 +53,7 @@ class DayScene extends Phaser.Scene{
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadClientAssetsAsync(this);
+    loadEnvironmentPropsAsync(this,()=>this.placeEnvironmentProps());
     this.checkStory();this.updateHUD();
     this.time.delayedCall(this.beta.firstSpawn,()=>this.spawn());
     this.time.delayedCall(this.beta.secondSpawn,()=>this.spawn());
@@ -36,13 +71,15 @@ class DayScene extends Phaser.Scene{
   buildWorld(){
     const W=this.W,H=this.H;
     this.bgG=this.add.graphics();drawBG(this.bgG,W,H,false);this.bgImg=applyRoomBackground(this,this.bgG,W,H,false);
-    const cY=H*.75,cg=this.add.graphics();
+    this.windowMood=addRoomWindowMood(this,false);
+    const cY=H*.75,cg=this.add.graphics();this.counterG=cg;
     cg.fillStyle(0x28200e,.55);cg.fillRect(W*.23,cY,W*.54,32);
     cg.fillStyle(0x7a5a18,.75);cg.fillRect(W*.23,cY,W*.54,4);
     cg.fillStyle(0x1a1010,.45);cg.fillRect(W*.23+18,cY-20,28,18);
-    this.shopSign=this.add.text(W*.5,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-    this.IA.push({x:W*.5,y:cY,type:'counter',lbl:'Click/E '+tr('counter')});
-    const sx=W*.25,sy=H*.47,sg=this.add.graphics();
+    this.shopSign=this.add.text(W*.24+129,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
+    const counterPt=this.rp(128,176);
+    this.IA.push({x:counterPt.x,y:counterPt.y,type:'counter',lbl:'Click/E '+tr('counter')});
+    const stockPt=this.rp(130,106),sx=stockPt.x,sy=stockPt.y,sg=this.add.graphics();this.stockG=sg;
     sg.lineStyle(1,0x2a2040,.5);sg.strokeRect(sx-44,sy-68,88,88);
     [0x5bc8fa,0xff7eb3,0x4dff91,0xffe566,0x9d7fe3,0xff6644].forEach((c,i)=>{
       const x=sx-28+i%3*28,y=sy-56+Math.floor(i/3)*30;
@@ -50,40 +87,74 @@ class DayScene extends Phaser.Scene{
     });
     this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
     this.IA.push({x:sx,y:sy,type:'stock',lbl:'Click/E '+tr('stockTitle')});
-    const ux=W*.41,uy=H*.31,ug=this.add.graphics();
+    const shopPt=this.rp(178,88),ux=shopPt.x,uy=shopPt.y,ug=this.add.graphics();this.shopG=ug;
     ug.fillStyle(0x07110a,.14);ug.fillRect(ux-40,uy-28,80,52);
     ug.lineStyle(1,0x2aff72,.55);ug.strokeRect(ux-40,uy-28,80,52);
     this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#1eff72',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
     this.IA.push({x:ux,y:uy,type:'shop',lbl:'Click/E '+tr('shopTitle')});
-    const tx=W*.29,ty=H*.35;this.tZone={x:tx,y:ty};this.tblG=this.add.graphics();this.drawTbl(false);
+    const tabPt=this.rp(112,89),tx=tabPt.x,ty=tabPt.y;this.tZone={x:tx,y:ty};this.tblG=this.add.graphics();this.drawTbl(false);
     this.IA.push({x:tx,y:ty,type:'tab',lbl:'Click/E '+tr('boardTitle')});
-    this.pGfx=[];const psp=(W*.37)/4;
+    const printerPt=this.rp(185,176);
+    this.pGfx=[];const psp=(W*.37)/4,mainPrinterX=printerPt.x,mainPrinterY=printerPt.y,printerScale=printerPt.s;
     for(let i=0;i<4;i++){
-      const px=i===0?W*.67:W*.6+i*psp+psp/2,py=H*.55;
-      const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(3.5);
+      const px=i===0?mainPrinterX:W*.6+i*psp+psp/2,py=i===0?mainPrinterY:H*.55;
+      const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(i===0?printerScale:3.5);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
       if(i>0)this.hideDayPrinter(pg,sp,lt);
       this.pGfx.push({g:pg,sp,lt,px,py});
     }
-    this.IA.push({x:W*.67,y:H*.55,type:'printers',lbl:'Click/E '+tr('printerTitle')});
+    this.IA.push({x:mainPrinterX,y:mainPrinterY,type:'printers',lbl:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
       if(p.locked||i>0)return;
-      const px=i===0?W*.67:W*.6+i*psp+psp/2;
-      this.IA.push({x:px,y:H*.55,type:'printer',pid:i,lbl:'Click/E P'+(i+1)+' '+tr('loadJob')});
+      const px=i===0?mainPrinterX:W*.6+i*psp+psp/2,py=i===0?mainPrinterY:H*.55;
+      this.IA.push({x:px,y:py,type:'printer',pid:i,lbl:'Click/E P'+(i+1)+' '+tr('loadJob')});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
+  placeEnvironmentProps(){
+    if(this.envPropsPlaced)return;
+    this.envPropsPlaced=true;
+    const P=(x,y)=>this.rp(x,y),S=this.room().s;
+    if(this.stockG)this.stockG.setVisible(false);
+    if(this.counterG)this.counterG.setVisible(false);
+    if(this.shopSign)this.shopSign.setVisible(false);
+    [
+      ['prop_shelf_5',32,105,S,1],
+      ['prop_poster_idea',88,92,S,1],
+      ['prop_electricity',112,89,S,3],
+      ['prop_shelf_2',134,125,S,1],
+      ['prop_filament_violet',128,82,S,3],
+      ['prop_filament_pink',139,82,S,3],
+      ['prop_filament_violet',150,82,S,3],
+      ['prop_filament_cyan',128,105,S,3],
+      ['prop_filament_blue',139,105,S,3],
+      ['prop_toolbox',176,118,S,2],
+      ['prop_workbench_2',232,96,S,1],
+      ['prop_workbench_1',232,128,S,2],
+      ['prop_shelf_1',310,126,S,1],
+      ['prop_filament_yellow',294,82,S,3],
+      ['prop_filament_orange',306,82,S,3],
+      ['prop_filament_yellow',318,82,S,3],
+      ['prop_filament_pink',294,112,S,3],
+      ['prop_filament_violet',306,112,S,3],
+      ['prop_shelf_2',362,126,S,1],
+      ['prop_filament_green',354,82,S,3],
+      ['prop_filament_red',365,105,S,3],
+      ['prop_filament_blue',354,112,S,3],
+      ['prop_box_2',47,166,S,1],
+      ['prop_box_3',32,168,S,1],
+      ['prop_box_4',381,166,S,1],
+      ['prop_box_3',392,171,S,1],
+      ['prop_shelf_4_1',185,204,S,2],
+      ['prop_shelf_4',225,204,S,2],
+      ['prop_shelf_4_2',268,199,S,2],
+      ['prop_shelf_7',310,184,S,2]
+    ].forEach(p=>{const q=P(p[1],p[2]),sp=addEnvSprite(this,p[0],q.x,q.y,p[3],p[4]);if(p[0]==='prop_electricity')this.powerSprite=sp;});
+  }
   drawTbl(pwr){
-    const g=this.tblG,tx=(this.tZone&&this.tZone.x)||this.W*.29,ty=(this.tZone&&this.tZone.y)||this.H*.35;g.clear();
-    g.fillStyle(pwr?0x2a0808:0x1a1010);g.fillRect(tx-24,ty-33,48,66);
-    g.lineStyle(2,pwr?0xff3333:0x3a1a1a);g.strokeRect(tx-24,ty-33,48,66);
-    g.fillStyle(pwr?0x3a0808:0x2a0808);g.fillRect(tx-20,ty-29,40,12);
-    for(let i=0;i<4;i++){
-      g.fillStyle(!pwr?0x4dff91:0x330000,!pwr?.6:1);g.fillRect(tx-16+i*10,ty-27,6,8);
-      g.fillStyle(!pwr?0x4dff91:0x330000,!pwr?.3:.8);g.fillCircle(tx-13+i*10,ty-13,3);
-    }
-    this.tblG.setDepth(2);
+    const g=this.tblG;if(g)g.clear();
+    if(this.powerSprite)this.powerSprite.clearTint().setTint(pwr?0xff4d6a:0xffffff).setAlpha(pwr?.95:1);
   }
   stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'  TPU:'+matStock('tpu')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
   hideDayPrinter(g,sp,lt){
@@ -92,7 +163,8 @@ class DayScene extends Phaser.Scene{
     if(lt)lt.setVisible(false);
   }
   createPlayer(){
-    this.player=this.add.container(this.W*.35,this.H*.71).setDepth(5);
+    const start=this.rp(127,178);
+    this.player=this.add.container(start.x,start.y).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
     this.player.add(this.pGr);this.pSp=null;this.pDir='down';
   }
@@ -159,6 +231,17 @@ class DayScene extends Phaser.Scene{
     const pool=(pref.length&&Math.random()<.75)?pref:PR;
     return pool[Math.floor(Math.random()*pool.length)];
   }
+  materialAvailable(mat){
+    const b=BETA_DAYS[G.day];
+    if(!b||!b.shop)return true;
+    return b.shop.some(x=>String(x).indexOf(mat+':')===0);
+  }
+  orderMaterialFor(pr,diff){
+    const preferred=pr.cat==='art'?'resin':(pr.cat==='util'&&diff>1.15?'petg':'pla');
+    if(this.materialAvailable(preferred))return preferred;
+    const fallback=preferred==='resin'?['petg','pla','tpu','resin']:['pla','petg','tpu','resin'];
+    return fallback.find(m=>this.materialAvailable(m))||'pla';
+  }
   makeOrder(cl,pr,urg,style){
     const dayMul=1+Math.min(.8,(G.day-1)*.045);
     const diff=Phaser.Math.Clamp(style.diff*dayMul*(urg?1.18:1),.75,2.6);
@@ -167,7 +250,7 @@ class DayScene extends Phaser.Scene{
     const time=Math.max(1.2,pr.t*(0.82+diff*.28)*(urg?.86:1));
     const pat=Math.max(6,(cl.pat*style.pat-(G.day-1)*.28+(urg?-4:0))*repPatienceMult()*(mod.pat||1));
     const risk=Phaser.Math.Clamp(.035+(diff-1)*.07+G.day*.006+(urg?.035:0)+(mod.risk||0),.02,.42);
-    let material=pr.cat==='art'?'resin':(pr.cat==='util'&&diff>1.15?'petg':'pla');
+    let material=this.orderMaterialFor(pr,diff);
     if(G.day===1)material='pla';
     const units=G.day===1&&G.dayCli===0?1:Math.max(1,Math.ceil(pr.t*diff/3));
     return {pay,time,diff,risk,pat,tag:style.tag,material,units};
@@ -195,7 +278,7 @@ class DayScene extends Phaser.Scene{
     let pay=order.pay;
     if(G.upg.ams&&(pr.cat==='fig'||pr.cat==='art'))pay=Math.round(pay*1.5);
     const idx=slot;
-    const tX=this.W*.24+slot*86,yP=this.H*.71;
+    const target=this.rp(127+slot*26,178),tX=target.x,yP=target.y;
     const pat=order.pat*1000;
     const ct=this.add.container(-50,yP).setDepth(4);
     const cs=createClientSprite(this,cl,idx);if(cs)cs.setScale(2.6);
@@ -284,7 +367,7 @@ class DayScene extends Phaser.Scene{
     else if(t.type==='counter')this.openCounter();
     else if(t.type==='printer')this.openPrinterQueue(G.printers[t.pid]);
     else if(t.type==='printers')this.openPrinters();
-    else if(t.type==='stock')this.openStock();
+    else if(t.type==='stock')G.openShop('stk');
     else if(t.type==='shop')G.openShop();
     else if(t.type==='tab')this.openTab();
   }
@@ -342,6 +425,7 @@ class DayScene extends Phaser.Scene{
     p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;p._dayLoaded=true;
     p._dayPrintMs=G.day===1?(G.dayPrints>=2?999999:24000):Math.max(14000,o.time*8500);
     if(G.day===1&&o.material==='pla'&&o.filament&&o.filament.id==='eco')G.dayUsedPlaBasic=true;
+    this.updatePrinterVisual(p.id);
     doSave(G);SFX.ok();G.cSto();
     showNotif('P'+(p.id+1)+' '+tr('loaded')+' '+o.pr.e+' '+o.pr.n,'success');
     sLog('P'+(p.id+1)+' '+tr('loaded')+': '+o.cl+' - '+o.pr.n+' '+tr('withMat')+' '+o.filament.n+'.');
@@ -356,6 +440,7 @@ class DayScene extends Phaser.Scene{
     G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;G.dayEarn+=earned;G.dayPrints++;
     G.orders=G.orders.filter(x=>x!==o);
     p.busy=false;p.order=null;p.progress=0;p._ev=null;p._pau=false;
+    this.updatePrinterVisual(p.id);
     SFX.coin();
     const pg=this.pGfx&&this.pGfx[p.id];
     if(pg){
@@ -414,14 +499,34 @@ class DayScene extends Phaser.Scene{
       else pg.lt.setText('LIBRE').setColor('#2a2050');
     });
   }
+  updatePrinterVisual(i){
+    const pg=this.pGfx&&this.pGfx[i],p=G.printers&&G.printers[i];if(!pg||!p)return;
+    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt);return;}
+    const c=p.order?p.order.pr.c:0x5bc8fa;
+    const activeDay=p.busy&&p.id===0&&!p._pau;
+    if(pg.sp){
+      pg.sp.setVisible(true);
+      setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
+      if(pg.g)pg.g.setVisible(false);
+    }else{
+      if(pg.g)pg.g.setVisible(true);
+      drawPrinter(pg.g,activeDay,p.broken,p.progress,c);
+    }
+    if(p.locked)pg.lt.setText('ðŸ”’').setColor('#222244');
+    else if(p.broken)pg.lt.setText('âš ï¸ROTA').setColor('#ff4d6a');
+    else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
+    else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
+    else pg.lt.setText('LIBRE').setColor('#2a2050');
+  }
   refreshPrinterSprites(){
     if(!this.pGfx)return;
     this.pGfx.forEach(pg=>{
       if(pg.sp||!this.textures.exists(PRINTER_ASSET))return;
-      pg.sp=createPrinterSprite(this,pg.px,pg.py);
-      if(pg.sp){pg.sp.setScale(3.5);pg.g.setVisible(false);}
       const i=this.pGfx.indexOf(pg);
+      pg.sp=createPrinterSprite(this,pg.px,pg.py);
+      if(pg.sp){pg.sp.setScale(i===0?Math.max(3.65,this.W/420*.8):3.5);pg.g.setVisible(false);}
       if(i>0)this.hideDayPrinter(pg.g,pg.sp,pg.lt);
+      else this.updatePrinterVisual(i);
     });
   }
   updateHUD(){
@@ -432,9 +537,15 @@ class DayScene extends Phaser.Scene{
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
   }
   dayObjectiveReady(){
-    if(G.day!==1)return false;
+    const loaded=(G.printers||[]).filter(p=>p.order).length;
     const queued=(G.orders||[]).length;
-    return (G.dayOrd||0)>=3&&(G.dayPrints||0)>=2&&queued>=1&&(G.dayBoughtPlaBasic||G.dayUsedPlaBasic);
+    if(G.day===1)
+      return (G.dayOrd||0)>=3&&(G.dayPrints||0)>=2&&queued>=1&&(G.dayBoughtPlaBasic||G.dayUsedPlaBasic);
+    if(G.day===2)
+      return (G.dayOrd||0)>=4&&((G.dayPrints||0)+loaded)>=3&&(G.dayBought||0)>=1;
+    if(G.day===3)
+      return G.pCount>=2&&((G.dayPrints||0)+loaded)>=2&&(G.dayOrd||0)>=4;
+    return false;
   }
   maybeFastCloseDay(){
     if(this.fastCloseDay||G.block||G.phase!=='day')return;
@@ -461,8 +572,7 @@ class DayScene extends Phaser.Scene{
     if(k.d.isDown||k.rt.isDown){vx=168*spd;this.dir=1;}
     if(k.w.isDown||k.up.isDown)vy=-101*spd;
     if(k.s.isDown||k.dn.isDown)vy=101*spd;
-    this.player.x=Phaser.Math.Clamp(this.player.x+vx*dt/1000,28,this.W-28);
-    this.player.y=Phaser.Math.Clamp(this.player.y+vy*dt/1000,this.H*.28,this.H*.82);
+    this.movePlayer(vx*dt/1000,vy*dt/1000);
     this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
     if(!this.pSp)this.player.scaleX=this.dir;
     if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}

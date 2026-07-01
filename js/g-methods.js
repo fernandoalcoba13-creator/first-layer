@@ -15,8 +15,8 @@ G.bStk=function(k,c,id){
   document.getElementById('hg').textContent=G.gold;
   doSave(G);
 };
-G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
-G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
+G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();if(ns&&ns.juice)ns.juice('IMPRESORA SALVADA','P'+(ev.printer.id+1)+' · '+ev.ti,'success');showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
+G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();if(ns&&ns.juice)ns.juice('AUTO-REPARADO','Rodrigo salvó P'+(ev.printer.id+1),'success');showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
 G.startNozzleMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
@@ -103,27 +103,42 @@ G.startBedMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='bed')return;
   if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}
   document.getElementById('evp').style.display='none';
-  const seq=[0,1,2,3].sort(()=>Math.random()-.5);
-  G._mini={type:'bed',ev,time:25000,max:25000,seq,idx:0,done:false,tick:null};
+  const pool=[0,1,2,3],len=G.day>=3?9:7;
+  const seq=Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]);
+  G._mini={type:'bed',ev,time:G.day>=3?30000:26000,max:G.day>=3?30000:26000,seq,idx:0,combo:0,done:false,tick:null};
   document.getElementById('miniGame').style.display='flex';
   {const ab=document.getElementById('mgAbandon');if(ab)ab.style.display=BETA_DAYS[G.day]?'none':'';}
   document.getElementById('mgTitle').textContent='📐 '+tr('bedTitle')+' - P'+(ev.printer.id+1);
-  document.getElementById('mgDesc').textContent=tr('bedDesc');
+  document.getElementById('mgDesc').textContent=G.lang==='en'?'Hit the arrows in order. Misses break the combo and cost time.':'Marcá las flechas en orden. Si fallás, perdés combo y tiempo.';
   document.getElementById('mgTimerFill').style.width='100%';
   G.renderBedMini();
   G._mini.tick=setInterval(()=>{if(!G._mini)return;G._mini.time-=250;document.getElementById('mgTimerFill').style.width=Math.max(0,G._mini.time/G._mini.max*100)+'%';G.renderBedMini();if(G._mini.time<=0)G.failNozzleMini();},250);
 };
 G.renderBedMini=function(){
   const m=G._mini;if(!m||m.type!=='bed')return;
-  const labels=['↖','↗','↙','↘'];
-  document.getElementById('mgGrid').innerHTML=labels.map((l,i)=>'<button class="mgCell exit '+(m.seq[m.idx]===i?'here':'')+'" onclick="G.tapBedMini('+i+')">'+l+'</button>').join('')+
-    '<div class="mgBtns" style="grid-column:1/-1">'+m.seq.map(i=>labels[i]).join(' ')+'</div>';
-  document.getElementById('mgHint').textContent=(G.lang==='en'?'Corner ':'Esquina ')+(m.idx+1)+'/'+m.seq.length+' | '+Math.ceil(m.time/1000)+'s';
+  const labels=['↑','→','↓','←'];
+  const seq=m.seq.map((i,n)=>'<span class="'+(n<m.idx?'done':n===m.idx?'now':'')+'">'+labels[i]+'</span>').join('');
+  document.getElementById('mgGrid').innerHTML=
+    '<div class="pumpGame">'+
+      '<div class="pumpSeq">'+seq+'</div>'+
+      '<div class="pumpPads">'+
+        '<button class="pumpPad up '+(m.seq[m.idx]===0?'here':'')+'" onclick="G.tapBedMini(0)">↑</button>'+
+        '<button class="pumpPad left '+(m.seq[m.idx]===3?'here':'')+'" onclick="G.tapBedMini(3)">←</button>'+
+        '<button class="pumpPad right '+(m.seq[m.idx]===1?'here':'')+'" onclick="G.tapBedMini(1)">→</button>'+
+        '<button class="pumpPad down '+(m.seq[m.idx]===2?'here':'')+'" onclick="G.tapBedMini(2)">↓</button>'+
+      '</div>'+
+      '<div class="pumpMeter"><b style="width:'+(m.idx/m.seq.length*100)+'%"></b></div>'+
+    '</div>';
+  document.getElementById('mgHint').textContent=(G.lang==='en'?'Step ':'Paso ')+(m.idx+1)+'/'+m.seq.length+' | Combo '+(m.combo||0)+' | '+Math.ceil(m.time/1000)+'s';
 };
 G.tapBedMini=function(i){
   const m=G._mini;if(!m||m.type!=='bed'||m.done)return;
-  if(m.seq[m.idx]!==i){m.idx=0;SFX.err();shakeUI();G.renderBedMini();return;}
-  m.idx++;SFX.clk();if(m.idx>=m.seq.length){m.done=true;setTimeout(()=>G.winNozzleMini(),120);}else G.renderBedMini();
+  if(m.seq[m.idx]!==i){
+    m.combo=0;m.idx=Math.max(0,m.idx-2);m.time=Math.max(0,m.time-1800);
+    SFX.err();shakeUI();G.renderBedMini();return;
+  }
+  m.idx++;m.combo=(m.combo||0)+1;SFX.clk();
+  if(m.idx>=m.seq.length){m.done=true;setTimeout(()=>G.winNozzleMini(),120);}else G.renderBedMini();
 };
 G.winNozzleMini=function(){
   if(!G._mini)return;
@@ -133,7 +148,7 @@ G.winNozzleMini=function(){
     ev.printer._ev=null;ev.printer._pau=false;
     const ns=game.scene.getScene('Night');if(ns)ns.aEv=null;
     document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
-    SFX.fix();showNotif('🪡 '+tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));return;
+    SFX.fix();if(ns&&ns.juice)ns.juice('BOQUILLA LIMPIA','P'+(ev.printer.id+1)+' vuelve a imprimir','success');showNotif('🪡 '+tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));return;
   }
   G.nFix();
 };
@@ -161,7 +176,7 @@ G.nForceRepair=function(){
   ev.printer._ev=null;ev.printer._pau=false;if(ev.printer.order)ev.printer.busy=true;
   ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;
   G.nFixes=(G.nFixes||0)+1;if(G.stats)G.stats.fix++;
-  SFX.fix();shakeUI();
+  SFX.fix();shakeUI();if(ns&&ns.juice)ns.juice('REPARACIÓN DE EMERGENCIA','P'+(ev.printer.id+1)+' sigue viva','success');
   showNotif(tr('repairAnyway')+' — -'+ev.rp+' REP','warning');
   sLog('🛠️ '+ev.ti+' — -'+ev.rp+' REP');
   renderRepHUD();doSave(G);
@@ -192,8 +207,20 @@ G.syncPrinters=function(){
   }
 };
 G.openShop=function(t){G.stab=t||G.stab||'up';G.tab(G.stab);document.getElementById('shop').style.display='block';G.block=true;setTimeout(()=>focusPanelFirst('#shop .st.on,#shop .st,#sg .si:not(.sb),#shop .shopClose'),0);};
-G._bUpg=function(id){const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;if(!betaShopAllows('upg',id)){showNotif(betaEverAllows('upg',id)?'🔒 '+tr('lockedToday'):'⭐ '+tr('fullGameMsg'),'info');return;}if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=u.co;G.upg[id]=true;if(id.indexOf('unlock')===0)G.syncPrinters();SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;};
 G._hEmp=function(id){const e=EMP.find(x=>x.id===id);if(!e||G.emp[id])return;if(!betaShopAllows('emp',id)){showNotif(betaEverAllows('emp',id)?'🔒 '+tr('lockedToday'):'⭐ '+tr('fullGameMsg'),'info');return;}if(G.gold<e.co){showNotif('💸 '+tr('noFunds'));return;}G.gold-=e.co;G.emp[id]=true;SFX.up();showNotif('✅ '+e.ic+' '+e.n+' OK');doSave(G);G.tab('emp');};
+G._bUpg=function(id){
+  const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;
+  if(!betaShopAllows('upg',id)){showNotif(betaEverAllows('upg',id)?'🔒 '+tr('lockedToday'):'⭐ '+tr('fullGameMsg'),'info');return;}
+  if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}
+  if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}
+  G.gold-=u.co;G.upg[id]=true;
+  if(id.indexOf('unlock')===0){
+    G.syncPrinters();
+    const ns=game.scene.getScene('Night');
+    if(ns&&ns.sys&&ns.sys.isActive()&&ns.ensureUnlockedPrinterVisuals)ns.ensureUnlockedPrinterVisuals();
+  }
+  SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;
+};
 G.cShop=function(){
   document.getElementById('shop').style.display='none';G.block=false;
 };

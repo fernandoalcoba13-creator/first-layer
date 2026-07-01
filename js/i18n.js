@@ -2,7 +2,7 @@ const TXT={
   es:{
     betaThanksK:'GRACIAS POR JUGAR',
     betaEndTitle:'Terminaste la beta de 3 días',
-    betaTease:'El juego completo suma <b>más días y clientes</b>, <b>impresoras de resina e industriales</b>, <b>árbol de mejoras</b>, eventos y tu taller creciendo sin límite.',
+    betaTease:'<b>Esto fue solo la apertura.</b><div class="beIceberg"><span>👥 12 clientes con personalidad</span><span>🧵 12 materiales y calidades</span><span>⚠️ 11 fallas de taller</span><span>⚡ 3 tipos de corte de luz</span><span>🔧 18 mejoras técnicas</span><span>👷 5 empleados contratables</span><span>🖨️ Hasta 4 impresoras</span><span>☀️ UPS, generador y solar</span></div>',
     betaWishlistBtn:'★ Sumá el juego a tu lista de deseos en Steam',
     betaMenuBtn:'Volver al menú',
     betaSoon:'Página de Steam próximamente. ¡Seguí al taller para enterarte del lanzamiento!',
@@ -105,7 +105,7 @@ const TXT={
   en:{
     betaThanksK:'THANKS FOR PLAYING',
     betaEndTitle:'You finished the 3-day beta',
-    betaTease:'The full game adds <b>more days and clients</b>, <b>resin and industrial printers</b>, an <b>upgrade tree</b>, events, and your workshop growing without limit.',
+    betaTease:'<b>This was only opening day.</b><div class="beIceberg"><span>👥 12 personality-driven clients</span><span>🧵 12 material tiers</span><span>⚠️ 11 workshop failures</span><span>⚡ 3 outage types</span><span>🔧 18 technical upgrades</span><span>👷 5 hireable staff</span><span>🖨️ Up to 4 printers</span><span>☀️ UPS, generator, and solar</span></div>',
     betaWishlistBtn:'★ Add the game to your Steam wishlist',
     betaMenuBtn:'Back to menu',
     betaSoon:'Steam page coming soon. Follow the shop to hear about launch!',

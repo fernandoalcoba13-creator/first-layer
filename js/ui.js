@@ -66,6 +66,23 @@ function showNotif(m,type='info'){
   n.animate([{transform:'translateX(22px)',opacity:0},{transform:'translateX(0)',opacity:1}],{duration:220,easing:'ease-out'});
   setTimeout(()=>{n.animate([{opacity:1},{opacity:0,transform:'translateX(14px)'}],{duration:280,fill:'forwards'});setTimeout(()=>n.remove(),280);},4300);
 }
+function showJuice(title,sub='',type='success'){
+  const ui=document.getElementById('ui');if(!ui)return;
+  const el=document.createElement('div');el.className='juicePop '+type;
+  const h=document.createElement('b');h.textContent=title;
+  const p=document.createElement('span');p.textContent=sub;
+  el.appendChild(h);if(sub)el.appendChild(p);
+  ui.appendChild(el);
+  setTimeout(()=>{if(el&&el.parentNode)el.parentNode.removeChild(el);},1450);
+}
+function nightJuice(scene,title,sub='',type='success'){
+  showJuice(title,sub,type);
+  if(scene&&scene.cameras&&scene.cameras.main){
+    scene.cameras.main.shake(180,.006);
+    scene.cameras.main.flash(260,type==='money'?255:120,type==='money'?210:255,type==='money'?60:180,.38);
+  }
+  if(typeof SFX!=='undefined'&&SFX.hero)SFX.hero();
+}
 function shakeUI(){const c=document.getElementById('ui');c.classList.remove('shake');void c.offsetWidth;c.classList.add('shake');setTimeout(()=>c.classList.remove('shake'),400);}
 
 // ═══ MERCADO DE FILAMENTO ═══
@@ -337,6 +354,10 @@ document.addEventListener('keydown',e=>{
   if(isShown('miniGame')&&G._mini&&G._mini.type==='nozzle'){
     const mv={arrowup:[0,-1],w:[0,-1],arrowdown:[0,1],s:[0,1],arrowleft:[-1,0],a:[-1,0],arrowright:[1,0],d:[1,0]}[k];
     if(mv){G.moveNozzleMaze(mv[0],mv[1]);e.preventDefault();return;}
+  }
+  if(isShown('miniGame')&&G._mini&&G._mini.type==='bed'){
+    const dir={arrowup:0,w:0,arrowright:1,d:1,arrowdown:2,s:2,arrowleft:3,a:3}[k];
+    if(dir!==undefined){G.tapBedMini(dir);e.preventDefault();return;}
   }
   if(handlePanelKeys('titleScreen','#titleScreen .tsBtn,#titleScreen .langBtn',k,e,2))return;
   if(handlePanelKeys('miniGame','#miniGame button',k,e,2))return;

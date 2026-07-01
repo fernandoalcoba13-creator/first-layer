@@ -2,7 +2,9 @@
 // Procedural drawing functions used during prototype phase.
 // Will be progressively retired as Mati delivers sprite assets.
 const PRINTER_ASSET='maquina3d';
-const PRINTER_SHEET='assets/printers/maquina3d.png';
+const PRINTER_SHEET='assets/printers/maquina3d_lvl1.png';
+const PRINTER_WORKING_ASSET='maquina3d_working';
+const PRINTER_WORKING_SHEET='assets/printers/maquina3d_lvl1_working.png';
 const PRINTER_SHEET_DATA='data:image/png;base64,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';
 const PRINTER_BROKEN_ASSET='maquina3d_broken';
 const PRINTER_FILAMENT_ASSET='maquina3d_filament';
@@ -12,6 +14,35 @@ const PLAYER_RIGHT='player_walk_d';
 const PLAYER_UP='player_walk_w';
 const ENV_BG_ASSET='env_fondo';
 const ENV_BG_PATH='assets/environment/fondo.png';
+const ENV_PROP_ASSETS=[
+  ['prop_toolbox','assets/environment/props/toolbox.png'],
+  ['prop_box_1','assets/environment/props/box_1.png'],
+  ['prop_box_2','assets/environment/props/box_2.png'],
+  ['prop_box_3','assets/environment/props/box_3.png'],
+  ['prop_box_4','assets/environment/props/box_4.png'],
+  ['prop_electricity','assets/environment/props/electricity.png'],
+  ['prop_poster_idea','assets/environment/props/poster_idea.png'],
+  ['prop_filament_yellow','assets/environment/props/filament_yellow.png'],
+  ['prop_filament_blue','assets/environment/props/filament_blue.png'],
+  ['prop_filament_cyan','assets/environment/props/filament_cyan.png'],
+  ['prop_filament_orange','assets/environment/props/filament_orange.png'],
+  ['prop_filament_red','assets/environment/props/filament_red.png'],
+  ['prop_filament_pink','assets/environment/props/filament_pink.png'],
+  ['prop_filament_green','assets/environment/props/filament_green.png'],
+  ['prop_filament_violet','assets/environment/props/filament_violet.png'],
+  ['prop_workbench_1','assets/environment/props/workbench_1.png'],
+  ['prop_workbench_2','assets/environment/props/workbench_2.png'],
+  ['prop_shelf_1','assets/environment/props/shelf_1.png'],
+  ['prop_shelf_2','assets/environment/props/shelf_2.png'],
+  ['prop_shelf_3','assets/environment/props/shelf_3.png'],
+  ['prop_shelf_4','assets/environment/props/shelf_4.png'],
+  ['prop_shelf_4_1','assets/environment/props/shelf_4_1.png'],
+  ['prop_shelf_4_2','assets/environment/props/shelf_4_2.png'],
+  ['prop_shelf_5','assets/environment/props/shelf_5.png'],
+  ['prop_shelf_6','assets/environment/props/shelf_6.png'],
+  ['prop_shelf_7','assets/environment/props/shelf_7.png'],
+  ['prop_shelf_8','assets/environment/props/shelf_8.png']
+];
 const CLIENT_ASSETS=[
   {key:'client_personaje1',src:'assets/characters/clients/personaje1.png'},
   {key:'client_personaje2',src:'assets/characters/clients/personaje2.png'},
@@ -33,15 +64,47 @@ function addSheetFromImage(scene,key,src,fw,fh,cb){
   img.onerror=()=>{console.warn('Sprite failed to load: '+key);if(cb)cb();};
   img.src=src;
 }
+function addImageFromImage(scene,key,src,cb){
+  if(scene.textures.exists(key)){if(cb)cb();return;}
+  const img=new Image();
+  img.onload=()=>{if(!scene.textures.exists(key))scene.textures.addImage(key,img);if(cb)cb();};
+  img.onerror=()=>{console.warn('Image failed to load: '+key);if(cb)cb();};
+  img.src=src;
+}
+function loadEnvironmentPropsAsync(scene,onReady){
+  const items=ENV_PROP_ASSETS.filter(a=>!scene.textures.exists(a[0]));
+  if(!items.length){if(onReady)onReady();return;}
+  let left=items.length;
+  const done=()=>{left--;if(left<=0&&onReady)onReady();};
+  items.forEach(a=>addImageFromImage(scene,a[0],a[1],done));
+}
+function addEnvSprite(scene,key,x,y,scale,depth){
+  if(!scene.textures.exists(key))return null;
+  return scene.add.image(x,y,key).setOrigin(.5,1).setScale(scale||3).setDepth(depth||2);
+}
+function addRoomWindowMood(scene,night){
+  if(!scene.room)return null;
+  const r=scene.room(),g=scene.add.graphics().setDepth(-19);
+  const x=r.ox+153*r.s,y=r.oy+22*r.s,w=109*r.s,h=19*r.s;
+  g.fillStyle(night?0x080a1d:0x63d6e7,1).fillRoundedRect(x,y,w,h,2*r.s);
+  g.lineStyle(Math.max(1,r.s),0x18202e,.75).strokeRoundedRect(x,y,w,h,2*r.s);
+  if(night){
+    g.fillStyle(0xffffff,.75);
+    [[18,6],[35,12],[73,5],[94,13]].forEach(p=>g.fillCircle(x+p[0]*r.s,y+p[1]*r.s,Math.max(1,r.s*.55)));
+  }else{
+    g.fillStyle(0xe8ffff,.88);
+    [[24,11,18,3],[50,8,23,3],[82,12,29,4]].forEach(p=>g.fillEllipse(x+p[0]*r.s,y+p[1]*r.s,p[2]*r.s,p[3]*r.s));
+  }
+  return g;
+}
 function setupPrinterAnims(scene){
   if(!scene.textures.exists(PRINTER_ASSET)||scene.anims.exists('printer_idle'))return;
   const fr=n=>({key:PRINTER_ASSET,frame:n});
-  const br=n=>({key:scene.textures.exists(PRINTER_BROKEN_ASSET)?PRINTER_BROKEN_ASSET:PRINTER_ASSET,frame:n});
-  const fi=n=>({key:scene.textures.exists(PRINTER_FILAMENT_ASSET)?PRINTER_FILAMENT_ASSET:PRINTER_ASSET,frame:n});
-  scene.anims.create({key:'printer_idle',frames:[fr(0),fr(1),fr(2),fr(3)],frameRate:3,repeat:-1});
-  scene.anims.create({key:'printer_working',frames:[4,5,6,7,8,9,10,11,12].map(fr),frameRate:8,repeat:-1});
-  scene.anims.create({key:'printer_fail',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(br),frameRate:7,repeat:-1});
-  scene.anims.create({key:'printer_out_filament',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(fi),frameRate:7,repeat:-1});
+  const wk=n=>({key:scene.textures.exists(PRINTER_WORKING_ASSET)?PRINTER_WORKING_ASSET:PRINTER_ASSET,frame:n});
+  scene.anims.create({key:'printer_idle',frames:[fr(0)],frameRate:1,repeat:-1});
+  scene.anims.create({key:'printer_working',frames:[0,1,2,3,4,5].map(wk),frameRate:8,repeat:-1});
+  scene.anims.create({key:'printer_fail',frames:[fr(0)],frameRate:1,repeat:-1});
+  scene.anims.create({key:'printer_out_filament',frames:[fr(0)],frameRate:1,repeat:-1});
 }
 function loadPrinterAssetsAsync(scene,onReady){
   if(scene.textures.exists(PRINTER_ASSET)){setupPrinterAnims(scene);if(onReady)onReady();return;}
@@ -52,13 +115,14 @@ function loadPrinterAssetsAsync(scene,onReady){
     if(!scene.textures.exists(PRINTER_ASSET)){
       scene.textures.addSpriteSheet(PRINTER_ASSET,img,{frameWidth:26,frameHeight:34});
     }
-    let left=2;
+    let left=3;
     const done=()=>{left--;if(left<=0){setupPrinterAnims(scene);(G._printerAssetCallbacks||[]).forEach(cb=>{if(cb)cb();});G._printerAssetCallbacks=null;}};
+    addSheetFromImage(scene,PRINTER_WORKING_ASSET,PRINTER_WORKING_SHEET,26,34,done);
     addSheetFromImage(scene,PRINTER_BROKEN_ASSET,'assets/printers/BROKENMACHINE.png',26,34,done);
     addSheetFromImage(scene,PRINTER_FILAMENT_ASSET,'assets/printers/MACHINEFILAMENT.png',26,34,done);
   };
   img.onerror=()=>console.warn('Printer sprite failed to load, using procedural fallback.');
-  img.src=PRINTER_SHEET_DATA;
+  img.src=PRINTER_SHEET;
 }
 function setupPlayerAnims(scene){
   if(!scene.textures.exists(PLAYER_DOWN)||scene.anims.exists('player_walk_down'))return;
@@ -129,18 +193,21 @@ function createClientSprite(scene,cl,idx){
 function createPrinterSprite(scene,x,y){
   if(!scene.textures.exists(PRINTER_ASSET))return null;
   setupPrinterAnims(scene);
-  const sp=scene.add.sprite(x,y+38,PRINTER_ASSET,0).setOrigin(.5,1).setScale(3).setDepth(3);
+  const sp=scene.add.sprite(x,y,PRINTER_ASSET,0).setOrigin(.5,1).setScale(3).setDepth(3);
   return sp;
 }
 function setPrinterSpriteState(sp,p){
   if(!sp)return;
+  sp.clearTint();
   let key=null;
   if(p&&p._ev&&p._ev.id==='run')key='printer_out_filament';
   else if(p&&p._ev)key='printer_fail';
   else if(p&&p.busy&&!p._pau)key='printer_working';
   else if(p&&p.broken)key='printer_fail';
+  if(key==='printer_fail')sp.setTint(0xff6b6b);
+  if(key==='printer_out_filament')sp.setTint(0xffd166);
   if(!key){if(sp.anims)sp.anims.stop();sp.setTexture(PRINTER_ASSET,0);return;}
-  if(sp.anims&&sp.anims.currentAnim&&sp.anims.currentAnim.key===key)return;
+  if(sp.anims&&sp.anims.currentAnim&&sp.anims.currentAnim.key===key&&sp.anims.isPlaying)return;
   sp.play(key,true);
 }
 function drawPlayer(g,light,tired){
@@ -220,8 +287,11 @@ function applyRoomBackground(scene,g,W,H,night){
     if(!scene.textures.exists(ENV_BG_ASSET))return;
     if(g)g.setVisible(false);
     const tex=scene.textures.get(ENV_BG_ASSET).getSourceImage();
-    const scale=W/tex.width;
-    const bg=scene.add.image(Math.round(W/2),8,ENV_BG_ASSET).setOrigin(.5,0).setScale(scale).setDepth(-20);
+    const scale=Math.min(W/tex.width,H/tex.height);
+    const ox=(W-tex.width*scale)/2;
+    const oy=8;
+    scene.roomLayout={scale,ox,oy,w:tex.width,h:tex.height};
+    const bg=scene.add.image(Math.round(ox+tex.width*scale/2),oy,ENV_BG_ASSET).setOrigin(.5,0).setScale(scale).setDepth(-20);
     if(night)bg.setTint(0x5f638a).setAlpha(.55);
     return bg;
   };

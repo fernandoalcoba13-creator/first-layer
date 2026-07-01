@@ -3,6 +3,40 @@
 // player runs to inspect/repair and to the breaker panel.
 class NightScene extends Phaser.Scene{
   constructor(){super({key:'Night'});}
+  room(){
+    const s=Math.min(this.W/420,this.H/270);
+    return {s,ox:(this.W-420*s)/2,oy:8};
+  }
+  rp(x,y){
+    const r=this.room();
+    return {x:r.ox+x*r.s,y:r.oy+y*r.s,s:r.s};
+  }
+  solidRects(){
+    const s=this.room().s,R=(x,y,w,h)=>{
+      const p=this.rp(x,y);
+      return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
+    };
+    return [
+      R(32,105,30,36),R(134,125,36,54),R(232,128,54,36),R(310,126,58,54),R(362,126,38,54),
+      R(185,204,26,24),R(225,204,30,24),R(268,199,42,26),R(176,153,24,12),
+      R(47,166,26,22),R(381,166,26,22),R(178,88,38,24),R(112,89,14,14)
+    ];
+  }
+  footRect(x=this.player.x,y=this.player.y){
+    const s=this.room().s;
+    return new Phaser.Geom.Rectangle(x-5*s,y-7*s,10*s,7*s);
+  }
+  hitsSolid(x,y){
+    const f=this.footRect(x,y);
+    return this.solidRects().some(r=>Phaser.Geom.Intersects.RectangleToRectangle(f,r));
+  }
+  movePlayer(dx,dy){
+    const minY=this.H*.28,maxY=this.H*.82,minX=28,maxX=this.W-28;
+    const nx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX);
+    if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
+    const ny=Phaser.Math.Clamp(this.player.y+dy,minY,maxY);
+    if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
+  }
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
@@ -10,12 +44,15 @@ class NightScene extends Phaser.Scene{
     BGM.playNight();
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
     this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
-    this.bkOrd=[];this.bkNext=0;this.tZone={x:this.W*.2,y:this.H*.42};
+    this.startPwr=(G.stats&&G.stats.pwr)||0;
+    const tabPt=this.rp(112,89);
+    this.bkOrd=[];this.bkNext=0;this.tZone={x:tabPt.x,y:tabPt.y};
     if(G.syncPrinters)G.syncPrinters();
     G.printers.forEach(p=>{if(p.order&&!p.broken&&!p.locked){p.busy=true;p._dayLoaded=false;}});
     this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
+    loadEnvironmentPropsAsync(this,()=>this.placeEnvironmentProps());
     this.schedPwr();this.schedEvs();
     document.getElementById('ptag').className='ptag night';
     document.getElementById('ptag').textContent='🌙 '+tr('night')+' — '+tr('dayDyn')+' '+G.day;
@@ -87,17 +124,19 @@ class NightScene extends Phaser.Scene{
     if(G.gold<cost){showNotif('💸 '+tr('noFunds'),'error');return;}
     G.gold-=cost;p.broken=false;p._ev=null;p._pau=false;if(p.order)p.busy=true;
     G.nFixes=(G.nFixes||0)+1;G.stats.fix++;document.getElementById('hg').textContent=G.gold;
-    G.cSto();SFX.fix();showNotif('P'+(p.id+1)+' '+tr('repair')+' OK','success');this.refreshPrinterLabels();doSave(G);
+    G.cSto();SFX.fix();this.juice('IMPRESORA SALVADA','P'+(p.id+1)+' vuelve al taller','success');showNotif('P'+(p.id+1)+' '+tr('repair')+' OK','success');this.refreshPrinterLabels();doSave(G);
   }
   buildWorld(){
     const W=this.W,H=this.H;
     this.bgG=this.add.graphics();drawBG(this.bgG,W,H,true);this.bgImg=applyRoomBackground(this,this.bgG,W,H,true);
+    this.windowMood=addRoomWindowMood(this,true);
     const nbg=this.add.rectangle(W/2,20,300,7,0x0d0a20).setOrigin(.5);
     this.nBf=this.add.rectangle(W/2-150,20,0,7,0x9d7fe3).setOrigin(0,.5).setDepth(20);
     this.add.text(W/2,30,tr('nightActive').toUpperCase(),{fontSize:'7px',color:'#2a2040',fontFamily:'Press Start 2P'}).setOrigin(.5,0).setDepth(20);
     this.tG=this.add.graphics();this.drawTblN(false);
-    this.shopZone={x:W*.9,y:H*.34};
-    this.invZone={x:W*.9,y:H*.47};
+    const shopPt=this.rp(178,88),invPt=this.rp(310,184);
+    this.shopZone={x:shopPt.x,y:shopPt.y};
+    this.invZone={x:invPt.x,y:invPt.y};
     const sg=this.add.graphics();
     sg.fillStyle(0x0c180c);sg.fillRect(this.shopZone.x-38,this.shopZone.y-26,76,50);
     sg.lineStyle(1,0x2a4a2a);sg.strokeRect(this.shopZone.x-38,this.shopZone.y-26,76,50);
@@ -105,12 +144,10 @@ class NightScene extends Phaser.Scene{
     sg.fillStyle(0x10101e);sg.fillRect(this.invZone.x-38,this.invZone.y-26,76,50);
     sg.lineStyle(1,0x2a2040);sg.strokeRect(this.invZone.x-38,this.invZone.y-26,76,50);
     this.add.text(this.invZone.x,this.invZone.y,'📦\n'+tr('inventoryShort'),{fontSize:'9px',color:'#5bc8fa',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
-    const cnt=G.printers.filter(p=>!p.locked).length;
-    const sp=Math.min(160,(W-80)/Math.max(cnt,1));
-    const sx=(W-sp*(cnt-1))/2;
+    const printerSlots=[[185,176],[225,176],[265,176],[310,176]].map(p=>this.rp(p[0],p[1]));
     G.printers.forEach((p,i)=>{
       if(p.locked)return;
-      const px=sx+i*sp,py=H*.51;
+      const slot=printerSlots[i]||this.rp(185+i*40,176),px=slot.x,py=slot.y;
       const ct=this.add.container(px,py).setDepth(3);
       const spr=createPrinterSprite(this,px,py);
       const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
@@ -136,6 +173,44 @@ class NightScene extends Phaser.Scene{
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Press Start 2P',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
   }
+  placeEnvironmentProps(){
+    if(this.envPropsPlaced)return;
+    this.envPropsPlaced=true;
+    const P=(x,y)=>this.rp(x,y),S=this.room().s;
+    const props=[
+      ['prop_shelf_5',32,105,S,1],
+      ['prop_poster_idea',88,92,S,1],
+      ['prop_electricity',112,89,S,3],
+      ['prop_shelf_2',134,125,S,1],
+      ['prop_filament_violet',128,82,S,3],
+      ['prop_filament_pink',139,82,S,3],
+      ['prop_filament_violet',150,82,S,3],
+      ['prop_filament_cyan',128,105,S,3],
+      ['prop_filament_blue',139,105,S,3],
+      ['prop_toolbox',176,118,S,2],
+      ['prop_workbench_2',232,96,S,1],
+      ['prop_workbench_1',232,128,S,2],
+      ['prop_shelf_1',310,126,S,1],
+      ['prop_filament_yellow',294,82,S,3],
+      ['prop_filament_orange',306,82,S,3],
+      ['prop_filament_yellow',318,82,S,3],
+      ['prop_filament_pink',294,112,S,3],
+      ['prop_filament_violet',306,112,S,3],
+      ['prop_shelf_2',362,126,S,1],
+      ['prop_filament_green',354,82,S,3],
+      ['prop_filament_red',365,105,S,3],
+      ['prop_filament_blue',354,112,S,3],
+      ['prop_box_2',47,166,S,1],
+      ['prop_box_3',32,168,S,1],
+      ['prop_box_4',381,166,S,1],
+      ['prop_box_3',392,171,S,1],
+      ['prop_shelf_4_1',185,204,S,2],
+      ['prop_shelf_4',225,204,S,2],
+      ['prop_shelf_4_2',268,199,S,2],
+      ['prop_shelf_7',310,184,S,2]
+    ].map(p=>{const q=P(p[1],p[2]),sp=addEnvSprite(this,p[0],q.x,q.y,p[3],p[4]);if(p[0]==='prop_electricity')this.powerSprite=sp;return sp;}).filter(Boolean);
+    props.forEach(o=>o.setTint(0x7c7fa8).setAlpha(.72));
+  }
   refreshPrinterSprites(){
     if(!this.pObjs)return;
     this.pObjs.forEach(po=>{
@@ -144,19 +219,41 @@ class NightScene extends Phaser.Scene{
       if(po.spr)po.pg.setVisible(false);
     });
   }
+  ensureUnlockedPrinterVisuals(){
+    if(!this.pObjs)return;
+    const unlocked=G.printers.filter(p=>!p.locked);
+    const slots=[[185,176],[225,176],[265,176],[310,176]].map(p=>this.rp(p[0],p[1]));
+    unlocked.forEach((p,i)=>{
+      const slot=slots[i]||this.rp(185+i*40,176),px=slot.x,py=slot.y;
+      let po=this.pObjs.find(o=>o.p===p);
+      if(po){
+        po.px=px;po.py=py;po.ct.setPosition(px,py);if(po.spr)po.spr.setPosition(px,py);
+        return;
+      }
+      const ct=this.add.container(px,py).setDepth(3);
+      const spr=createPrinterSprite(this,px,py);
+      const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
+      const arm=this.add.graphics();
+      arm.fillStyle(0x8888cc);arm.fillRect(-2,-64,4,22);
+      arm.fillStyle(0x5bc8fa);arm.fillTriangle(-4,-42,4,-42,0,-36);
+      ct.add(arm);
+      const pbB=this.add.rectangle(0,-16,70,5,0x070510).setOrigin(.5).setDepth(4);
+      const pbF=this.add.rectangle(-35,-16,0,5,p.order?p.order.pr.c:0x5bc8fa).setOrigin(0,.5).setDepth(4);
+      ct.add(pbB);ct.add(pbF);
+      const lb=this.add.text(0,30,'P'+(p.id+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'LIBRE'),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
+      ct.add(lb);
+      const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
+      this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
+    });
+    this.refreshPrinterSprites();this.refreshPrinterLabels();
+  }
   drawTblN(pwr){
-    const g=this.tG,tx=this.tZone.x,ty=this.tZone.y;g.clear();
-    g.fillStyle(pwr?0x2a0808:0x1a1010);g.fillRect(tx-26,ty-38,52,70);
-    g.lineStyle(2,pwr?0xff3333:0x3a1a1a);g.strokeRect(tx-26,ty-38,52,70);
-    g.fillStyle(pwr?0x3a0808:0x2a0808);g.fillRect(tx-22,ty-34,44,14);
-    for(let i=0;i<4;i++){
-      g.fillStyle(!pwr?0x4dff91:0x330000,!pwr?.6:1);g.fillRect(tx-18+i*10,ty-32,6,9);
-      g.fillStyle(!pwr?0x4dff91:0x330000,!pwr?.3:.8);g.fillCircle(tx-15+i*10,ty-16,4);
-    }
-    this.tG.setDepth(2);
+    const g=this.tG;if(g)g.clear();
+    if(this.powerSprite)this.powerSprite.clearTint().setTint(pwr?0xff4d6a:0x8da0ff).setAlpha(pwr?1:.88);
   }
   createPlayer(){
-    this.player=this.add.container(this.W/2,this.H*.71).setDepth(5);
+    const start=this.rp(127,178);
+    this.player=this.add.container(start.x,start.y).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,true,false);
     this.player.add(this.pGr);
     this.fc=this.add.graphics();this.fc.fillStyle(0xffeeaa,.07);this.fc.fillTriangle(12,-6,12,6,52,0);
@@ -342,6 +439,9 @@ class NightScene extends Phaser.Scene{
     document.getElementById('evp').style.display='block';
     setTimeout(()=>focusPanelFirst('#ebs .eb'),0);
   }
+  juice(title,sub='',type='success'){
+    nightJuice(this,title,sub,type);
+  }
   completePrint(p){
     const o=p.order,earned=o.pay;
     const repGain=2+(o.filament&&o.filament.rep||0);
@@ -351,9 +451,9 @@ class NightScene extends Phaser.Scene{
     SFX.coin();
     const po=this.pObjs.find(x=>x.p===p);
     if(po){
-      const coin=this.add.text(po.px,po.py-80,'+$'+earned,{fontSize:'12px',color:'#ffd700',fontFamily:'Press Start 2P'}).setOrigin(.5).setDepth(12);
-      this.tweens.add({targets:coin,y:coin.y-55,alpha:0,duration:1100,onComplete:()=>coin.destroy()});
-      this.cameras.main.flash(200,0,200,100,.3);
+      const coin=this.add.text(po.px,po.py-88,'+$'+earned,{fontSize:'18px',color:'#ffd700',fontFamily:'Press Start 2P'}).setOrigin(.5).setDepth(12);
+      this.tweens.add({targets:coin,y:coin.y-72,scale:1.18,alpha:0,duration:1250,ease:'Cubic.easeOut',onComplete:()=>coin.destroy()});
+      this.juice('TRABAJO COBRADO','P'+(p.id+1)+' · +$'+earned+(repGain!==2?' · REP '+(repGain>0?'+':'')+repGain:''),'money');
     }
     showNotif('✅ '+o.pr.e+' '+o.pr.n+' — +$'+earned+(repGain!==2?' REP '+(repGain>0?'+':'')+repGain:''),'money');
     sLog('✅ P'+(p.id+1)+': '+o.pr.e+' '+o.pr.n+' con '+(o.filament?o.filament.n:o.material)+' — +$'+earned+' 🪙');
@@ -371,7 +471,7 @@ class NightScene extends Phaser.Scene{
     G.block=false;this.drawTblN(false);
     this.cameras.main.flash(400,255,220,100,.4);
     showNotif(panel?'✅ '+tr('breakerRestored'):'⚡ '+tr('lightBack'));
-    if(panel)SFX.fix();
+    if(panel){SFX.fix();this.juice('LUZ RESTAURADA','Las impresoras retoman','power');}
     sLog('💡 Luz restablecida. Las impresoras retoman.');
   }
   update(_t,dt){
@@ -389,8 +489,7 @@ class NightScene extends Phaser.Scene{
       if(k.d.isDown||k.rt.isDown){vx=172*spd;this.dir=1;}
       if(k.w.isDown||k.up.isDown)vy=-103*spd;
       if(k.s.isDown||k.dn.isDown)vy=103*spd;
-      this.player.x=Phaser.Math.Clamp(this.player.x+vx*dt/1000,28,this.W-28);
-      this.player.y=Phaser.Math.Clamp(this.player.y+vy*dt/1000,this.H*.28,this.H*.82);
+      this.movePlayer(vx*dt/1000,vy*dt/1000);
       this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
       if(!this.pSp)this.player.scaleX=this.dir;
       this.fc.scaleX=this.dir;
@@ -438,9 +537,16 @@ class NightScene extends Phaser.Scene{
     this.updateHUD();this.maybeFastCloseNight();
   }
   nightObjectiveReady(){
-    if(G.day!==1)return false;
     const active=(G.printers||[]).some(p=>p.busy&&!p.broken&&!p._ev);
-    return (G.nFixes||0)>=1&&(G.nightDone||0)>=1&&!G.pActive&&!active;
+    const printed=(G.dayPrints||0)+(G.nightDone||0);
+    const pwrDone=((G.stats&&G.stats.pwr)||0)>(this.startPwr||0)&&!G.pActive;
+    if(G.day===1)return (G.nFixes||0)>=1&&(G.nightDone||0)>=1&&!G.pActive&&!active;
+    if(G.day===2)return pwrDone&&(G.nFixes||0)>=1&&printed>=3&&!active;
+    if(G.day===3){
+      const activePrinters=(G.printers||[]).filter(p=>!p.locked&&!p.broken).length;
+      return activePrinters>=2&&pwrDone&&(G.nFixes||0)>=2&&printed>=2&&!active;
+    }
+    return false;
   }
   maybeFastCloseNight(){
     if(this.fastCloseNight||G.block||G.phase!=='night')return;

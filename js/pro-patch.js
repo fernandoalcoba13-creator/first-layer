@@ -50,8 +50,8 @@
         :G.day===2
         ?[
           {txt:es?'Aceptar cuatro pedidos':'Accept four orders',done:(G.dayOrd||0)>=4},
-          {txt:es?'Cargar al menos tres trabajos':'Load at least three jobs',done:loaded>=3},
-          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:material>=2}
+          {txt:es?'Imprimir o cargar tres trabajos':'Print or load three jobs',done:((G.dayPrints||0)+loaded)>=3},
+          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:(G.dayBought||0)>=1}
         ]
         :[
           {txt:es?'Comprar la segunda impresora':'Buy the second printer',done:G.pCount>=2},
