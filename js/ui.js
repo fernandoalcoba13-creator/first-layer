@@ -445,6 +445,9 @@ G.continueToNight=function(){
   if(cb)cb();
 };
 window.resetGame=()=>{localStorage.removeItem(SK);location.reload();};
+G.confirmReset=function(){
+  if(window.confirm(tr('confirmReset')))window.resetGame();
+};
 
 // ═══ FIN DE LA BETA — cartel de conversión a Steam ═══
 // Fernando: cuando publiques la página de Steam, pegá su URL acá (ej: 'https://store.steampowered.com/app/XXXXXX/').
@@ -473,7 +476,5 @@ G.betaWishlist=function(){
   window.open(STEAM_PAGE_URL,'_blank','noopener');
 };
 G.betaToMenu=function(){
-  const el=document.getElementById('betaEnd');
-  if(el)el.style.display='none';
-  setGameMenu(true);
+  window.resetGame();
 };

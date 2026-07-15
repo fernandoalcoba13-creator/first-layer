@@ -4,7 +4,7 @@ const TXT={
     betaEndTitle:'Justo cuando el taller empezaba a despegar...',
     betaTease:'<b>La beta termina, pero el taller recién abre.</b><br>En el día 4 aparece la primera contratación, nuevos materiales y una cadena de fallas más pesada.<div class="beIceberg"><span>👥 12 clientes con personalidad</span><span>🧵 12 materiales y calidades</span><span>⚠️ 11 fallas de taller</span><span>⚡ 3 tipos de corte de luz</span><span>🔧 18 mejoras técnicas</span><span>👷 5 empleados contratables</span><span>🖨️ Hasta 4 impresoras</span><span>☀️ UPS, generador y solar</span></div>',
     betaWishlistBtn:'★ Sumá el juego a tu lista de deseos en Steam',
-    betaMenuBtn:'Volver al menú',
+    betaMenuBtn:'Jugar de nuevo',confirmReset:'¿Borrar la partida y empezar de cero?',
     betaSoon:'Página de Steam próximamente. ¡Seguí al taller para enterarte del lanzamiento!',
     fullGameMsg:'Disponible en el juego completo',
     repBad:'Mala fama',repNorm:'Normal',repGood:'Prestigio',
@@ -27,12 +27,13 @@ const TXT={
     keyEsc:'Click objetos',keyPick:'1-6 elegir',keyAccept:'A aceptar',keyNeg:'N negociar',keyReject:'R rechazar',keyMate:'I inventario',keyRepair:'O tienda',
     notifTip:'Consejo',notifSuccess:'Logro',notifWarning:'Atencion',notifPurchase:'Compra',
     dayGoalComplete:'Objetivo diario completo. Cerrando turno.',
+    dayTasksPending:'El turno termino, pero faltan tareas. Completa la lista de la izquierda para cerrar el dia.',
     nightGoalComplete:'Objetivo nocturno completo. Abriendo el taller.',
     cash:'Caja',printers:'Impresoras',stock:'Stock',team:'Equipo',
     ready:'LISTO',locked:'BLOQUEADO',buy:'COMPRAR',noMoney:'SIN FONDOS',
     upSub:'Compra mejoras permanentes para sobrevivir mas noches.',
     empSub:'Contrata ayuda: pagas sueldo cada noche, pero te alivian el turno.',
-    stkSub:'Compra materiales al precio del mercado de hoy.',
+    stkSub:'Compra materiales al precio del mercado de hoy.',cafeTitle:'Cafetera',cafeSub:'Cafe, infusiones y comida para recuperar el ritmo.',
     needs:'Requiere ',installed:'Instalado',hired:'Contratado',
     salary:'Sueldo',partsName:'Repuestos nozzle',partsDesc:'Picos, racores y piezas para reparar.',
     tier:'Gama',risk:'Riesgo',quickStock:'Compra rapida: calidad estandar. En tienda tenes todas las gamas.',
@@ -107,7 +108,7 @@ const TXT={
     betaEndTitle:'Just as the shop was taking off...',
     betaTease:'<b>The beta ends, but the workshop is just opening.</b><br>Day 4 brings your first hire, new materials, and a nastier failure chain.<div class="beIceberg"><span>👥 12 personality-driven clients</span><span>🧵 12 material tiers</span><span>⚠️ 11 workshop failures</span><span>⚡ 3 outage types</span><span>🔧 18 technical upgrades</span><span>👷 5 hireable staff</span><span>🖨️ Up to 4 printers</span><span>☀️ UPS, generator, and solar</span></div>',
     betaWishlistBtn:'★ Add the game to your Steam wishlist',
-    betaMenuBtn:'Back to menu',
+    betaMenuBtn:'Play again',confirmReset:'Delete this run and start over?',
     betaSoon:'Steam page coming soon. Follow the shop to hear about launch!',
     fullGameMsg:'Available in the full game',
     repBad:'Bad name',repNorm:'Normal',repGood:'Prestige',
@@ -130,12 +131,13 @@ const TXT={
     keyEsc:'Click objects',keyPick:'1-6 pick',keyAccept:'A accept',keyNeg:'N bargain',keyReject:'R reject',keyMate:'I inventory',keyRepair:'O shop',
     notifTip:'Tip',notifSuccess:'Milestone',notifWarning:'Warning',notifPurchase:'Purchase',
     dayGoalComplete:'Daily goal complete. Closing shift.',
+    dayTasksPending:'The shift timer ended, but tasks remain. Complete the checklist on the left to close the day.',
     nightGoalComplete:'Night goal complete. Opening the shop.',
     cash:'Cash',printers:'Printers',stock:'Stock',team:'Team',
     ready:'READY',locked:'LOCKED',buy:'BUY',noMoney:'NO CASH',
     upSub:'Buy permanent upgrades to survive longer nights.',
     empSub:'Hire help: nightly wages, less pressure.',
-    stkSub:'Buy materials at today market price.',
+    stkSub:'Buy materials at today market price.',cafeTitle:'Coffee station',cafeSub:'Coffee, infusions and food to recover your pace.',
     needs:'Needs ',installed:'Installed',hired:'Hired',
     salary:'Wage',partsName:'Nozzle spares',partsDesc:'Nozzles, fittings, and repair parts.',
     tier:'Tier',risk:'Risk',quickStock:'Quick buy: standard quality. Shop has every tier.',
@@ -225,9 +227,9 @@ const CL_EN_LINES={
 const MOOD_EN={Apurada:'Rushed','Técnico':'Technical',Corporativa:'Corporate',Creativa:'Creative',Influencer:'Influencer',Constructor:'Builder',Urgente:'Urgent',Académico:'Academic',Casual:'Casual',Curiosa:'Curious'};
 const TAG_EN={flexible:'flexible','apuro estetico':'rush finish','tolerancia fina':'tight tolerance',corporativo:'corporate','fan art':'fan art',creativo:'creative',viral:'viral',maqueta:'scale model','contra reloj':'against the clock',academico:'academic',simple:'simple',curiosa:'curious',normal:'normal'};
 const STORY_EN={
-  1:{ti:'🖨️ Day 1 - Opening Day',tx:'The shop opens.\nToday is basic: eco PLA, a few clients, and a tutorial night.',ob:'Earn $300'},
+  1:{ti:'🖨️ Day 1 - Opening Day',tx:'The shop opens.\nToday is basic: eco PLA, a few clients, and a tutorial night.',ob:'Accept 3 orders, cash out 2, and save 1 for night'},
   2:{ti:'⏱️ Day 2 - First Pressure',tx:'More jobs arrive and the first outage hits.\nAccept work, but check stock before printing.',ob:'Accept 4 orders'},
-  3:{ti:'⚡ Day 3 - Breaking Point',tx:'Tonight gets heavy.\nBuy another printer to maximize production and survive with 2 machines running.',ob:'Survive with 2 printers working'}
+  3:{ti:'⚡ Day 3 - Breaking Point',tx:'Tonight gets heavy.\nPrepare jobs: tonight you can buy another printer and bring it online.',ob:'Survive with 2 printers working'}
 };
 const NE_EN={
   jam:{ti:'FILAMENT JAM',de:'Extruder on {P} jammed.',fx:'Cold pull'},
@@ -286,7 +288,7 @@ function applyLang(){
   set('ctlMate',tr('mate'));
   set('btnContinue','▶ '+tr('continue'));
   set('btnReset',tr('reset'));
-  set('shopSub',G.stab==='emp'?tr('empSub'):G.stab==='stk'?tr('stkSub'):tr('upSub'));
+  set('shopSub',G.stab==='emp'?tr('empSub'):G.stab==='stk'?tr('stkSub'):G.stab==='cafe'?tr('cafeSub'):tr('upSub'));
   set('deStart','▶ '+tr('startNight'));
   set('tsObjective',tr('objective'));
   set('makerLabel',tr('makerName'));

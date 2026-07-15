@@ -17,9 +17,17 @@ class NightScene extends Phaser.Scene{
       return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
     };
     return [
-      R(32,105,30,36),R(134,125,36,54),R(232,128,54,36),R(310,126,58,54),R(362,126,38,54),
-      R(185,204,26,24),R(225,204,30,24),R(268,199,42,26),R(176,153,24,12),
-      R(47,166,26,22),R(381,166,26,22),R(178,88,38,24),R(112,89,14,14)
+      R(32,119,28,14),        // left shelf feet
+      R(134,145,34,15),       // filament shelf feet
+      R(232,145,52,16),       // workbench base
+      R(310,145,56,15),       // large shelf feet
+      R(362,145,36,15),       // right shelf feet
+      R(185,212,25,15),       // printer cabinet 1
+      R(225,212,29,15),       // printer cabinet 2
+      R(268,208,40,16),       // printer cabinet 3
+      R(176,157,22,8),        // toolbox
+      R(47,174,25,12),        // left boxes
+      R(381,174,25,12)        // right boxes
     ];
   }
   footRect(x=this.player.x,y=this.player.y){
@@ -43,13 +51,15 @@ class NightScene extends Phaser.Scene{
     G.phase='night';G.block=false;
     BGM.playNight();
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
-    this.earn=0;this.done=0;G.nightDone=0;this.wt=0;this.st=0;this.wb=0;this.dir=1;
+    this.earn=0;this.done=0;G.nightDone=0;G.breakerFixes=0;G.lastPowerResolved=null;this.wt=0;this.st=0;this.wb=0;this.dir=1;
     this.startPwr=(G.stats&&G.stats.pwr)||0;
     const tabPt=this.rp(112,89);
     this.bkOrd=[];this.bkNext=0;this.tZone={x:tabPt.x,y:tabPt.y};
     if(G.syncPrinters)G.syncPrinters();
     G.printers.forEach(p=>{if(p.order&&!p.broken&&!p.locked){p.busy=true;p._dayLoaded=false;}});
     this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
+    this.cameras.main.setZoom(1.08);
+    this.cameras.main.centerOn(this.W/2,this.H/2);
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadEnvironmentPropsAsync(this,()=>this.placeEnvironmentProps());
@@ -149,7 +159,7 @@ class NightScene extends Phaser.Scene{
       if(p.locked)return;
       const slot=printerSlots[i]||this.rp(185+i*40,176),px=slot.x,py=slot.y;
       const ct=this.add.container(px,py).setDepth(3);
-      const spr=createPrinterSprite(this,px,py);
+      const spr=createPrinterSprite(this,px,py);if(spr)spr.setScale(Math.max(3.2,this.room().s));
       const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
       const arm=this.add.graphics();
       arm.fillStyle(0x8888cc);arm.fillRect(-2,-64,4,22);
@@ -216,6 +226,7 @@ class NightScene extends Phaser.Scene{
     this.pObjs.forEach(po=>{
       if(po.spr||!this.textures.exists(PRINTER_ASSET))return;
       po.spr=createPrinterSprite(this,po.px,po.py);
+      if(po.spr)po.spr.setScale(Math.max(3.2,this.room().s));
       if(po.spr)po.pg.setVisible(false);
     });
   }
@@ -231,7 +242,7 @@ class NightScene extends Phaser.Scene{
         return;
       }
       const ct=this.add.container(px,py).setDepth(3);
-      const spr=createPrinterSprite(this,px,py);
+      const spr=createPrinterSprite(this,px,py);if(spr)spr.setScale(Math.max(3.2,this.room().s));
       const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
       const arm=this.add.graphics();
       arm.fillStyle(0x8888cc);arm.fillRect(-2,-64,4,22);
@@ -259,7 +270,7 @@ class NightScene extends Phaser.Scene{
     this.fc=this.add.graphics();this.fc.fillStyle(0xffeeaa,.07);this.fc.fillTriangle(12,-6,12,6,52,0);
     this.player.add(this.fc);this.pSp=null;this.pDir='down';
   }
-  refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,true);if(this.pSp)this.pGr.setVisible(false);}
+  refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,true);if(this.pSp){this.pSp.setScale(2.45);this.pGr.setVisible(false);}}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
     this.input.keyboard.on('keydown-E',()=>{
@@ -460,8 +471,10 @@ class NightScene extends Phaser.Scene{
     this.updateHUD();
   }
   resPwr(panel){
+    const resolvedType=G.pType&&G.pType.id;
     const pen=G.pType?G.pType.pen:.3;
     if(!G.upsLeft)G.printers.forEach(p=>{if(p._pau){p.progress=Math.max(0,p.progress-pen*.4);p._pau=false;}});
+    if(panel){G.breakerFixes=(G.breakerFixes||0)+1;G.lastPowerResolved=resolvedType;}
     G.pActive=false;G.pType=null;G.upsLeft=0;SFX.pwrOn();
     document.getElementById('pov').className='';
     document.getElementById('phud').style.display='none';
@@ -480,7 +493,10 @@ class NightScene extends Phaser.Scene{
       G.pTimer-=dt;
       document.getElementById('ptf').style.width=(Math.max(0,G.pTimer/G.pMax)*100)+'%';
       if(G.upsLeft>0){G.upsLeft-=dt;if(G.upsLeft<=0){G.upsLeft=0;G.printers.forEach(p=>{if(p.busy&&!p.broken)p._pau=true;});}}
-      if(G.pTimer<=0&&G.pType&&G.pType.id!=='micro')this.resPwr(false);
+      if(G.pTimer<=0&&G.pType&&G.pType.id!=='micro'){
+        if(BETA_DAYS[G.day])G.pTimer=0;
+        else this.resPwr(false);
+      }
     }
     if(!G.block){
       const k=this.keys;let vx=0,vy=0;
@@ -493,10 +509,17 @@ class NightScene extends Phaser.Scene{
       this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
       if(!this.pSp)this.player.scaleX=this.dir;
       this.fc.scaleX=this.dir;
-      if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>175){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
+      if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>175){this.wb^=1;this.wt=0;}if(this.st>360){this.st=0;SFX.step();}}
+      else this.wb=0;
+      const bobT=this.pSp||this.pGr;if(bobT)bobT.y=(vx||vy)&&this.wb?-2:0;
     }
     tickMate(dt);this.el+=dt;this.nBf.width=300*Math.min(1,this.el/this.dur);
-    if(this.el>=this.dur){this.endNight();return;}
+    if(this.el>=this.dur){
+      // In the beta the night can't just time out while a scripted failure is still unresolved:
+      // the player must clear the minigame. Hold the clock full and keep waiting until it's fixed.
+      if(BETA_DAYS[G.day]&&!this.nightObjectiveReady()){this.el=this.dur;}
+      else{this.endNight();return;}
+    }
     G.printers.forEach(p=>{
       if(!p.busy||p.broken||p._ev||p._pau)return;
       p.progress+=dt/1000*G.sMult/(p.order?(p.order.time||p.order.pr.t)*10:100);
@@ -536,10 +559,19 @@ class NightScene extends Phaser.Scene{
     if(this.iLbl.visible){const pulse=.55+.35*Math.sin(this.time.now/120);this.iLbl.setAlpha(.72+pulse*.28).setScale(1+pulse*.05);}
     this.updateHUD();this.maybeFastCloseNight();
   }
+  // Beta gate: the night may only close once every scripted failure has been handled.
+  // A failure is "pending" while its printer still carries an active event or a panel is open,
+  // or while the minigame is mid-run. nFixes must cover every forced fail the day scheduled.
+  betaNightClearable(){
+    const ff=(this.beta&&this.beta.forcedFails)?this.beta.forcedFails.length:0;
+    const anyEvActive=(G.printers||[]).some(p=>p._ev)||!!(this.aEv)||!!G._mini;
+    if(anyEvActive||G.pActive)return false;
+    return (G.nFixes||0)>=ff;
+  }
   nightObjectiveReady(){
     const active=(G.printers||[]).some(p=>p.busy&&!p.broken&&!p._ev);
     const printed=(G.dayPrints||0)+(G.nightDone||0);
-    const pwrDone=((G.stats&&G.stats.pwr)||0)>(this.startPwr||0)&&!G.pActive;
+    const pwrDone=(G.breakerFixes||0)>=1&&!G.pActive;
     if(G.day===1)return (G.nFixes||0)>=1&&(G.nightDone||0)>=1&&!G.pActive&&!active;
     if(G.day===2)return pwrDone&&(G.nFixes||0)>=1&&printed>=3&&!active;
     if(G.day===3){

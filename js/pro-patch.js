@@ -51,11 +51,12 @@
         ?[
           {txt:es?'Aceptar cuatro pedidos':'Accept four orders',done:(G.dayOrd||0)>=4},
           {txt:es?'Imprimir o cargar tres trabajos':'Print or load three jobs',done:((G.dayPrints||0)+loaded)>=3},
-          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:(G.dayBought||0)>=1}
+          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:(G.dayBoughtMaterial||0)>=1},
+          {txt:es?'Dejar 1 trabajo para la noche':'Leave 1 job for night',done:(G.orders||[]).length>=1}
         ]
         :[
-          {txt:es?'Comprar la segunda impresora':'Buy the second printer',done:G.pCount>=2},
-          {txt:es?'Cargar dos impresoras con trabajos':'Load two printers with jobs',done:loaded>=2},
+          {txt:es?'Aceptar cuatro pedidos':'Accept four orders',done:(G.dayOrd||0)>=4},
+          {txt:es?'Imprimir o cargar dos trabajos':'Print or load two jobs',done:printed>=2||loaded>=2||((G.dayPrints||0)+loaded)>=2},
           {txt:es?'Guardar repuestos para fallas fuertes':'Keep spares for serious failures',done:(G.stk&&G.stk.parts||0)>=2},
           {txt:es?'Dejar cola suficiente para producir':'Leave enough queue to produce',done:(G.orders||[]).length>=2}
         ];
@@ -63,24 +64,22 @@
         ?[
           {txt:es?'Resolver la boquilla obstruida':'Fix the clogged nozzle',done:(G.nFixes||0)>=1},
           {txt:es?'Terminar el primer trabajo':'Finish the first job',done:printed>=1},
-          {txt:es?'Cobrar hasta llegar a $300':'Cash out until you reach $300',done:(G.nightDone||0)>=1&&(G.gold||0)>=300}
+          {txt:es?'Terminar el trabajo reservado':'Finish the reserved night job',done:(G.nightDone||0)>=1}
         ]
         :G.day===2
         ?[
           {txt:es?'Asignar trabajos a impresoras libres':'Assign jobs to free printers',done:loaded>=1},
-          {txt:es?'Superar el corte de luz':'Survive the outage',done:(G.stats&&G.stats.pwr||0)>=1},
+          {txt:es?'Restablecer el tablero eléctrico':'Restore the breaker panel',done:(G.breakerFixes||0)>=1},
           {txt:es?'Reparar la falla de adhesion':'Fix the adhesion failure',done:(G.nFixes||0)>=1},
           {txt:es?'Terminar tres trabajos':'Finish three jobs',done:printed>=3}
         ]
         :[
-          {txt:es?'Mantener dos impresoras sanas':'Keep two printers healthy',done:activePrinters>=2},
+          {txt:es?'Comprar y activar la segunda impresora':'Buy and activate the second printer',done:activePrinters>=2},
           {txt:es?'Reparar dos fallas':'Repair two failures',done:(G.nFixes||0)>=2},
-          {txt:es?'Sobrevivir al corte prolongado':'Survive the long outage',done:(G.stats&&G.stats.pwr||0)>=1},
+          {txt:es?'Restablecer el corte prolongado':'Restore power after the long outage',done:(G.breakerFixes||0)>=1},
           {txt:es?'Terminar dos trabajos':'Finish two jobs',done:printed>=2}
         ];
       const tasks=G.phase==='night'?nightTasks:dayTasks;
-      const _rg=(typeof repGoal==='function')?repGoal():45;
-      tasks.push({txt:(es?'Mantené la fama ≥ ':'Keep fame ≥ ')+_rg,done:(G.rep||0)>=_rg});
       list.innerHTML=tasks.map(t=>
         '<div class="objRow '+(t.done?'done':'')+'"><span>'+(t.done?'✓':'□')+'</span><b>'+t.txt+'</b><em>'+(t.done?'OK':'')+'</em></div>'
       ).join('');

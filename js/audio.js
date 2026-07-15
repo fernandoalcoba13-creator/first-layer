@@ -19,7 +19,7 @@ var BGM={
   day:null,
   night:null,
   _btn(){return document.getElementById('musicBtn');},
-  _syncBtn(){const b=this._btn();if(!b)return;b.textContent=this.on?'♪ Música ON':'♪ Música OFF';b.classList.toggle('off',!this.on);},
+  _syncBtn(){const b=this._btn();if(!b)return;const label=typeof G!=='undefined'&&G.lang==='en'?'Music':'Música';b.textContent='♪ '+label+' '+(this.on?'ON':'OFF');b.classList.toggle('off',!this.on);},
   // El tema de día ya existe y suena. Para la noche: cuando tengas el .mp3, dejalo en
   // assets/audio/night-theme.mp3 y completá nightSrc acá. Mientras esté vacío NO se crea
   // ningún Audio ni se hace request — así no quedan 404 en la beta.

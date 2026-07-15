@@ -3,8 +3,8 @@
 class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
   room(){
-    const s=Math.min(this.W/420,this.H/270);
-    return {s,ox:(this.W-420*s)/2,oy:8};
+    const s=Math.min(this.W/DAY_ROOM_W,this.H/DAY_ROOM_H);
+    return {s,ox:(this.W-DAY_ROOM_W*s)/2,oy:18};
   }
   rp(x,y){
     const r=this.room();
@@ -16,9 +16,15 @@ class DayScene extends Phaser.Scene{
       return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
     };
     return [
-      R(32,105,30,36),R(134,125,36,54),R(232,128,54,36),R(310,126,58,54),R(362,126,38,54),
-      R(185,204,26,24),R(225,204,30,24),R(268,199,42,26),R(176,153,24,12),
-      R(47,166,26,22),R(381,166,26,22),R(178,88,38,24),R(112,89,14,14)
+      R(88,176,150,56),       // complete L-counter body; front remains reachable from below
+      R(33,139,34,15),        // stacked boxes
+      R(71,141,30,13),        // display/mannequin floor footprint
+      R(294,153,96,18),       // model display cabinet base
+      R(383,153,43,18),       // coffee station base
+      R(370,250,68,30),       // lounge sofa footprint
+      R(318,235,34,20),       // lounge table footprint
+      R(194,260,105,24),      // machine behind the front glass
+      R(230,218,36,22)        // active day printer stand
     ];
   }
   footRect(x=this.player.x,y=this.player.y){
@@ -30,7 +36,8 @@ class DayScene extends Phaser.Scene{
     return this.solidRects().some(r=>Phaser.Geom.Intersects.RectangleToRectangle(f,r));
   }
   movePlayer(dx,dy){
-    const minY=this.H*.28,maxY=this.H*.82,minX=28,maxX=this.W-28;
+    const room=this.room(),minY=room.oy+102*room.s,maxY=room.oy+244*room.s;
+    const minX=room.ox+12*room.s,maxX=room.ox+(DAY_ROOM_W-12)*room.s;
     const nx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX);
     if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
     const ny=Phaser.Math.Clamp(this.player.y+dy,minY,maxY);
@@ -39,7 +46,7 @@ class DayScene extends Phaser.Scene{
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
-    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.dayBought=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
+    G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.dayBought=0;G.dayBoughtMaterial=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     BGM.playDay();
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
     const freshDayOne=G.day===1&&!(G.orders&&G.orders.length)&&!G.dayBoughtPlaBasic&&!G.dayUsedPlaBasic;
@@ -47,13 +54,12 @@ class DayScene extends Phaser.Scene{
     if(freshDayOne){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;ensureStockShape();ensureConsumables();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
-    this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
-    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
+    this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;this.overtimeWarned=false;
+    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;this._ysort=[];
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadClientAssetsAsync(this);
-    loadEnvironmentPropsAsync(this,()=>this.placeEnvironmentProps());
     this.checkStory();this.updateHUD();
     this.time.delayedCall(this.beta.firstSpawn,()=>this.spawn());
     this.time.delayedCall(this.beta.secondSpawn,()=>this.spawn());
@@ -70,39 +76,28 @@ class DayScene extends Phaser.Scene{
   }
   buildWorld(){
     const W=this.W,H=this.H;
-    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,false);this.bgImg=applyRoomBackground(this,this.bgG,W,H,false);
-    this.windowMood=addRoomWindowMood(this,false);
-    const cY=H*.75,cg=this.add.graphics();this.counterG=cg;
-    cg.fillStyle(0x28200e,.55);cg.fillRect(W*.23,cY,W*.54,32);
-    cg.fillStyle(0x7a5a18,.75);cg.fillRect(W*.23,cY,W*.54,4);
-    cg.fillStyle(0x1a1010,.45);cg.fillRect(W*.23+18,cY-20,28,18);
-    this.shopSign=this.add.text(W*.24+129,cY+9,'🖨️  '+shopDisplayName().toUpperCase()+'  🖨️',{fontSize:'11px',color:'#ffb347',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-    const counterPt=this.rp(128,176);
+    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,false);applyDayRoomLayers(this,this.bgG,W,H);
+    const counterPt=this.rp(86,181);
     this.IA.push({x:counterPt.x,y:counterPt.y,type:'counter',lbl:'Click/E '+tr('counter')});
-    const stockPt=this.rp(130,106),sx=stockPt.x,sy=stockPt.y,sg=this.add.graphics();this.stockG=sg;
-    sg.lineStyle(1,0x2a2040,.5);sg.strokeRect(sx-44,sy-68,88,88);
-    [0x5bc8fa,0xff7eb3,0x4dff91,0xffe566,0x9d7fe3,0xff6644].forEach((c,i)=>{
-      const x=sx-28+i%3*28,y=sy-56+Math.floor(i/3)*30;
-      sg.fillStyle(c,.8);sg.fillCircle(x,y,9);sg.fillStyle(0x07060f);sg.fillCircle(x,y,4);
-    });
-    this.sLbl=this.add.text(sx,sy+28,this.stkTxt(),{fontSize:'9px',color:'#3a2a60',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
-    this.IA.push({x:sx,y:sy,type:'stock',lbl:'Click/E '+tr('stockTitle')});
-    const shopPt=this.rp(178,88),ux=shopPt.x,uy=shopPt.y,ug=this.add.graphics();this.shopG=ug;
-    ug.fillStyle(0x07110a,.14);ug.fillRect(ux-40,uy-28,80,52);
-    ug.lineStyle(1,0x2aff72,.55);ug.strokeRect(ux-40,uy-28,80,52);
-    this.add.text(ux,uy,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#1eff72',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
-    this.IA.push({x:ux,y:uy,type:'shop',lbl:'Click/E '+tr('shopTitle')});
-    const tabPt=this.rp(112,89),tx=tabPt.x,ty=tabPt.y;this.tZone={x:tx,y:ty};this.tblG=this.add.graphics();this.drawTbl(false);
+    const pcPt=this.rp(55,176);
+    this.IA.push({x:pcPt.x,y:pcPt.y,type:'shop',lbl:'Click/E '+tr('shopTitle')});
+    const stockPt=this.rp(79,111);
+    this.IA.push({x:stockPt.x,y:stockPt.y,type:'stock',lbl:'Click/E '+tr('stockTitle')});
+    const cafePt=this.rp(382,137);
+    this.IA.push({x:cafePt.x,y:cafePt.y,type:'cafe',lbl:'Click/E '+tr('cafeTitle')});
+    const tabPt=this.rp(151,108),tx=tabPt.x,ty=tabPt.y;this.tZone={x:tx,y:ty};this.tblG=this.add.graphics();this.drawTbl(false);
     this.IA.push({x:tx,y:ty,type:'tab',lbl:'Click/E '+tr('boardTitle')});
-    const printerPt=this.rp(185,176);
+    const printerPt=this.rp(230,194);
     this.pGfx=[];const psp=(W*.37)/4,mainPrinterX=printerPt.x,mainPrinterY=printerPt.y,printerScale=printerPt.s;
     for(let i=0;i<4;i++){
       const px=i===0?mainPrinterX:W*.6+i*psp+psp/2,py=i===0?mainPrinterY:H*.55;
+      const bg=this.add.graphics();this.drawPrinterBench(bg,px,py,i===0?printerScale:3.5);
+      this._ysort.push({o:bg,baseY:py+2});
       const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(i===0?printerScale:3.5);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-      if(i>0)this.hideDayPrinter(pg,sp,lt);
-      this.pGfx.push({g:pg,sp,lt,px,py});
+      if(i>0)this.hideDayPrinter(pg,sp,lt,bg);
+      this.pGfx.push({g:pg,sp,lt,px,py,bench:bg});
     }
     this.IA.push({x:mainPrinterX,y:mainPrinterY,type:'printers',lbl:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
@@ -112,58 +107,40 @@ class DayScene extends Phaser.Scene{
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ffb347',fontFamily:'Press Start 2P',backgroundColor:'#000000bb',padding:{x:4,y:2}}).setDepth(20).setVisible(false);
   }
-  placeEnvironmentProps(){
-    if(this.envPropsPlaced)return;
-    this.envPropsPlaced=true;
-    const P=(x,y)=>this.rp(x,y),S=this.room().s;
-    if(this.stockG)this.stockG.setVisible(false);
-    if(this.counterG)this.counterG.setVisible(false);
-    if(this.shopSign)this.shopSign.setVisible(false);
-    [
-      ['prop_shelf_5',32,105,S,1],
-      ['prop_poster_idea',88,92,S,1],
-      ['prop_electricity',112,89,S,3],
-      ['prop_shelf_2',134,125,S,1],
-      ['prop_filament_violet',128,82,S,3],
-      ['prop_filament_pink',139,82,S,3],
-      ['prop_filament_violet',150,82,S,3],
-      ['prop_filament_cyan',128,105,S,3],
-      ['prop_filament_blue',139,105,S,3],
-      ['prop_toolbox',176,118,S,2],
-      ['prop_workbench_2',232,96,S,1],
-      ['prop_workbench_1',232,128,S,2],
-      ['prop_shelf_1',310,126,S,1],
-      ['prop_filament_yellow',294,82,S,3],
-      ['prop_filament_orange',306,82,S,3],
-      ['prop_filament_yellow',318,82,S,3],
-      ['prop_filament_pink',294,112,S,3],
-      ['prop_filament_violet',306,112,S,3],
-      ['prop_shelf_2',362,126,S,1],
-      ['prop_filament_green',354,82,S,3],
-      ['prop_filament_red',365,105,S,3],
-      ['prop_filament_blue',354,112,S,3],
-      ['prop_box_2',47,166,S,1],
-      ['prop_box_3',32,168,S,1],
-      ['prop_box_4',381,166,S,1],
-      ['prop_box_3',392,171,S,1],
-      ['prop_shelf_4_1',185,204,S,2],
-      ['prop_shelf_4',225,204,S,2],
-      ['prop_shelf_4_2',268,199,S,2],
-      ['prop_shelf_7',310,184,S,2]
-    ].forEach(p=>{const q=P(p[1],p[2]),sp=addEnvSprite(this,p[0],q.x,q.y,p[3],p[4]);if(p[0]==='prop_electricity')this.powerSprite=sp;});
+  // Depth = base Y, so whatever is lower on screen draws in front. Keeps the player,
+  // printers, clients and tall props overlapping like a real room instead of a flat layer.
+  ySortWorld(){
+    if(!this._ysort)return;
+    if(this.player)this.player.setDepth(this.player.y);
+    if(this.pGfx)this.pGfx.forEach(pg=>{const t=pg.sp&&pg.sp.visible?pg.sp:pg.g;if(t)t.setDepth(pg.py);if(pg.lt)pg.lt.setDepth(pg.py+1);});
+    if(this.clients)this.clients.forEach(c=>{if(c.ct&&c.ct.active)c.ct.setDepth(c.baseY);});
+    this._ysort.forEach(e=>{if(e.o&&e.o.active)e.o.setDepth(e.baseY);});
   }
   drawTbl(pwr){
     const g=this.tblG;if(g)g.clear();
     if(this.powerSprite)this.powerSprite.clearTint().setTint(pwr?0xff4d6a:0xffffff).setAlpha(pwr?.95:1);
   }
   stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'  TPU:'+matStock('tpu')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
-  hideDayPrinter(g,sp,lt){
+  hideDayPrinter(g,sp,lt,bench){
     if(sp)sp.setVisible(false);
     if(g)g.setVisible(false);
     if(lt)lt.setVisible(false);
+    if(bench)bench.setVisible(false);
+  }
+  // Simple pixel workbench under a printer: top surface + two legs, sized to the printer scale.
+  drawPrinterBench(g,cx,by,scale){
+    if(!g)return;g.clear();
+    const w=Math.round(30*scale),h=Math.round(6*scale),legH=Math.round(16*scale),legW=Math.round(4*scale);
+    const x=cx-w/2,top=by-2;
+    g.fillStyle(0x2a1d0e,1).fillRect(x+legW,top+h,w-legW*2,legH);            // shadow gap under top
+    g.fillStyle(0x6b4a1c,1).fillRect(x,top,w,h);                             // table top
+    g.fillStyle(0x8a6224,1).fillRect(x,top,w,Math.max(2,Math.round(h*.4))); // top highlight
+    g.fillStyle(0x4a3213,1);
+    g.fillRect(x+legW,top+h,legW,legH);g.fillRect(x+w-legW*2,top+h,legW,legH); // legs
+    g.lineStyle(1,0x1a1206,.6).strokeRect(x,top,w,h);
   }
   createPlayer(){
-    const start=this.rp(127,178);
+    const start=this.rp(184,190);
     this.player=this.add.container(start.x,start.y).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,false,false);
     this.player.add(this.pGr);this.pSp=null;this.pDir='down';
@@ -256,7 +233,9 @@ class DayScene extends Phaser.Scene{
     return {pay,time,diff,risk,pat,tag:style.tag,material,units};
   }
   spawn(){
-    if(this.clients.length>=5||G.phase!=='day'||G.dayCli>=(this.beta.maxClients||5))return;
+    const requiredOrders=G.day===1?3:4;
+    const arrivalCap=this.beta.maxClients||5;
+    if(this.clients.length>=5||G.phase!=='day'||(G.dayCli>=arrivalCap&&(G.dayOrd||0)>=requiredOrders))return;
     const slot=this.nextClientSlot();
     if(slot<0)return;
     const activeIds=this.clients.filter(c=>!c.served).map(c=>c.cl.id);
@@ -278,7 +257,7 @@ class DayScene extends Phaser.Scene{
     let pay=order.pay;
     if(G.upg.ams&&(pr.cat==='fig'||pr.cat==='art'))pay=Math.round(pay*1.5);
     const idx=slot;
-    const target=this.rp(127+slot*26,178),tX=target.x,yP=target.y;
+    const target=this.rp(42+slot*27,183),tX=target.x,yP=target.y;
     const pat=order.pat*1000;
     const ct=this.add.container(-50,yP).setDepth(4);
     const cs=createClientSprite(this,cl,idx);if(cs)cs.setScale(2.6);
@@ -340,6 +319,9 @@ class DayScene extends Phaser.Scene{
     if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
+    // Guard against a stale dialog: if this client already left (patience ran out, rejected,
+    // or was served), a late Accept click must not create a ghost order.
+    if(!c||c.served||this.clients.indexOf(c)<0)return false;
     const canPrint=matStock(c.order.material)>=c.order.units;
     G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk:c.order.risk,tag:c.order.tag,material:c.order.material,units:c.order.units,waitingMaterial:!canPrint});
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
@@ -368,7 +350,8 @@ class DayScene extends Phaser.Scene{
     else if(t.type==='printer')this.openPrinterQueue(G.printers[t.pid]);
     else if(t.type==='printers')this.openPrinters();
     else if(t.type==='stock')G.openShop('stk');
-    else if(t.type==='shop')G.openShop();
+    else if(t.type==='shop')G.openShop('up');
+    else if(t.type==='cafe')G.openCafeShop();
     else if(t.type==='tab')this.openTab();
   }
   openCounter(target){
@@ -376,12 +359,15 @@ class DayScene extends Phaser.Scene{
     if(!w.length){showNotif(tr('noWaitingClients'));return;}
     const c=target&&!target.served?target:(this.nearClient||w[0]);
     const dl=clLine(c.cl);
+    // Bargain is a one-shot gamble per client — offering it again would let the player
+    // compound the price bump indefinitely, so it disappears once used.
+    const choices=[{lb:'✅ '+tr('accept')+' ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}}];
+    if(!c.negotiated)choices.push({lb:'💬 '+tr('bargain'),cb:()=>{if(c.served){cDlg();return;}c.negotiated=true;const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}});
+    choices.push({lb:'❌ '+tr('decline'),cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}});
+    choices.push({lb:tr('close'),cb:()=>cDlg()});
     this.oDlg(c.cl.e+' '+c.cl.n,tr('mood')+': '+moodName(c.cl.m),
       '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('stock')+': '+matStock(c.order.material)+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+tagName(c.order.tag)+(c.urg?'\n🔴 '+tr('urgent'):''),
-      [{lb:'✅ '+tr('accept')+' ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
-       {lb:'💬 '+tr('bargain'),cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}},
-       {lb:'❌ '+tr('decline'),cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
-       {lb:tr('close'),cb:()=>cDlg()}]);
+      choices);
   }
   openPrinters(){
     const ps=G.printers.filter(p=>!p.locked);
@@ -487,7 +473,7 @@ class DayScene extends Phaser.Scene{
     });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
-      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt);return;}
+      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench);return;}
       const c=p.order?p.order.pr.c:0x5bc8fa;
       const activeDay=p.busy&&p.id===0;
       if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
@@ -501,7 +487,7 @@ class DayScene extends Phaser.Scene{
   }
   updatePrinterVisual(i){
     const pg=this.pGfx&&this.pGfx[i],p=G.printers&&G.printers[i];if(!pg||!p)return;
-    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt);return;}
+    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench);return;}
     const c=p.order?p.order.pr.c:0x5bc8fa;
     const activeDay=p.busy&&p.id===0&&!p._pau;
     if(pg.sp){
@@ -512,8 +498,8 @@ class DayScene extends Phaser.Scene{
       if(pg.g)pg.g.setVisible(true);
       drawPrinter(pg.g,activeDay,p.broken,p.progress,c);
     }
-    if(p.locked)pg.lt.setText('ðŸ”’').setColor('#222244');
-    else if(p.broken)pg.lt.setText('âš ï¸ROTA').setColor('#ff4d6a');
+    if(p.locked)pg.lt.setText('🔒').setColor('#222244');
+    else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
     else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
     else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
     else pg.lt.setText('LIBRE').setColor('#2a2050');
@@ -524,7 +510,7 @@ class DayScene extends Phaser.Scene{
       if(pg.sp||!this.textures.exists(PRINTER_ASSET))return;
       const i=this.pGfx.indexOf(pg);
       pg.sp=createPrinterSprite(this,pg.px,pg.py);
-      if(pg.sp){pg.sp.setScale(i===0?Math.max(3.65,this.W/420*.8):3.5);pg.g.setVisible(false);}
+      if(pg.sp){pg.sp.setScale(i===0?Math.max(3.2,this.room().s):3.5);pg.g.setVisible(false);}
       if(i>0)this.hideDayPrinter(pg.g,pg.sp,pg.lt);
       else this.updatePrinterVisual(i);
     });
@@ -542,9 +528,9 @@ class DayScene extends Phaser.Scene{
     if(G.day===1)
       return (G.dayOrd||0)>=3&&(G.dayPrints||0)>=2&&queued>=1&&(G.dayBoughtPlaBasic||G.dayUsedPlaBasic);
     if(G.day===2)
-      return (G.dayOrd||0)>=4&&((G.dayPrints||0)+loaded)>=3&&(G.dayBought||0)>=1;
+      return (G.dayOrd||0)>=4&&((G.dayPrints||0)+loaded)>=3&&(G.dayBoughtMaterial||0)>=1&&queued>=1;
     if(G.day===3)
-      return G.pCount>=2&&((G.dayPrints||0)+loaded)>=2&&(G.dayOrd||0)>=4;
+      return (G.dayOrd||0)>=4&&((G.dayPrints||0)+loaded)>=2&&queued>=2;
     return false;
   }
   maybeFastCloseDay(){
@@ -557,7 +543,15 @@ class DayScene extends Phaser.Scene{
   }
   update(_t,dt){
     if(G.phase!=='day'||G.block)return;
-    this.timer-=dt;if(this.timer<=0){this.endDay();return;}
+    this.timer=Math.max(0,this.timer-dt);
+    if(this.timer<=0){
+      if(this.dayObjectiveReady()){this.endDay();return;}
+      if(!this.overtimeWarned){
+        this.overtimeWarned=true;
+        showNotif(tr('dayTasksPending'),'warning');
+        sHint(tr('dayTasksPending'));
+      }
+    }
     const pct=this.timer/this.dur;
     if(pct<.2)document.getElementById('htf').style.background='#ff4d6a';
     if(G.day===1&&!this.cheapStockTip&&pct<.18){
@@ -575,7 +569,12 @@ class DayScene extends Phaser.Scene{
     this.movePlayer(vx*dt/1000,vy*dt/1000);
     this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
     if(!this.pSp)this.player.scaleX=this.dir;
-    if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
+    // Walk-bob is purely cosmetic: offset the sprite child, never the container's logical Y
+    // (that Y drives collision, interaction range and y-sorting — mutating it made things jitter).
+    if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;}if(this.st>360){this.st=0;SFX.step();}}
+    else this.wb=0;
+    const bobT=this.pSp||this.pGr;if(bobT)bobT.y=(vx||vy)&&this.wb?-2:0;
+    this.ySortWorld();
     const cNear=this.nearestClient();
     this.nearClient=cNear;
     let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'Click/E '+cNear.cl.n}:null,md=cNear?0:88;
@@ -601,6 +600,15 @@ class DayScene extends Phaser.Scene{
   }
   endDay(){
     if(G.phase!=='day')return;
+    if(!this.dayObjectiveReady()){
+      this.timer=0;
+      if(!this.overtimeWarned){
+        this.overtimeWarned=true;
+        showNotif(tr('dayTasksPending'),'warning');
+        sHint(tr('dayTasksPending'));
+      }
+      return;
+    }
     G.phase='transition';G.block=true;doSave(G);this.scene.pause();
     const accepted=G.dayOrd,lost=Math.max(0,G.dayCli-G.dayOrd),queue=G.orders.length;
     const urgent=G.orders.filter(o=>o.urg).length;

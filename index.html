@@ -23,7 +23,7 @@
     <div id="objList" class="objList"></div>
     <p id="proTip">TIP: si hay urgentes, priorizalos antes del cierre.</p>
   </div>
-  <div id="quickBtns"><button class="qbtn" id="btnSave" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="window.resetGame()">↻ Reset</button><button class="qbtn" id="btnMenu" onclick="openGameMenu()">? Menú</button></div>
+  <div id="quickBtns"><button class="qbtn" id="btnSave" onclick="doSave(G)">💾 Guardar</button><button class="qbtn" onclick="G.confirmReset()">↻ Reset</button><button class="qbtn" id="btnMenu" onclick="openGameMenu()">? Menú</button></div>
   <div id="titleScreen">
     <div class="tsBox">
       <div class="tsK">ORIGINAL GAME</div>
@@ -50,7 +50,7 @@
         <div><kbd>M</kbd><span id="ctlMate">Mate</span></div>
       </div>
       <button class="tsBtn" id="btnContinue" onclick="closeGameMenu()">▶ CONTINUAR</button>
-      <button class="tsBtn alt" id="btnReset" onclick="window.resetGame()">BORRAR PARTIDA</button>
+      <button class="tsBtn alt" id="btnReset" onclick="G.confirmReset()">BORRAR PARTIDA</button>
       <p id="tsObjective" style="font-size:10px;color:#5a4a80;margin-top:12px;line-height:1.6">Objetivo: hacer crecer tu taller sin fundirte ni quemar las máquinas.</p>
     </div>
   </div>
@@ -126,17 +126,19 @@
 </div>
 
 <!-- Game scripts (orden de dependencias - NO cambiar) -->
-<script src="js/audio.js"></script>
-<script src="js/data.js"></script>
-<script src="js/state.js"></script>
-<script src="js/i18n.js"></script>
-<script src="js/draw.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/g-methods.js"></script>
-<script src="js/pro-patch.js"></script>
-<script src="js/scenes/DayScene.js"></script>
-<script src="js/scenes/NightScene.js"></script>
-<script src="js/main.js"></script>
+<!-- ?v=... = cache-buster. Subilo (v6, v7...) cada vez que publiques una versión nueva
+     para forzar a los navegadores a bajar el JS actualizado en vez de servir el viejo cacheado. -->
+<script src="js/audio.js?v=6"></script>
+<script src="js/data.js?v=7"></script>
+<script src="js/state.js?v=6"></script>
+<script src="js/i18n.js?v=8"></script>
+<script src="js/draw.js?v=7"></script>
+<script src="js/ui.js?v=6"></script>
+<script src="js/g-methods.js?v=8"></script>
+<script src="js/pro-patch.js?v=7"></script>
+<script src="js/scenes/DayScene.js?v=10"></script>
+<script src="js/scenes/NightScene.js?v=8"></script>
+<script src="js/main.js?v=6"></script>
 
 </body>
 </html>
