@@ -70,8 +70,8 @@ const PE=[
 ];
 const BETA_DAYS={
   1:{title:'La apertura',goal:'Aceptá 3 pedidos',duration:90000,maxClients:4,firstSpawn:900,secondSpawn:28000,interval:22000,shop:['pla:eco','petg:eco','coffee','mate'],forcedPower:[],forcedFails:[{at:9000,id:'clog'}],hint:'Tutorial: aceptá 3 pedidos, cobrá 2 trabajos y dejá el extra preparado para la noche.'},
-  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',duration:95000,maxClients:4,firstSpawn:900,secondSpawn:5200,interval:10500,shop:['pla:eco','pla:std','petg:eco','parts','coffee','mate','bar'],forcedPower:[{at:12000,id:'micro'},{at:30000,id:'norm'}],forcedFails:[{at:18000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido espera hasta comprarlo.'},
-  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',duration:140000,maxClients:7,firstSpawn:1200,secondSpawn:6500,interval:13000,shop:['pla:eco','pla:std','pla:pro','petg:eco','petg:std','petg:pro','tpu:basic','resin:basic','parts','unlock2','coffee','mate','bar','sandwich','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'clog'},{at:42000,id:'bed'}],hint:'Comprá la segunda impresora y cargá trabajos temprano para maximizar producción.'}
+  2:{title:'Primera presión',goal:'Aceptá 4 pedidos',duration:95000,maxClients:6,firstSpawn:900,secondSpawn:5200,interval:10500,shop:['pla:eco','pla:std','petg:eco','parts','coffee','mate','bar'],forcedPower:[{at:7000,id:'micro'},{at:13000,id:'norm'}],forcedFails:[{at:22000,id:'bed'}],hint:'El stock importa: si aceptás sin material, el pedido espera hasta comprarlo.'},
+  3:{title:'El quiebre',goal:'Sobreviví la noche con 2 impresoras funcionando',duration:140000,maxClients:7,firstSpawn:1200,secondSpawn:6500,interval:13000,shop:['pla:eco','pla:std','pla:pro','petg:eco','petg:std','petg:pro','tpu:basic','resin:basic','parts','unlock2','coffee','mate','bar','sandwich','cleaner'],forcedPower:[{at:14000,id:'long'}],forcedFails:[{at:22000,id:'clog'},{at:42000,id:'bed'}],hint:'Prepará al menos dos trabajos: esta noche vas a poder sumar la segunda impresora.'}
 };
 const UPG=[
   {id:'speed1',n:'Perfil velocidad',de:'+30% velocidad',co:300,ic:'⚡'},
@@ -101,7 +101,7 @@ const EMP=[
   {id:'diego2',n:'Diego (Técnico Full)',de:'Supervisa noche solo',co:800,sal:150,ic:'🔧'},
 ];
 const STORY=[
-  {day:1,ti:'🖨️ Día 1 — La apertura',tx:'Abrís el taller.\nHoy todo es básico: PLA eco, pocos clientes y una noche tutorial.',ob:'Ganá $300'},
+  {day:1,ti:'🖨️ Día 1 — La apertura',tx:'Abrís el taller.\nHoy todo es básico: PLA eco, pocos clientes y una noche tutorial.',ob:'Aceptá 3 pedidos, cobrá 2 y reservá 1 para la noche'},
   {day:2,ti:'⏱️ Día 2 — Primera presión',tx:'Llegan más pedidos y aparece el primer corte.\nAceptá trabajo, pero mirá el stock antes de imprimir.',ob:'Aceptá 4 pedidos'},
-  {day:3,ti:'⚡ Día 3 — El quiebre',tx:'La noche se pone pesada.\nComprá otra impresora para maximizar producción y sobrevivir con 2 máquinas andando.',ob:'Sobreviví con 2 impresoras funcionando'},
+  {day:3,ti:'⚡ Día 3 — El quiebre',tx:'La noche se pone pesada.\nPrepará trabajos: esta noche vas a poder comprar otra impresora y activarla.',ob:'Sobreviví con 2 impresoras funcionando'},
 ];

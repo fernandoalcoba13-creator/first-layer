@@ -14,6 +14,16 @@ const PLAYER_RIGHT='player_walk_d';
 const PLAYER_UP='player_walk_w';
 const ENV_BG_ASSET='env_fondo';
 const ENV_BG_PATH='assets/environment/fondo.png';
+const DAY_ROOM_W=413;
+const DAY_ROOM_H=270;
+const DAY_ROOM_LAYERS=[
+  {key:'day_room_floor',src:'assets/environment/day/day-floor.png',depth:-30},
+  {key:'day_room_props',src:'assets/environment/day/day-props.png',depth:1},
+  {key:'day_room_counter',src:'assets/environment/day/day-counter.png',depth:'counter'},
+  {key:'day_room_grass',src:'assets/environment/day/day-grass.png',depth:9000},
+  {key:'day_room_glass',src:'assets/environment/day/day-glass.png',depth:9100},
+  {key:'day_room_lights',src:'assets/environment/day/day-lights.png',depth:9200}
+];
 const ENV_PROP_ASSETS=[
   ['prop_toolbox','assets/environment/props/toolbox.png'],
   ['prop_box_1','assets/environment/props/box_1.png'],
@@ -78,6 +88,28 @@ function loadEnvironmentPropsAsync(scene,onReady){
   const done=()=>{left--;if(left<=0&&onReady)onReady();};
   items.forEach(a=>addImageFromImage(scene,a[0],a[1],done));
 }
+function loadDayRoomLayersAsync(scene,onReady){
+  const items=DAY_ROOM_LAYERS.filter(a=>!scene.textures.exists(a.key));
+  if(!items.length){if(onReady)onReady();return;}
+  let left=items.length;
+  const done=()=>{left--;if(left<=0&&onReady)onReady();};
+  items.forEach(a=>addImageFromImage(scene,a.key,a.src,done));
+}
+function applyDayRoomLayers(scene,g,W,H){
+  const add=()=>{
+    if(scene.dayRoomLayers||!scene.textures.exists('day_room_floor'))return;
+    if(g)g.setVisible(false);
+    const scale=Math.min(W/DAY_ROOM_W,H/DAY_ROOM_H);
+    const ox=Math.round((W-DAY_ROOM_W*scale)/2),oy=18;
+    scene.roomLayout={scale,ox,oy,w:DAY_ROOM_W,h:DAY_ROOM_H};
+    scene.dayRoomLayers=DAY_ROOM_LAYERS.map(layer=>{
+      if(!scene.textures.exists(layer.key))return null;
+      const depth=layer.depth==='counter'?oy+174*scale:layer.depth;
+      return scene.add.image(ox,oy,layer.key).setOrigin(0,0).setScale(scale).setDepth(depth);
+    }).filter(Boolean);
+  };
+  loadDayRoomLayersAsync(scene,add);
+}
 function addEnvSprite(scene,key,x,y,scale,depth){
   if(!scene.textures.exists(key))return null;
   return scene.add.image(x,y,key).setOrigin(.5,1).setScale(scale||3).setDepth(depth||2);
@@ -101,10 +133,12 @@ function setupPrinterAnims(scene){
   if(!scene.textures.exists(PRINTER_ASSET)||scene.anims.exists('printer_idle'))return;
   const fr=n=>({key:PRINTER_ASSET,frame:n});
   const wk=n=>({key:scene.textures.exists(PRINTER_WORKING_ASSET)?PRINTER_WORKING_ASSET:PRINTER_ASSET,frame:n});
+  const fail=n=>({key:scene.textures.exists(PRINTER_BROKEN_ASSET)?PRINTER_BROKEN_ASSET:PRINTER_ASSET,frame:n});
+  const out=n=>({key:scene.textures.exists(PRINTER_FILAMENT_ASSET)?PRINTER_FILAMENT_ASSET:PRINTER_ASSET,frame:n});
   scene.anims.create({key:'printer_idle',frames:[fr(0)],frameRate:1,repeat:-1});
   scene.anims.create({key:'printer_working',frames:[0,1,2,3,4,5].map(wk),frameRate:8,repeat:-1});
-  scene.anims.create({key:'printer_fail',frames:[fr(0)],frameRate:1,repeat:-1});
-  scene.anims.create({key:'printer_out_filament',frames:[fr(0)],frameRate:1,repeat:-1});
+  scene.anims.create({key:'printer_fail',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(fail),frameRate:7,repeat:-1});
+  scene.anims.create({key:'printer_out_filament',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(out),frameRate:7,repeat:-1});
 }
 function loadPrinterAssetsAsync(scene,onReady){
   if(scene.textures.exists(PRINTER_ASSET)){setupPrinterAnims(scene);if(onReady)onReady();return;}
