@@ -313,7 +313,8 @@ G.showInventory=function(tab){
     const orders=(G.orders||[]);
     sp.innerHTML=orders.length?orders.map(o=>{
       const status=o.filament?o.filament.n:o.waitingMaterial?tr('missingMaterial'):tr('queued');
-      const body='<span class="invMeta">'+esc(o.cl.n)+' | '+esc(o.material.toUpperCase())+' x'+o.units+' | $'+o.pay+'</span><br>'+esc(status);
+      const clName=(o.cl&&o.cl.n)?o.cl.n:o.cl;  // orders store cl as the client name string
+      const body='<span class="invMeta">'+esc(clName)+' | '+esc(o.material.toUpperCase())+' x'+o.units+' | $'+o.pay+'</span><br>'+esc(status);
       return card(o.pr.e,o.pr.n,o.loaded?'P'+o.loaded:'',body,'',!!o.filament);
     }).join(''):'<div class="invEmpty">'+tr('noQueuedOrders')+'</div>';
   } else if(G.invTab==='cons'){

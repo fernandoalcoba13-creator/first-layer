@@ -48,7 +48,7 @@ class DayScene extends Phaser.Scene{
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
     this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;
-    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;
+    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;this._ysort=[];
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
@@ -98,11 +98,15 @@ class DayScene extends Phaser.Scene{
     this.pGfx=[];const psp=(W*.37)/4,mainPrinterX=printerPt.x,mainPrinterY=printerPt.y,printerScale=printerPt.s;
     for(let i=0;i<4;i++){
       const px=i===0?mainPrinterX:W*.6+i*psp+psp/2,py=i===0?mainPrinterY:H*.55;
+      // Each printer sits ON a bench/table so it doesn't float on the floor. The bench top is
+      // drawn at the printer's base Y; its own base sits a bit lower so the printer reads as resting on it.
+      const bg=this.add.graphics();this.drawPrinterBench(bg,px,py,i===0?printerScale:3.5);
+      this._ysort.push({o:bg,baseY:py+2});
       const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(i===0?printerScale:3.5);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-      if(i>0)this.hideDayPrinter(pg,sp,lt);
-      this.pGfx.push({g:pg,sp,lt,px,py});
+      if(i>0)this.hideDayPrinter(pg,sp,lt,bg);
+      this.pGfx.push({g:pg,sp,lt,px,py,bench:bg});
     }
     this.IA.push({x:mainPrinterX,y:mainPrinterY,type:'printers',lbl:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
@@ -150,17 +154,42 @@ class DayScene extends Phaser.Scene{
       ['prop_shelf_4',225,204,S,2],
       ['prop_shelf_4_2',268,199,S,2],
       ['prop_shelf_7',310,184,S,2]
-    ].forEach(p=>{const q=P(p[1],p[2]),sp=addEnvSprite(this,p[0],q.x,q.y,p[3],p[4]);if(p[0]==='prop_electricity')this.powerSprite=sp;});
+    ].forEach(p=>{const q=P(p[1],p[2]),sp=addEnvSprite(this,p[0],q.x,q.y,p[3],p[4]);if(p[0]==='prop_electricity')this.powerSprite=sp;
+      // Tall furniture the player can walk behind joins the y-sort pool; flat floor props stay low.
+      if(sp&&/workbench|shelf_1|shelf_2|shelf_5|shelf_7/.test(p[0]))this._ysort.push({o:sp,baseY:q.y});});
+    this.ySortWorld();
+  }
+  // Depth = base Y, so whatever is lower on screen draws in front. Keeps the player,
+  // printers, clients and tall props overlapping like a real room instead of a flat layer.
+  ySortWorld(){
+    if(!this._ysort)return;
+    if(this.player)this.player.setDepth(this.player.y);
+    if(this.pGfx)this.pGfx.forEach(pg=>{const t=pg.sp&&pg.sp.visible?pg.sp:pg.g;if(t)t.setDepth(pg.py);if(pg.lt)pg.lt.setDepth(pg.py+1);});
+    if(this.clients)this.clients.forEach(c=>{if(c.ct&&c.ct.active)c.ct.setDepth(c.baseY);});
+    this._ysort.forEach(e=>{if(e.o&&e.o.active)e.o.setDepth(e.baseY);});
   }
   drawTbl(pwr){
     const g=this.tblG;if(g)g.clear();
     if(this.powerSprite)this.powerSprite.clearTint().setTint(pwr?0xff4d6a:0xffffff).setAlpha(pwr?.95:1);
   }
   stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'  TPU:'+matStock('tpu')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
-  hideDayPrinter(g,sp,lt){
+  hideDayPrinter(g,sp,lt,bench){
     if(sp)sp.setVisible(false);
     if(g)g.setVisible(false);
     if(lt)lt.setVisible(false);
+    if(bench)bench.setVisible(false);
+  }
+  // Simple pixel workbench under a printer: top surface + two legs, sized to the printer scale.
+  drawPrinterBench(g,cx,by,scale){
+    if(!g)return;g.clear();
+    const w=Math.round(30*scale),h=Math.round(6*scale),legH=Math.round(16*scale),legW=Math.round(4*scale);
+    const x=cx-w/2,top=by-2;
+    g.fillStyle(0x2a1d0e,1).fillRect(x+legW,top+h,w-legW*2,legH);            // shadow gap under top
+    g.fillStyle(0x6b4a1c,1).fillRect(x,top,w,h);                             // table top
+    g.fillStyle(0x8a6224,1).fillRect(x,top,w,Math.max(2,Math.round(h*.4))); // top highlight
+    g.fillStyle(0x4a3213,1);
+    g.fillRect(x+legW,top+h,legW,legH);g.fillRect(x+w-legW*2,top+h,legW,legH); // legs
+    g.lineStyle(1,0x1a1206,.6).strokeRect(x,top,w,h);
   }
   createPlayer(){
     const start=this.rp(127,178);
@@ -340,6 +369,9 @@ class DayScene extends Phaser.Scene{
     if(c.cs&&c.cs.anims)c.cs.anims.pause();
   }
   acceptOrd(c,mode){
+    // Guard against a stale dialog: if this client already left (patience ran out, rejected,
+    // or was served), a late Accept click must not create a ghost order.
+    if(!c||c.served||this.clients.indexOf(c)<0)return false;
     const canPrint=matStock(c.order.material)>=c.order.units;
     G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk:c.order.risk,tag:c.order.tag,material:c.order.material,units:c.order.units,waitingMaterial:!canPrint});
     G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
@@ -376,12 +408,15 @@ class DayScene extends Phaser.Scene{
     if(!w.length){showNotif(tr('noWaitingClients'));return;}
     const c=target&&!target.served?target:(this.nearClient||w[0]);
     const dl=clLine(c.cl);
+    // Bargain is a one-shot gamble per client — offering it again would let the player
+    // compound the price bump indefinitely, so it disappears once used.
+    const choices=[{lb:'✅ '+tr('accept')+' ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}}];
+    if(!c.negotiated)choices.push({lb:'💬 '+tr('bargain'),cb:()=>{if(c.served){cDlg();return;}c.negotiated=true;const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}});
+    choices.push({lb:'❌ '+tr('decline'),cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}});
+    choices.push({lb:tr('close'),cb:()=>cDlg()});
     this.oDlg(c.cl.e+' '+c.cl.n,tr('mood')+': '+moodName(c.cl.m),
       '"'+dl+'"\n\n📦 '+c.pr.e+' '+c.pr.n+'\n💰 $'+c.pay+'\n'+tr('material')+': '+c.order.material+' x'+c.order.units+'\n'+tr('stock')+': '+matStock(c.order.material)+'\n'+tr('difficulty')+': '+Math.round(c.order.diff*100)+'% | '+tagName(c.order.tag)+(c.urg?'\n🔴 '+tr('urgent'):''),
-      [{lb:'✅ '+tr('accept')+' ($'+c.pay+')',cls:'ok',cb:()=>{if(this.acceptOrd(c,'man'))cDlg();}},
-       {lb:'💬 '+tr('bargain'),cb:()=>{const np=Math.round(c.pay*(c.cl.gr>.99?.92:1.08));c.pay=np;cDlg();showNotif(c.cl.n+': $'+np);this.openCounter(c);}},
-       {lb:'❌ '+tr('decline'),cls:'no',cb:()=>{this.leaveClient(c,false);cDlg();}},
-       {lb:tr('close'),cb:()=>cDlg()}]);
+      choices);
   }
   openPrinters(){
     const ps=G.printers.filter(p=>!p.locked);
@@ -487,7 +522,7 @@ class DayScene extends Phaser.Scene{
     });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
-      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt);return;}
+      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench);return;}
       const c=p.order?p.order.pr.c:0x5bc8fa;
       const activeDay=p.busy&&p.id===0;
       if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
@@ -501,7 +536,7 @@ class DayScene extends Phaser.Scene{
   }
   updatePrinterVisual(i){
     const pg=this.pGfx&&this.pGfx[i],p=G.printers&&G.printers[i];if(!pg||!p)return;
-    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt);return;}
+    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench);return;}
     const c=p.order?p.order.pr.c:0x5bc8fa;
     const activeDay=p.busy&&p.id===0&&!p._pau;
     if(pg.sp){
@@ -512,8 +547,8 @@ class DayScene extends Phaser.Scene{
       if(pg.g)pg.g.setVisible(true);
       drawPrinter(pg.g,activeDay,p.broken,p.progress,c);
     }
-    if(p.locked)pg.lt.setText('ðŸ”’').setColor('#222244');
-    else if(p.broken)pg.lt.setText('âš ï¸ROTA').setColor('#ff4d6a');
+    if(p.locked)pg.lt.setText('🔒').setColor('#222244');
+    else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
     else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
     else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
     else pg.lt.setText('LIBRE').setColor('#2a2050');
@@ -575,7 +610,12 @@ class DayScene extends Phaser.Scene{
     this.movePlayer(vx*dt/1000,vy*dt/1000);
     this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
     if(!this.pSp)this.player.scaleX=this.dir;
-    if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
+    // Walk-bob is purely cosmetic: offset the sprite child, never the container's logical Y
+    // (that Y drives collision, interaction range and y-sorting — mutating it made things jitter).
+    if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;}if(this.st>360){this.st=0;SFX.step();}}
+    else this.wb=0;
+    const bobT=this.pSp||this.pGr;if(bobT)bobT.y=(vx||vy)&&this.wb?-2:0;
+    this.ySortWorld();
     const cNear=this.nearestClient();
     this.nearClient=cNear;
     let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'Click/E '+cNear.cl.n}:null,md=cNear?0:88;

@@ -496,7 +496,12 @@ class NightScene extends Phaser.Scene{
       if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>175){this.wb^=1;this.wt=0;this.player.y+=this.wb?-2:2;}if(this.st>360){this.st=0;SFX.step();}}
     }
     tickMate(dt);this.el+=dt;this.nBf.width=300*Math.min(1,this.el/this.dur);
-    if(this.el>=this.dur){this.endNight();return;}
+    if(this.el>=this.dur){
+      // In the beta the night can't just time out while a scripted failure is still unresolved:
+      // the player must clear the minigame. Hold the clock full and keep waiting until it's fixed.
+      if(BETA_DAYS[G.day]&&!this.betaNightClearable()){this.el=this.dur;}
+      else{this.endNight();return;}
+    }
     G.printers.forEach(p=>{
       if(!p.busy||p.broken||p._ev||p._pau)return;
       p.progress+=dt/1000*G.sMult/(p.order?(p.order.time||p.order.pr.t)*10:100);
@@ -535,6 +540,15 @@ class NightScene extends Phaser.Scene{
     }
     if(this.iLbl.visible){const pulse=.55+.35*Math.sin(this.time.now/120);this.iLbl.setAlpha(.72+pulse*.28).setScale(1+pulse*.05);}
     this.updateHUD();this.maybeFastCloseNight();
+  }
+  // Beta gate: the night may only close once every scripted failure has been handled.
+  // A failure is "pending" while its printer still carries an active event or a panel is open,
+  // or while the minigame is mid-run. nFixes must cover every forced fail the day scheduled.
+  betaNightClearable(){
+    const ff=(this.beta&&this.beta.forcedFails)?this.beta.forcedFails.length:0;
+    const anyEvActive=(G.printers||[]).some(p=>p._ev)||!!(this.aEv)||!!G._mini;
+    if(anyEvActive)return false;
+    return (G.nFixes||0)>=ff;
   }
   nightObjectiveReady(){
     const active=(G.printers||[]).some(p=>p.busy&&!p.broken&&!p._ev);
