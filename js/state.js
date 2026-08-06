@@ -1,12 +1,39 @@
 // ═══ SAVE ═══
 // localStorage save/load.
 const SK='first_layer_save';
-function doSave(G){try{localStorage.setItem(SK,JSON.stringify({gold:G.gold,rep:G.rep,day:G.day,makerName:G.makerName,shopName:G.shopName,upg:G.upg,emp:G.emp,stk:G.stk,cons:G.cons,orders:G.orders,ss:G.ss,stats:G.stats,lang:G.lang,dayBoughtPlaBasic:G.dayBoughtPlaBasic,dayUsedPlaBasic:G.dayUsedPlaBasic}));const e=document.getElementById('sv');e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}catch(e){}}
+const SAVE_VERSION=2;
+const CHECKPOINT_KEYS=['gold','rep','day','makerName','shopName','upg','emp','stk','cons','orders','ss','stats','lang','stress','dayEarn','dayOrd','dayCli','dayPrints','dayBought','dayBoughtMaterial','dayBoughtPlaBasic','dayUsedPlaBasic','dayStartGold','dayStartRep','energy','mateCount','market','dayMod'];
+function cloneSaveValue(v){return v===undefined?undefined:JSON.parse(JSON.stringify(v));}
+function buildSaveCheckpoint(G,phase){
+  const cp={phase:phase==='night'?'night':'day'};
+  CHECKPOINT_KEYS.forEach(k=>{if(G[k]!==undefined)cp[k]=cloneSaveValue(G[k]);});
+  const orders=G.orders||[];
+  cp.printers=(G.printers||[]).map(p=>({
+    id:p.id,locked:!!p.locked,broken:!!p.broken,busy:!!p.busy,
+    progress:Number(p.progress||0),_pau:!!p._pau,_dayLoaded:!!p._dayLoaded,
+    _dayPrintMs:Number(p._dayPrintMs||0),orderIndex:orders.indexOf(p.order)
+  }));
+  return cp;
+}
+function setSaveCheckpoint(G,phase){
+  G.resumePhase=phase==='night'?'night':'day';
+  G._checkpoint=buildSaveCheckpoint(G,G.resumePhase);
+  doSave(G);
+}
+function doSave(G){
+  try{
+    if(!G._checkpoint)G._checkpoint=buildSaveCheckpoint(G,G.resumePhase||G.phase);
+    const prefs={makerName:G.makerName||'',shopName:G.shopName||'',lang:G.lang||'es'};
+    localStorage.setItem(SK,JSON.stringify({version:SAVE_VERSION,checkpoint:G._checkpoint,prefs}));
+    const e=document.getElementById('sv');
+    if(e){e.textContent=G.lang==='en'?'Checkpoint saved':'Checkpoint guardado';e.style.opacity='1';setTimeout(()=>e.style.opacity='0',1400);}
+  }catch(e){}
+}
 function loadSave(){try{const r=localStorage.getItem(SK);return r?JSON.parse(r):null;}catch(e){return null;}}
 
 // ═══ GAME STATE ═══
 // Single global G. All gameplay reads/writes go through here.
-const G={gold:500,rep:50,day:1,lang:'es',makerName:'',shopName:'',phase:'day',stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3},cons:{coffee:1,mate:0,bar:1,sandwich:0,cleaner:1},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,dayPrints:0,dayBoughtPlaBasic:false,dayUsedPlaBasic:false,nightDone:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
+const G={gold:500,rep:50,day:1,lang:'es',makerName:'',shopName:'',phase:'day',resumePhase:'day',_checkpoint:null,stress:0,orders:[],printers:[],upg:{},emp:{},stk:{pla:{eco:3,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3},cons:{coffee:1,mate:0,bar:1,sandwich:0,cleaner:1},ss:0,cObj:null,stats:{earn:0,ord:0,fix:0,pwr:0},dayEarn:0,dayOrd:0,dayCli:0,dayPrints:0,dayBoughtPlaBasic:false,dayUsedPlaBasic:false,nightDone:0,nFixes:0,block:false,stab:'up',pActive:false,pType:null,pTimer:0,pMax:0,upsLeft:0,
   get pCount(){return this.upg.unlock4?4:this.upg.unlock3?3:this.upg.unlock2?2:1;},
   get sMult(){return 1+(this.upg.speed1?0.3:0)+(this.upg.speed2?0.3:0);},
   get pMult(){return 1+(this.upg.qual?0.25:0)+(this.emp.caro2?0.15:0);},
@@ -80,4 +107,27 @@ function gameTitle(){return 'First Layer';}
 function shopDisplayName(){return (G.shopName||(G.lang==='en'?'Workshop':'Taller')).trim()||(G.lang==='en'?'Workshop':'Taller');}
 function makerDisplayName(){return (G.makerName||'Maker').trim()||'Maker';}
 function spendFilament(mat,id,units){if(!G.stk[mat]||!G.stk[mat][id]||G.stk[mat][id]<units)return false;G.stk[mat][id]-=units;return true;}
-(()=>{const s=loadSave();if(s){['gold','rep','day','makerName','shopName','upg','emp','stk','cons','orders','ss','stats','lang','dayBoughtPlaBasic','dayUsedPlaBasic'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});}if(G.day>3){G.day=1;G.orders=[];G.ss=0;}ensureStockShape();ensureConsumables();if(!Array.isArray(G.orders))G.orders=[];G.printers=[];G.phase='day';G.stress=0;G.block=false;G.pActive=false;G.pType=null;})();
+(()=>{
+  const raw=loadSave();
+  let s=raw;
+  if(raw&&raw.version>=2&&raw.checkpoint){
+    s=Object.assign({},raw.checkpoint,raw.prefs||{});
+    G._checkpoint=cloneSaveValue(raw.checkpoint);
+  }
+  if(s){
+    CHECKPOINT_KEYS.forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});
+    ['makerName','shopName','lang'].forEach(k=>{if(s[k]!==undefined)G[k]=s[k];});
+  }
+  if(G.day>3){G.day=1;G.orders=[];G.ss=0;G._checkpoint=null;}
+  ensureStockShape();ensureConsumables();if(!Array.isArray(G.orders))G.orders=[];
+  G.resumePhase=s&&s.phase==='night'?'night':'day';
+  if(G.resumePhase==='night'&&Array.isArray(s&&s.printers)){
+    G.printers=s.printers.map((p,i)=>({
+      id:Number.isInteger(p.id)?p.id:i,locked:!!p.locked,broken:!!p.broken,busy:!!p.busy,
+      order:Number.isInteger(p.orderIndex)&&p.orderIndex>=0?G.orders[p.orderIndex]||null:null,
+      progress:Number(p.progress||0),_ev:null,_pau:false,_dayLoaded:!!p._dayLoaded,
+      _dayPrintMs:Number(p._dayPrintMs||0)
+    }));
+  }else G.printers=[];
+  G.phase=G.resumePhase;G.block=false;G.pActive=false;G.pType=null;G.pTimer=0;G.pMax=0;
+})();

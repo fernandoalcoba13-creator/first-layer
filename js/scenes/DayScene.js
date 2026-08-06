@@ -58,6 +58,7 @@ class DayScene extends Phaser.Scene{
     this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;this._ysort=[];
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
+    loadBenchyAsync(this,()=>this.refreshBenchySprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadClientAssetsAsync(this);
     this.checkStory();this.updateHUD();
@@ -68,7 +69,7 @@ class DayScene extends Phaser.Scene{
     document.getElementById('hday').textContent='📅 '+tr('dayDyn')+' '+G.day;
     updateMarket();this.applyDayMod();this.cInt=Math.max(7000,Math.round(this.cInt*repStanding().flow));this.announceStanding();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
     sHint('Click objetos | WASD + E');
-    doSave(G);
+    setSaveCheckpoint(G,'day');
   }
   initPrinters(){
     G.printers=[];
@@ -95,9 +96,11 @@ class DayScene extends Phaser.Scene{
       this._ysort.push({o:bg,baseY:py+2});
       const sp=createPrinterSprite(this,px,py);if(sp)sp.setScale(i===0?printerScale:3.5);
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
+      const jb=this.add.graphics();jb.setPosition(px,py).setDepth(py+1);
+      const bn=createBenchySprite(this,px,py-22,1.45);if(bn)bn.setDepth(py+1);
       const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
-      if(i>0)this.hideDayPrinter(pg,sp,lt,bg);
-      this.pGfx.push({g:pg,sp,lt,px,py,bench:bg});
+      if(i>0)this.hideDayPrinter(pg,sp,lt,bg,jb,bn);
+      this.pGfx.push({g:pg,sp,lt,px,py,bench:bg,job:jb,benchy:bn});
     }
     this.IA.push({x:mainPrinterX,y:mainPrinterY,type:'printers',lbl:'Click/E '+tr('printerTitle')});
     G.printers.forEach((p,i)=>{
@@ -112,7 +115,7 @@ class DayScene extends Phaser.Scene{
   ySortWorld(){
     if(!this._ysort)return;
     if(this.player)this.player.setDepth(this.player.y);
-    if(this.pGfx)this.pGfx.forEach(pg=>{const t=pg.sp&&pg.sp.visible?pg.sp:pg.g;if(t)t.setDepth(pg.py);if(pg.lt)pg.lt.setDepth(pg.py+1);});
+    if(this.pGfx)this.pGfx.forEach(pg=>{const t=pg.sp&&pg.sp.visible?pg.sp:pg.g;if(t)t.setDepth(pg.py);if(pg.job)pg.job.setDepth(pg.py+.5);if(pg.benchy)pg.benchy.setDepth(pg.py+.5);if(pg.lt)pg.lt.setDepth(pg.py+1);});
     if(this.clients)this.clients.forEach(c=>{if(c.ct&&c.ct.active)c.ct.setDepth(c.baseY);});
     this._ysort.forEach(e=>{if(e.o&&e.o.active)e.o.setDepth(e.baseY);});
   }
@@ -121,11 +124,13 @@ class DayScene extends Phaser.Scene{
     if(this.powerSprite)this.powerSprite.clearTint().setTint(pwr?0xff4d6a:0xffffff).setAlpha(pwr?.95:1);
   }
   stkTxt(){return 'PLA:'+matStock('pla')+'  PETG:'+matStock('petg')+'  TPU:'+matStock('tpu')+'\nResin:'+matStock('resin')+'  '+tr('parts')+':'+G.stk.parts;}
-  hideDayPrinter(g,sp,lt,bench){
+  hideDayPrinter(g,sp,lt,bench,job,benchy){
     if(sp)sp.setVisible(false);
     if(g)g.setVisible(false);
     if(lt)lt.setVisible(false);
     if(bench)bench.setVisible(false);
+    if(job)job.setVisible(false).clear();
+    if(benchy)benchy.setVisible(false);
   }
   // Simple pixel workbench under a printer: top surface + two legs, sized to the printer scale.
   drawPrinterBench(g,cx,by,scale){
@@ -473,11 +478,14 @@ class DayScene extends Phaser.Scene{
     });
     this.pGfx.forEach((pg,i)=>{
       const p=G.printers[i];if(!p)return;
-      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench);return;}
+      if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench,pg.job,pg.benchy);return;}
       const c=p.order?p.order.pr.c:0x5bc8fa;
       const activeDay=p.busy&&p.id===0;
       if(pg.sp)setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
       else drawPrinter(pg.g,activeDay,p.broken,p.progress,c);
+      const prog=activeDay&&!p.broken?p.progress:0;
+      if(!updateBenchySprite(pg.benchy,prog,c)&&pg.job)drawPrintObject(pg.job,prog,c,1.15);
+      else if(pg.job)pg.job.clear();
       if(p.locked)pg.lt.setText('🔒').setColor('#222244');
       else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
       else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
@@ -485,9 +493,18 @@ class DayScene extends Phaser.Scene{
       else pg.lt.setText('LIBRE').setColor('#2a2050');
     });
   }
+  // El benchy carga async: cuando llega la textura se crean los sprites que faltaban.
+  refreshBenchySprites(){
+    if(!this.pGfx)return;
+    this.pGfx.forEach((pg,i)=>{
+      if(pg.benchy)return;
+      pg.benchy=createBenchySprite(this,pg.px,pg.py-22,1.45);
+      if(pg.benchy){pg.benchy.setDepth(pg.py+.5);if(i>0)pg.benchy.setVisible(false);}
+    });
+  }
   updatePrinterVisual(i){
     const pg=this.pGfx&&this.pGfx[i],p=G.printers&&G.printers[i];if(!pg||!p)return;
-    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench);return;}
+    if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench,pg.job,pg.benchy);return;}
     const c=p.order?p.order.pr.c:0x5bc8fa;
     const activeDay=p.busy&&p.id===0&&!p._pau;
     if(pg.sp){
@@ -498,6 +515,9 @@ class DayScene extends Phaser.Scene{
       if(pg.g)pg.g.setVisible(true);
       drawPrinter(pg.g,activeDay,p.broken,p.progress,c);
     }
+    const prog=activeDay&&!p.broken?p.progress:0;
+    if(updateBenchySprite(pg.benchy,prog,c)){if(pg.job)pg.job.clear();}
+    else if(pg.job){pg.job.setVisible(true);drawPrintObject(pg.job,prog,c,1.15);}
     if(p.locked)pg.lt.setText('🔒').setColor('#222244');
     else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
     else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
@@ -511,7 +531,7 @@ class DayScene extends Phaser.Scene{
       const i=this.pGfx.indexOf(pg);
       pg.sp=createPrinterSprite(this,pg.px,pg.py);
       if(pg.sp){pg.sp.setScale(i===0?Math.max(3.2,this.room().s):3.5);pg.g.setVisible(false);}
-      if(i>0)this.hideDayPrinter(pg.g,pg.sp,pg.lt);
+      if(i>0)this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench,pg.job,pg.benchy);
       else this.updatePrinterVisual(i);
     });
   }

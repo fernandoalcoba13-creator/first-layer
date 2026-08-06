@@ -62,6 +62,7 @@ class NightScene extends Phaser.Scene{
     this.cameras.main.centerOn(this.W/2,this.H/2);
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
+    loadBenchyAsync(this,()=>this.refreshBenchySprites());
     loadEnvironmentPropsAsync(this,()=>this.placeEnvironmentProps());
     this.schedPwr();this.schedEvs();
     document.getElementById('ptag').className='ptag night';
@@ -70,6 +71,7 @@ class NightScene extends Phaser.Scene{
     document.getElementById('phud').style.display='none';
     sLog(G.orders.length?tr('choosePrinterJob'):tr('noOrdersToPrint'));
     sHint(tr('assignHint'));
+    setSaveCheckpoint(G,'night');
   }
   assignOrders(){
     const av=G.printers.filter(p=>!p.broken&&!p.locked);
@@ -173,13 +175,17 @@ class NightScene extends Phaser.Scene{
           this.tweens.add({targets:sp2,y:sp2.y-20,alpha:0,duration:480,onComplete:()=>sp2.destroy()});
         },repeat:-1});
       }
+      // La pieza va a nivel de escena, NO dentro del contenedor: el sprite de la impresora
+      // se agrega después con la misma depth que el contenedor, así que adentro quedaba tapada.
+      const job=this.add.graphics();job.setPosition(px,py).setDepth(4);
+      const benchy=createBenchySprite(this,px,py-20,1.3);if(benchy)benchy.setDepth(4);
       const pbB=this.add.rectangle(0,-16,70,5,0x070510).setOrigin(.5).setDepth(4);
       const pbF=this.add.rectangle(-35,-16,0,5,p.order?p.order.pr.c:0x5bc8fa).setOrigin(0,.5).setDepth(4);
       ct.add(pbB);ct.add(pbF);
       const lb=this.add.text(0,30,'P'+(i+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'💤'),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
       ct.add(lb);
       const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
-      this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
+      this.pObjs.push({p,ct,pg,spr,job,benchy,pbF,lb,wn,arm,px,py});
     });
     this.iLbl=this.add.text(0,0,'',{fontSize:'10px',color:'#ff4d6a',fontFamily:'Press Start 2P',backgroundColor:'#000000cc',padding:{x:4,y:2}}).setDepth(15).setVisible(false);
   }
@@ -530,6 +536,10 @@ class NightScene extends Phaser.Scene{
       if(po.spr)setPrinterSpriteState(po.spr,p);
       else drawPrinter(po.pg,p.busy&&!p._pau,p.broken,p.progress,c);
       po.pbF.width=70*Math.min(1,p.progress);
+      const prog=(p.busy&&!p.broken)?p.progress:0;
+      // Si el benchy cargó, se usa el sprite; si no, queda el dibujo procedural de respaldo.
+      if(!updateBenchySprite(po.benchy,prog,c)&&po.job)drawPrintObject(po.job,prog,c,1);
+      else if(po.job)po.job.clear();
     });
     let near=null,md=95;
     this.pObjs.forEach(po=>{
@@ -562,6 +572,15 @@ class NightScene extends Phaser.Scene{
   // Beta gate: the night may only close once every scripted failure has been handled.
   // A failure is "pending" while its printer still carries an active event or a panel is open,
   // or while the minigame is mid-run. nFixes must cover every forced fail the day scheduled.
+  // El benchy carga async: cuando llega la textura se crean los sprites que faltaban.
+  refreshBenchySprites(){
+    if(!this.pObjs)return;
+    this.pObjs.forEach(po=>{
+      if(po.benchy)return;
+      po.benchy=createBenchySprite(this,po.px,po.py-20,1.3);
+      if(po.benchy)po.benchy.setDepth(4);
+    });
+  }
   betaNightClearable(){
     const ff=(this.beta&&this.beta.forcedFails)?this.beta.forcedFails.length:0;
     const anyEvActive=(G.printers||[]).some(p=>p._ev)||!!(this.aEv)||!!G._mini;
@@ -602,7 +621,7 @@ class NightScene extends Phaser.Scene{
       return;
     }
     G.day++;
-    doSave(G);
+    setSaveCheckpoint(G,'day');
     doTrans('☀️  '+tr('day')+' '+G.day,sub,()=>{this.scene.stop();this.scene.start('Day');});
   } // end endNight
 } // end NightScene

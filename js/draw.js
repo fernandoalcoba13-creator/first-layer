@@ -262,6 +262,48 @@ function drawPlayer(g,light,tired){
   g.fillStyle(tired?0x665544:0xaa6040);g.fillRect(-3,-9,7,2);
   if(light){g.fillStyle(0xddcc88);g.fillRect(13,3,9,5);g.fillStyle(0xffffff,.35);g.fillTriangle(22,2,22,10,40,6);}
 }
+// ═══ BENCHY: la pieza que sale de la impresora ═══
+// El clásico barquito de test, revelado de abajo hacia arriba según el progreso.
+const BENCHY_ASSET='benchy';
+const BENCHY_PATH='assets/printers/benchy.png';
+function loadBenchyAsync(scene,onReady){addImageFromImage(scene,BENCHY_ASSET,BENCHY_PATH,onReady);}
+function createBenchySprite(scene,x,y,scale){
+  if(!scene.textures.exists(BENCHY_ASSET))return null;
+  return scene.add.image(x,y,BENCHY_ASSET).setOrigin(.5,1).setScale(scale||1.3).setVisible(false);
+}
+// Recorta el sprite dejando ver sólo la parte ya "impresa", desde la base hacia arriba.
+function updateBenchySprite(sp,prog,col){
+  if(!sp)return false;
+  const pr=Math.max(0,Math.min(1,prog||0));
+  if(pr<=0){sp.setVisible(false);return true;}
+  const w=sp.frame.realWidth,h=sp.frame.realHeight;
+  const shown=Math.max(1,Math.round(h*pr));
+  sp.setVisible(true);
+  sp.setCrop(0,h-shown,w,shown);
+  if(col)sp.setTint(col);
+  return true;
+}
+// La pieza que se está imprimiendo, creciendo capa por capa sobre la cama.
+// Se dibuja fila por fila (1px = 1 capa) con líneas cada 3 capas y la capa nueva
+// resaltada arriba, para que se vea cómo sube el objeto mientras la impresora trabaja.
+function drawPrintObject(g,prog,col,scale){
+  if(!g)return;
+  g.clear();
+  const pr=Math.max(0,Math.min(1,prog||0));
+  if(pr<=0)return;
+  const s=scale||1,baseY=-20*s,maxH=Math.round(16*s),wMax=14*s;
+  const h=Math.max(1,Math.round(maxH*pr));
+  for(let i=0;i<h;i++){
+    const t=i/Math.max(1,maxH-1);
+    const w=Math.max(2,Math.round(wMax*(.62+.38*Math.sin(Math.PI*(.18+.72*t)))));
+    const y=baseY-1-i;
+    if(i===h-1){g.fillStyle(0xffffff,.85);g.fillRect(-w/2,y,w,Math.max(1,s*.6));}
+    else{
+      g.fillStyle(col,1);g.fillRect(-w/2,y,w,Math.max(1,s*.6));
+      if(i%3===0){g.fillStyle(0x000000,.2);g.fillRect(-w/2,y,w,Math.max(1,s*.4));}
+    }
+  }
+}
 function drawPrinter(g,busy,broken,prog,col){
   g.clear();
   const bc=broken?0x2a0808:busy?0x0e1a28:0x141228;

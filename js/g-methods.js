@@ -54,31 +54,98 @@ G.startNozzleMini=function(){
   },250);
   SFX.clk();
 };
+// ═══ BOQUILLA: estados de suciedad ═══
+// 100 = tapada del todo, 0 = limpia. Los PNG van en assets/ui/minigame/boquilla_<pct>.png.
+// Cuando Mati exporte los que faltan, sumá 80, 60 y 40 a esta lista (ordenada de sucio a limpio)
+// y el difuminado se reparte solo entre los estados nuevos. No hay que tocar nada más.
+const NZ_DIRT_STAGES=[100,20,0];
+const NZ_ART='assets/ui/minigame/';
+// Avance real del minijuego (0..1) contando las dos fases y el aguante parcial del hold actual,
+// así la boquilla se va limpiando de a poco en vez de saltar de golpe en cada acierto.
+G.nozzleProgress=function(m){
+  const per=m.needHits||3,total=per*2;
+  const hitsDone=(m.phase==='needle'?m.hits:per+m.hits);
+  const partial=Math.max(0,Math.min(1,(m.hold||0)/(m.holdNeed||1)));
+  return Math.max(0,Math.min(1,(hitsDone+partial)/total));
+};
+// Devuelve los dos estados a mezclar y cuánto del segundo se ve encima (t = 0..1).
+G.nozzleBlend=function(dirt){
+  const st=NZ_DIRT_STAGES;
+  if(dirt>=st[0])return {a:st[0],b:st[0],t:0};
+  for(let i=0;i<st.length-1;i++){
+    const hi=st[i],lo=st[i+1];
+    if(dirt<=hi&&dirt>=lo)return {a:hi,b:lo,t:hi===lo?1:(hi-dirt)/(hi-lo)};
+  }
+  const last=st[st.length-1];
+  return {a:last,b:last,t:1};
+};
+G.buildNozzleMini=function(m){
+  const isNeedle=m.phase==='needle';
+  const phaseName=G.lang==='en'?(isNeedle?'Needle':'Filament'):(isNeedle?'Aguja':'Filamento');
+  const key=G.lang==='en'?(isNeedle?'Tap ALT':'Tap SPACE'):(isNeedle?'Apreta ALT':'Apreta ESPACIO');
+  const grid=document.getElementById('mgGrid');
+  grid.innerHTML=
+    '<div class="nozzleGame">'+
+      '<div class="nzPhase" id="nzPhase">'+phaseName+' '+m.hits+'/'+m.needHits+'</div>'+
+      '<div class="nzGauge"><span style="left:'+m.targetA+'%;width:'+(m.targetB-m.targetA)+'%"></span><b id="nzPow"></b><i id="nzMark"></i></div>'+
+      '<div class="nzCut">'+
+        '<img class="nzSprite" id="nzBase" alt="">'+
+        '<img class="nzSprite nzTop" id="nzNext" alt="">'+
+        '<div class="nzHeat" id="nzHeat"></div>'+
+        '<img class="nzPua" id="nzPua" src="'+NZ_ART+'pua.png" alt="">'+
+        '<div class="nzFilament" id="nzFil"></div>'+
+      '</div>'+
+      '<div class="nzClean" id="nzClean"></div>'+
+      '<div class="nzStats">'+
+        '<b id="nzKey">'+key+'</b><b id="nzBurn"></b>'+
+      '</div>'+
+      '<div class="mgBtns"><button onclick="G.applyNozzleMove(\'needle\',1)">ALT ↑</button><button onclick="G.applyNozzleMove(\'filament\',1)">SPACE ↓</button></div>'+
+    '</div>';
+  grid._nzPhase=m.phase;
+};
 G.renderNozzleMini=function(){
   if(!G._mini)return;
   const m=G._mini;
-  if(m.type==='nozzle'){
-    const isNeedle=m.phase==='needle',phaseName=G.lang==='en'?(isNeedle?'Needle':'Filament'):(isNeedle?'Aguja':'Filamento');
-    const key=G.lang==='en'?(isNeedle?'Tap ALT':'Tap SPACE'):(isNeedle?'Apreta ALT':'Apreta ESPACIO');
-    const stable=Math.min(100,m.hold/m.holdNeed*100);
-    document.getElementById('mgGrid').innerHTML=
-      '<div class="nozzleGame">'+
-        '<div class="nzPhase">'+phaseName+' '+m.hits+'/'+m.needHits+'</div>'+
-        '<div class="nzGauge"><span style="left:'+m.targetA+'%;width:'+(m.targetB-m.targetA)+'%"></span><b style="width:'+m.power+'%"></b><i style="left:'+m.power+'%"></i></div>'+
-        '<div class="nzCut">'+
-          '<div class="nzTube"></div><div class="nzHeat" style="opacity:'+(m.heat/100)+'"></div>'+
-          '<div class="nzClog" style="top:52%"></div>'+
-          '<div class="nzFilament" style="height:'+(isNeedle?10:Math.max(10,m.power*.78))+'%"></div>'+
-          '<div class="nzNeedle" style="height:'+(isNeedle?Math.max(10,m.power*.78):10)+'%"></div>'+
-        '</div>'+
-        '<div class="nzStats">'+
-          '<b>'+key+' | '+Math.floor(stable)+'%</b><b class="'+(m.heat>70?'hot':'')+'">'+(G.lang==='en'?'Burn ':'Quemadura ')+Math.floor(m.heat)+'%</b>'+
-        '</div>'+
-        '<div class="mgBtns"><button onclick="G.applyNozzleMove(\'needle\',1)">ALT ↑</button><button onclick="G.applyNozzleMove(\'filament\',1)">SPACE ↓</button></div>'+
-      '</div>';
-    document.getElementById('mgHint').textContent=(G.lang==='en'?'Tap to fill, then keep it inside the green target. ':'Apreta para llenar y mantenela en la meta verde. ')+Math.ceil(m.time/1000)+'s';
-    return;
+  if(m.type!=='nozzle')return;
+  const grid=document.getElementById('mgGrid');
+  // La estructura se arma una sola vez por fase: si se reconstruyera en cada tick, el navegador
+  // recrearía las imágenes y el difuminado se cortaría. Acá sólo se actualizan los estilos.
+  if(!grid.querySelector('.nozzleGame')||grid._nzPhase!==m.phase)G.buildNozzleMini(m);
+  const isNeedle=m.phase==='needle';
+  const prog=G.nozzleProgress(m),dirt=(1-prog)*100,bl=G.nozzleBlend(dirt);
+  const base=document.getElementById('nzBase'),next=document.getElementById('nzNext');
+  if(base){const s=NZ_ART+'boquilla_'+bl.a+'.png';if(base.getAttribute('src')!==s)base.setAttribute('src',s);}
+  if(next){
+    const s=NZ_ART+'boquilla_'+bl.b+'.png';if(next.getAttribute('src')!==s)next.setAttribute('src',s);
+    next.style.opacity=bl.t.toFixed(3);
   }
+  const pua=document.getElementById('nzPua');
+  if(pua){
+    // La púa entra RECTA desde abajo según la fuerza; en la fase de filamento se guarda.
+    // El rotate(135deg) endereza el sprite (viene en diagonal) y va primero para que
+    // el translate mueva la aguja en vertical de pantalla, no sobre su eje inclinado.
+    const ins=Math.min(1,m.power/(m.targetB||82));
+    pua.style.opacity=isNeedle?'1':'0';
+    pua.style.transform='translate(-50%,'+Math.round(70-ins*64)+'%) rotate(135deg)';
+  }
+  const fil=document.getElementById('nzFil');
+  if(fil){
+    fil.style.opacity=isNeedle?'0':'1';
+    fil.style.height=(isNeedle?10:Math.max(10,m.power*.7))+'%';
+  }
+  const heat=document.getElementById('nzHeat');if(heat)heat.style.opacity=(m.heat/100).toFixed(3);
+  const pow=document.getElementById('nzPow');if(pow)pow.style.width=m.power+'%';
+  const mark=document.getElementById('nzMark');if(mark)mark.style.left=m.power+'%';
+  const ph=document.getElementById('nzPhase');
+  if(ph)ph.textContent=(G.lang==='en'?(isNeedle?'Needle':'Filament'):(isNeedle?'Aguja':'Filamento'))+' '+m.hits+'/'+m.needHits;
+  const stable=Math.min(100,m.hold/m.holdNeed*100);
+  const k=document.getElementById('nzKey');
+  if(k)k.textContent=(G.lang==='en'?(isNeedle?'Tap ALT':'Tap SPACE'):(isNeedle?'Apreta ALT':'Apreta ESPACIO'))+' | '+Math.floor(stable)+'%';
+  const burn=document.getElementById('nzBurn');
+  if(burn){burn.textContent=(G.lang==='en'?'Burn ':'Quemadura ')+Math.floor(m.heat)+'%';burn.className=m.heat>70?'hot':'';}
+  const cl=document.getElementById('nzClean');
+  if(cl)cl.textContent=(G.lang==='en'?'Clean ':'Limpieza ')+Math.round(prog*100)+'%';
+  document.getElementById('mgHint').textContent=(G.lang==='en'?'Tap to fill, then keep it inside the green target. ':'Apreta para llenar y mantenela en la meta verde. ')+Math.ceil(m.time/1000)+'s';
 };
 G.holdNozzleInput=function(which,on){
   const m=G._mini;if(!m||m.type!=='nozzle')return;
