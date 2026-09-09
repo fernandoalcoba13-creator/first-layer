@@ -51,8 +51,15 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 #keyHelp span{background:#0a0816;border:1px solid #241a40;color:#7f739b;font-size:9px;padding:3px 6px;}
 #musicBtn{position:absolute;right:12px;bottom:94px;z-index:12;background:#0a0816;border:1px solid #ffb347;color:#ffb347;font-family:var(--pixel-font);font-size:9px;padding:4px 7px;pointer-events:all;cursor:pointer;box-shadow:2px 2px 0 #03020a;}
 #musicBtn.off{border-color:#3a2a60;color:#7f739b;}
-#pov{position:absolute;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s;z-index:5;}
+#pov{position:absolute;inset:0;background:rgba(0,0,0,0);pointer-events:none;transition:background .3s;z-index:5;overflow:hidden;}
+#pov::before,#pov::after{content:"";position:absolute;left:50%;pointer-events:none;opacity:0;transition:opacity .25s;}
+#pov::before{top:12%;width:38px;height:12px;transform:translateX(-50%);background:#3a2514;border:2px solid #1b1210;box-shadow:inset 0 -3px 0 #21140e;border-radius:2px;}
+#pov::after{top:calc(12% + 7px);width:min(440px,58vw);height:62vh;transform:translateX(-50%);background:radial-gradient(ellipse at 50% 0,rgba(255,180,72,.24) 0,rgba(255,125,42,.10) 31%,rgba(255,80,32,.035) 55%,transparent 74%);clip-path:polygon(45% 0,55% 0,100% 100%,0 100%);mix-blend-mode:screen;}
 #pov.on{background:rgba(0,0,0,.86);}
+#pov.on::before{opacity:1;background:#ff9b38;box-shadow:0 0 7px #ff6a24,0 0 18px rgba(255,114,38,.75),inset 0 -3px 0 #9d3b1b;animation:emergencyLampPulse 1.7s ease-in-out infinite;}
+#pov.on::after{opacity:1;animation:emergencyGlowPulse 1.7s ease-in-out infinite;}
+@keyframes emergencyLampPulse{0%,100%{filter:brightness(.82)}50%{filter:brightness(1.12)}}
+@keyframes emergencyGlowPulse{0%,100%{opacity:.72}50%{opacity:1}}
 .juicePop{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%);z-index:47;pointer-events:none;text-align:center;min-width:min(420px,86vw);padding:16px 22px;background:rgba(5,4,12,.82);border:3px solid #4dff91;box-shadow:0 0 0 2px #03020a,0 0 44px rgba(77,255,145,.35);animation:juiceIn .18s ease-out,juiceOut .28s ease-in 1.16s forwards;}
 .juicePop b{display:block;color:#4dff91;font-size:20px;line-height:1.35;text-shadow:0 0 18px rgba(77,255,145,.85);letter-spacing:2px;}
 .juicePop span{display:block;color:#f2edf8;font-size:10px;line-height:1.6;margin-top:7px;}
@@ -68,19 +75,25 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 .ptw{height:5px;background:#1a0000;border:1px solid #440000;margin-bottom:6px;}
 .ptf{height:100%;background:#f33;}
 #phint{color:#fa0;font-size:11px;}
-#bkg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:transparent;border-image:url('assets/ui/dialog-ninepatch.png') 8 fill stretch;border-image-width:8px;border-style:solid;padding:18px 22px;min-width:300px;text-align:center;display:none;pointer-events:all;z-index:20;}
+#bkg{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:transparent;border-image:url('assets/ui/dialog-ninepatch.png') 8 fill stretch;border-image-width:8px;border-style:solid;padding:18px 22px;min-width:440px;text-align:center;display:none;pointer-events:all;z-index:20;}
 #bkg h2{color:#f33;font-size:13px;margin-bottom:5px;}
 #bkg p{color:#bbb;font-size:11px;margin-bottom:12px;}
-.bks{display:flex;gap:9px;justify-content:center;margin-bottom:12px;}
-.bk{width:42px;height:66px;border:2px solid #3a1a1a;border-radius:4px;background:#1a0808;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:5px 3px;transition:all .15s;pointer-events:all;}
-.bk.up{background:#0a1a0a;border-color:#4dff91;}
+#bkseq{display:flex;align-items:center;justify-content:center;gap:7px;min-height:30px;margin:4px 0 9px;color:#7b7195;font-size:9px;}
+#bkseq b{color:#5bc8fa;margin-right:5px;}
+#bkseq span{display:grid;place-items:center;width:25px;height:23px;background:#0b0915;border:1px solid #3b3451;color:#e9e6f4;transition:.15s;}
+#bkseq span.done{background:#082315;border-color:#4dff91;color:#4dff91;box-shadow:0 0 8px rgba(77,255,145,.35);}
+#bkseq i{color:#5a526d;font-style:normal;}
+.bks{position:relative;width:390px;height:267px;margin:0 auto 10px;background:url('assets/ui/minigame/breaker/breaker-panel.png') center/100% 100% no-repeat;image-rendering:pixelated;}
+.bk{position:absolute;left:calc(39px + var(--slot)*78px);top:78px;width:72px;height:126px;border:2px solid transparent;border-radius:3px;background:transparent;cursor:pointer;padding:0;pointer-events:all;transition:border-color .12s,filter .12s;}
+.breakerSprite{--correct-end:-432px;--fail-end:-216px;display:block;width:72px;height:126px;background:url('assets/ui/minigame/breaker/breaker-standard.png') 0 0/72px 126px no-repeat;image-rendering:pixelated;}
+.bk:hover{filter:brightness(1.13);border-color:rgba(91,200,250,.55);}
+.bk.correcting .breakerSprite{--breaker-end:var(--correct-end);background-image:url('assets/ui/minigame/breaker/breaker-success.png');background-size:504px 126px;animation:breakerFrames .6s steps(6,end) forwards;}
+.bk.up .breakerSprite{background-image:url('assets/ui/minigame/breaker/breaker-success.png');background-size:504px 126px;background-position:var(--correct-end) 0;}
+.bk.failing .breakerSprite{--breaker-end:var(--fail-end);background-image:url('assets/ui/minigame/breaker/breaker-fail.png');background-size:288px 126px;animation:breakerFrames .42s steps(3,end) forwards;}
 .bk.bad{animation:shake .2s;}
+@keyframes breakerFrames{from{background-position:0 0}to{background-position:var(--breaker-end) 0}}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
-.bkn{font-size:9px;color:#888;font-weight:700;}.bksw{width:12px;height:26px;border-radius:2px;background:#444;}
-.bk.up .bksw{background:#4dff91;transform:translateY(-3px);}
-.bkl{width:7px;height:7px;border-radius:50%;background:#330000;}
-.bk.up .bkl{background:#4dff91;box-shadow:0 0 5px #4dff91;}
-#bhint{color:#fa0;font-size:11px;}
+#bhint{color:#fa0;font-size:10px;min-height:16px;}
 #dlg{position:absolute;bottom:42px;left:50%;transform:translateX(-50%);background:transparent;border-image:url('assets/ui/dialog-ninepatch.png') 8 fill stretch;border-image-width:8px;border-style:solid;padding:13px 17px;min-width:330px;max-width:490px;pointer-events:all;display:none;z-index:15;}
 .dh{display:flex;align-items:center;gap:9px;margin-bottom:7px;}
 .dav{width:34px;height:34px;border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;overflow:hidden;background-image:url('assets/ui/avatar-frame.png');background-size:cover;background-color:#0a0816;border:none;}
@@ -135,26 +148,42 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 /* Capa de arriba: se va revelando encima de la anterior para que el avance se note de a poco. */
 .nzTop{opacity:0;transition:opacity .28s linear;}
 .nzHeat{position:absolute;left:18%;right:18%;top:40%;bottom:16%;background:radial-gradient(circle,#ffb347,#ff4d00 48%,transparent 70%);filter:blur(3px);pointer-events:none;transition:opacity .2s linear;}
-/* El sprite viene dibujado en diagonal con la punta abajo-izquierda: lo rotamos 135°
-   para que la aguja quede vertical y entre recta desde abajo hacia la boquilla. */
-.nzPua{position:absolute;left:50%;bottom:-2%;width:58%;image-rendering:pixelated;pointer-events:none;transform-origin:50% 50%;filter:drop-shadow(0 0 6px rgba(200,230,255,.45));transition:transform .12s ease-out,opacity .2s linear;}
+/* pua2 ya viene vertical (15x110): entra recta desde abajo, sin rotación. */
+.nzPua{position:absolute;left:50%;bottom:-4%;width:11%;image-rendering:pixelated;pointer-events:none;filter:drop-shadow(0 0 6px rgba(200,230,255,.45));transition:transform .12s ease-out,opacity .2s linear;}
 .nzFilament{position:absolute;left:50%;top:0;width:10px;margin-left:-5px;background:#5bc8fa;border:1px solid #bdefff;box-shadow:0 0 8px rgba(91,200,250,.55);transition:opacity .2s linear;}
 .nzClean{color:#4dff91;font-size:9px;letter-spacing:.5px;}
 .nzStats{display:flex;gap:12px;justify-content:center;color:#4dff91;font-size:9px;}
 .nzStats .hot{color:#ff4d6a;animation:blink .35s infinite;}
 .nozzleGame .mgBtns button{width:auto;min-width:118px;height:34px;font-size:9px;padding:0 10px;}
-.pumpGame{grid-column:1/-1;display:grid;gap:12px;justify-items:center;}
-.pumpSeq{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;max-width:330px;}
-.pumpSeq span{width:30px;height:30px;display:grid;place-items:center;background:#0e0c1e;border:1px solid #2a2050;color:#6a5a90;font-size:14px;}
-.pumpSeq span.now{border-color:#ffb347;color:#ffb347;background:#1a1208;box-shadow:0 0 0 2px rgba(255,179,71,.25),0 0 16px rgba(255,179,71,.35);animation:blink .55s infinite;}
-.pumpSeq span.done{border-color:#4dff91;color:#4dff91;background:#071a0d;}
-.pumpPads{display:grid;grid-template-columns:54px 54px 54px;grid-template-rows:54px 54px 54px;gap:6px;}
-.pumpPad{background:#0a0816;border:2px solid #2a2050;color:#9d7fe3;font-family:var(--pixel-font);font-size:20px;cursor:pointer;pointer-events:all;}
-.pumpPad.up{grid-column:2;grid-row:1}.pumpPad.left{grid-column:1;grid-row:2}.pumpPad.right{grid-column:3;grid-row:2}.pumpPad.down{grid-column:2;grid-row:3}
-.pumpPad.here{border-color:#4dff91;color:#4dff91;background:#071a0d;box-shadow:0 0 0 3px rgba(77,255,145,.16),0 0 20px rgba(77,255,145,.3);}
-.pumpPad:hover{border-color:#ffb347;color:#ffb347;}
-.pumpMeter{width:260px;height:9px;background:#120e20;border:1px solid #2a2050;}
-.pumpMeter b{display:block;height:100%;background:linear-gradient(90deg,#5bc8fa,#4dff91);width:0;}
+/* ═══ NIVELAR LA CAMA — juego de ritmo ═══ */
+.bedGame{grid-column:1/-1;display:grid;gap:10px;justify-items:center;}
+.bgLanes{display:grid;grid-template-columns:repeat(4,58px);gap:8px;}
+.bgLane{position:relative;height:150px;background:#0b0918;border:1px solid #221b3c;overflow:hidden;cursor:pointer;pointer-events:all;}
+.bgLane:hover{border-color:#3a2f66;}
+/* receptor arriba: ahí hay que marcar la flecha */
+.bgRecep{position:absolute;top:0;left:0;right:0;height:34px;display:grid;place-items:center;font-size:19px;color:#4a3f78;border-bottom:2px solid #2a2050;background:#0e0b1e;z-index:3;}
+.bgRecep.lit{color:#ffb347;border-bottom-color:#ffb347;background:#1a1208;box-shadow:0 0 14px rgba(255,179,71,.4);}
+.bgNotes{position:absolute;top:0;left:0;right:0;bottom:0;}
+.bgNote{position:absolute;top:2px;left:50%;margin-left:-15px;width:30px;height:30px;display:grid;place-items:center;font-size:17px;font-style:normal;color:#5bc8fa;background:#0d1a2c;border:1px solid #2f6d96;box-shadow:0 0 8px rgba(91,200,250,.25);}
+.bgNote.hit{color:#4dff91;border-color:#4dff91;background:#071a0d;transform:scale(1.35)!important;opacity:0;transition:transform .18s ease-out,opacity .18s;}
+.bgNote.gone{opacity:0;transition:opacity .2s;}
+/* la cama de Mati: base + perillas, con el empujón por dirección */
+.bgStage{position:relative;width:150px;height:137px;}
+.bgBed,.bgKnobs{position:absolute;inset:0;background-repeat:no-repeat;background-size:100% 100%;image-rendering:pixelated;}
+.bgBed{background-image:url('assets/ui/minigame/cama_base.png');}
+.bgKnobs{background-image:url('assets/ui/minigame/cama_rueditas.png');z-index:2;pointer-events:none;}
+.bgBed.narr,.bgBed.nder,.bgBed.nizq,.bgBed.nabj{background-size:400% 100%;animation:bedStrip .3s steps(4) 1;}
+.bgBed.narr{background-image:url('assets/ui/minigame/cama_arr.png');}
+.bgBed.nder{background-image:url('assets/ui/minigame/cama_der.png');}
+.bgBed.nizq{background-image:url('assets/ui/minigame/cama_izq.png');}
+.bgBed.nabj{background-image:url('assets/ui/minigame/cama_abj.png');}
+@keyframes bedStrip{from{background-position-x:0%;}to{background-position-x:100%;}}
+.bgJudge{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-size:13px;font-weight:900;opacity:0;pointer-events:none;z-index:3;text-shadow:2px 2px 0 #000;white-space:nowrap;}
+.bgJudge.show{animation:bgJudgePop .5s ease-out 1;}
+.bgJudge.perfect{color:#4dff91;}.bgJudge.good{color:#5bc8fa;}.bgJudge.miss{color:#ff4d6a;}.bgJudge.bad{color:#ffb347;}
+@keyframes bgJudgePop{0%{opacity:0;transform:translate(-50%,-30%) scale(.7)}25%{opacity:1;transform:translate(-50%,-55%) scale(1.15)}100%{opacity:0;transform:translate(-50%,-85%) scale(1)}}
+.bgHud{display:flex;gap:16px;color:#4dff91;font-size:10px;}
+.bgHud .hot{color:#ffb347;text-shadow:0 0 8px rgba(255,179,71,.5);}
 #mgHint{color:#ffb347;font-size:10px;margin:8px 0 11px;}
 #shop{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(6,5,14,.96);border-image:url('assets/ui/dialog-ninepatch.png') 8 fill stretch;border-image-width:8px;border-style:solid;padding:0;width:min(960px,94vw);height:min(720px,84vh);overflow:hidden;pointer-events:all;display:none;z-index:24;box-shadow:0 0 0 2px #2a2050,0 0 54px rgba(255,179,71,.18),inset 0 0 36px rgba(91,200,250,.06);}
 .shopHead{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;background:#0b0918;border-bottom:1px solid #2a2050;}
@@ -198,6 +227,7 @@ canvas{display:block;width:100vw!important;height:100vh!important;image-renderin
 .invActions .eb{font-size:8px;padding:6px 8px;}
 .invEmpty{grid-column:1/-1;text-align:center;color:#8f82aa;border:1px dashed #2a2050;padding:14px;background:rgba(10,8,22,.55);font-size:10px;}
 .eb:focus,.deBtn:focus,.tsBtn:focus,.langBtn:focus,.shopClose:focus,.st:focus,.si:focus,.bk:focus{outline:0;background:#211000!important;border-color:#ffb347!important;color:#fffb8f!important;box-shadow:0 0 0 3px rgba(255,179,71,.42),0 0 18px rgba(255,179,71,.28),2px 2px 0 #03020a!important;}
+#bks .bk:focus{background:transparent!important;border-color:#ffb347!important;box-shadow:0 0 0 3px rgba(255,179,71,.42),0 0 18px rgba(255,179,71,.35)!important;}
 #dayEnd{position:absolute;inset:0;background:rgba(3,2,8,.9);display:none;align-items:center;justify-content:center;pointer-events:all;z-index:28;}
 .deBox{width:min(520px,92vw);background:#07060f;border:3px solid #ffb347;box-shadow:0 0 42px rgba(255,179,71,.14),inset 0 0 36px rgba(91,200,250,.06);padding:18px 20px;text-align:center;}
 .deK{color:#5bc8fa;font-size:10px;letter-spacing:3px;margin-bottom:8px;}
@@ -278,3 +308,14 @@ body:after{content:"";position:fixed;inset:-20px;pointer-events:none;z-index:39;
 #dlg,#shop,#sto,#evp,#bkg,.mgBox,.deBox,.tsBox{box-shadow:4px 4px 0 #02010a,0 0 0 1px rgba(255,255,255,.05) inset;}
 .db,.eb,.qbtn,.tsBtn,.langBtn,.shopClose,.st,.si{box-shadow:2px 2px 0 #03020a;}
 #dlg,.dh,.dt,.db,#shop,.si,.st,#proPanel,#keyHelp span{clip-path:polygon(0 0,calc(100% - 2px) 0,100% 2px,100% 100%,2px 100%,0 calc(100% - 2px));}
+
+@media(max-width:520px){
+  #bkg{min-width:0;width:calc(100vw - 24px);padding:14px 10px;}
+  #bkseq{gap:4px;font-size:8px;}
+  #bkseq span{width:22px;height:21px;}
+  .bks{width:260px;height:178px;}
+  .bk{left:calc(26px + var(--slot)*52px);top:52px;width:48px;height:84px;}
+  .breakerSprite{--correct-end:-288px;--fail-end:-144px;width:48px;height:84px;background-size:48px 84px;}
+  .bk.correcting .breakerSprite,.bk.up .breakerSprite{background-size:336px 84px;}
+  .bk.failing .breakerSprite{background-size:192px 84px;}
+}

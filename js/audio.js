@@ -20,13 +20,12 @@ var BGM={
   night:null,
   _btn(){return document.getElementById('musicBtn');},
   _syncBtn(){const b=this._btn();if(!b)return;const label=typeof G!=='undefined'&&G.lang==='en'?'Music':'Música';b.textContent='♪ '+label+' '+(this.on?'ON':'OFF');b.classList.toggle('off',!this.on);},
-  // El tema de día ya existe y suena. Para la noche: cuando tengas el .mp3, dejalo en
-  // assets/audio/night-theme.mp3 y completá nightSrc acá. Mientras esté vacío NO se crea
-  // ningún Audio ni se hace request — así no quedan 404 en la beta.
+  // Day track plus a slower provisional night mix of the same licensed asset.
   daySrc:'assets/audio/day-theme.mp3',
-  nightSrc:'', // 'assets/audio/night-theme.mp3'
+  // Provisional night mix. Replace only this path when the final track arrives.
+  nightSrc:'assets/audio/day-theme.mp3',
   _day(){if(!this.daySrc)return null;if(!this.day){this.day=new Audio(this.daySrc);this.day.loop=true;this.day.volume=.38;}return this.day;},
-  _night(){if(!this.nightSrc)return null;if(!this.night){this.night=new Audio(this.nightSrc);this.night.loop=true;this.night.volume=.32;}return this.night;},
+  _night(){if(!this.nightSrc)return null;if(!this.night){this.night=new Audio(this.nightSrc);this.night.loop=true;this.night.volume=.22;this.night.playbackRate=.82;}return this.night;},
   playDay(){
     this.phase='day';this._syncBtn();
     if(this.night)this.night.pause();

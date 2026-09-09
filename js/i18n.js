@@ -29,6 +29,7 @@ const TXT={
     dayGoalComplete:'Objetivo diario completo. Cerrando turno.',
     dayTasksPending:'El turno termino, pero faltan tareas. Completa la lista de la izquierda para cerrar el dia.',
     nightGoalComplete:'Objetivo nocturno completo. Abriendo el taller.',
+    nightTasksPending:'La noche termino, pero quedan tareas criticas. Revisa la lista de la izquierda para poder cerrar.',
     cash:'Caja',printers:'Impresoras',stock:'Stock',team:'Equipo',
     ready:'LISTO',locked:'BLOQUEADO',buy:'COMPRAR',noMoney:'SIN FONDOS',
     upSub:'Compra mejoras permanentes para sobrevivir mas noches.',
@@ -90,7 +91,8 @@ const TXT={
     noPendingJobs:'No hay trabajos pendientes.',brokenPrinter:'rota. Reparala primero.',
     prints:'imprime',loaded:'cargada',withMat:'con',noWorkTonight:'Sin trabajo esta noche.',
     lightBack:'Luz volvio automaticamente.',breakerRestored:'Tablero restablecido!',
-    breakerOrder:'Levanta los disyuntores en orden (1->{num})',orderFromTo:'Orden: del 1 al {num}',
+    breakerOrder:'Levantá las térmicas en la secuencia indicada',orderFromTo:'Secuencia: 1 a {num}',
+    breakerRound:'Ronda {round}/{total}',breakerSequence:'Secuencia',breakerSwitch:'Térmica {num}',breakerNextRound:'Primera línea activa. Preparando segunda ronda...',
     waitReturn:'Espera que vuelva...',runToBreaker:'Corre al tablero -> E',powerLogWait:'Espera...',powerLogRun:'Corre al tablero!',
     inspectPrinter:'Inspeccionar impresora',chooseJob:'Elegir trabajo para imprimir',loadJob:'Cargar trabajo',
   savedManual:'Checkpoint guardado: volvés al inicio del turno al cargar',shopTitle:'TIENDA',inventoryShort:'INV',counter:'Mostrador',
@@ -101,7 +103,8 @@ const TXT={
     clean:'Limpiar',goodCleans:'Limpiezas buenas',greenZone:'Zona verde',perfectClean:'Limpieza perfecta',scratchNozzle:'Rayaste el nozzle. -tiempo',
     nozzleFailed:'El pico quedo obstruido. La impresora queda fuera.',nowBreaker:'Ahora el {num}',completed:'Completado!',wrongOrder:'Orden incorrecto. Empeza de nuevo.',
     energy:'energia',stress:'estres',saveForNozzle:'La aguja se usa durante el minijuego de boquilla.',nozzleCleaned:'Boquilla destapada sin cambiar repuesto.',
-    bedMini:'Minijuego: adherir cama',bedTitle:'Ajustar cama',bedDesc:'Toca las esquinas en el orden indicado para recuperar la primera capa.',bedFail:'La pieza se despego. La impresora queda fuera.'
+    bedMini:'Minijuego: nivelar cama',bedTitle:'Nivelar cama',bedDesc:'Marcá cada flecha cuando llegue arriba. Mantené el combo para nivelar la cama.',bedFail:'La cama sigue desnivelada.',
+    bedProgress:'Nivelada',bedControls:'Flechas o clic.',bedPerfect:'PERFECTO',bedGood:'BIEN',bedMiss:'FALLO',bedEarly:'FUERA',bedCombo:'Combo'
   },
   en:{
     betaThanksK:'THANKS FOR PLAYING',
@@ -133,6 +136,7 @@ const TXT={
     dayGoalComplete:'Daily goal complete. Closing shift.',
     dayTasksPending:'The shift timer ended, but tasks remain. Complete the checklist on the left to close the day.',
     nightGoalComplete:'Night goal complete. Opening the shop.',
+    nightTasksPending:'The night timer ended, but critical tasks remain. Check the list on the left before closing.',
     cash:'Cash',printers:'Printers',stock:'Stock',team:'Team',
     ready:'READY',locked:'LOCKED',buy:'BUY',noMoney:'NO CASH',
     upSub:'Buy permanent upgrades to survive longer nights.',
@@ -194,7 +198,8 @@ const TXT={
     noPendingJobs:'No pending jobs.',brokenPrinter:'is broken. Repair it first.',
     prints:'prints',loaded:'loaded',withMat:'with',noWorkTonight:'No work tonight.',
     lightBack:'Power came back automatically.',breakerRestored:'Breaker panel restored!',
-    breakerOrder:'Raise the breakers in order (1->{num})',orderFromTo:'Order: 1 to {num}',
+    breakerOrder:'Raise the breakers in the indicated sequence',orderFromTo:'Sequence: 1 to {num}',
+    breakerRound:'Round {round}/{total}',breakerSequence:'Sequence',breakerSwitch:'Breaker {num}',breakerNextRound:'First line active. Preparing second round...',
     waitReturn:'Wait for power...',runToBreaker:'Run to breaker -> E',powerLogWait:'Wait...',powerLogRun:'Run to the breaker!',
     inspectPrinter:'Inspect printer',chooseJob:'Choose job to print',loadJob:'Load job',
   savedManual:'Checkpoint saved: loading restarts the current shift',shopTitle:'SHOP',inventoryShort:'INV',counter:'Counter',
@@ -205,7 +210,8 @@ const TXT={
     clean:'Clean',goodCleans:'Good cleans',greenZone:'Green zone',perfectClean:'Perfect clean',scratchNozzle:'You scratched the nozzle. -time',
     nozzleFailed:'The nozzle stayed clogged. The printer is out.',nowBreaker:'Now {num}',completed:'Completed!',wrongOrder:'Wrong order. Start again.',
     energy:'energy',stress:'stress',saveForNozzle:'The needle is used during the nozzle mini-game.',nozzleCleaned:'Nozzle cleared without replacing a spare.',
-    bedMini:'Mini-game: bed adhesion',bedTitle:'Adjust bed',bedDesc:'Tap the corners in order to recover the first layer.',bedFail:'The part lifted. The printer is out.'
+    bedMini:'Mini-game: level the bed',bedTitle:'Level the bed',bedDesc:'Hit each arrow when it reaches the top. Keep the combo to level the bed.',bedFail:'The bed is still uneven.',
+    bedProgress:'Leveled',bedControls:'Arrow keys or click.',bedPerfect:'PERFECT',bedGood:'GOOD',bedMiss:'MISS',bedEarly:'EARLY',bedCombo:'Combo'
   }
 };
 function tr(k){return (TXT[G.lang]&&TXT[G.lang][k])||TXT.es[k]||k;}

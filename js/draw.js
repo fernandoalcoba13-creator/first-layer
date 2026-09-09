@@ -24,6 +24,29 @@ const DAY_ROOM_LAYERS=[
   {key:'day_room_glass',src:'assets/environment/day/day-glass.png',depth:9100},
   {key:'day_room_lights',src:'assets/environment/day/day-lights.png',depth:9200}
 ];
+const NIGHT_ROOM_W=420;
+const NIGHT_ROOM_H=270;
+const NIGHT_ROOM_LAYERS=[
+  {key:'night_room_floor_v2',src:'assets/environment/workshop-v2/floor.png',depth:-30},
+  {key:'night_room_objects_v2',src:'assets/environment/workshop-v2/objects.png',depth:1},
+  {key:'night_room_lights_v2',src:'assets/environment/workshop-v2/lights-on.png',depth:9200},
+  {key:'night_room_lights_off_v2',src:'assets/environment/workshop-v2/lights-off.png',depth:9190,hidden:true}
+];
+const NIGHT_ROOM_OBJECT_VARIANTS=[
+  {key:'night_room_objects_v2',src:'assets/environment/workshop-v2/objects.png'},
+  {key:'night_room_objects_p1_v2',src:'assets/environment/workshop-v2/objects-p1.png'},
+  {key:'night_room_objects_p2_v2',src:'assets/environment/workshop-v2/objects-p2.png'},
+  {key:'night_room_objects_p3_v2',src:'assets/environment/workshop-v2/objects-p3.png'}
+];
+function workshopLayout(W,H,roomW,roomH,top){
+  const panel=document.getElementById('proPanel');
+  const panelVisible=panel&&getComputedStyle(panel).display!=='none';
+  const safeLeft=panelVisible?Math.ceil(panel.getBoundingClientRect().right+10):0;
+  const availableW=Math.max(1,W-safeLeft);
+  const scale=Math.min(availableW/roomW,H/roomH);
+  return {s:scale,scale,ox:safeLeft+(availableW-roomW*scale)/2,oy:top,w:roomW,h:roomH};
+}
+const DAY_WALK_MASK_PATH='data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAaQAAAEOCAYAAADGy2O9AAAAAXNSR0IArs4c6QAABQtJREFUeJzt3UFy4jAAAEF5K///svfKZSuBDWgkdd8pVIF4kC1b1xjjHgAw2Z/ZAwCAIUgAVAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBECCIAGQIEgAJAgSAAmCBEDC17MvuO/7PSPZyHVds4cAsBwzJAASBAmABEECIEGQAEgQJAASBAmABEECIEGQAEgQJAASBAmABEECIEGQAEh4OkgeHPo9D6AFeN41xnjr0dPBGeA8r0xent5+4lmPgxInAP7l7UF69OrpPiED2N8SixpctwLY3xJBAmB/ggRAgiABkCBIACQIEgAJggRAgiABkCBIACQIEgAJggRAwjJB8vgggL0tEyQA1vDqBOKjT/sGYL7qGSczJICDVGM0BAmACkECIEGQAEgQJAASBAmABEECIEGQAEgQJAASBAmABEECIEGQAEgQJAASBAmABEECIEGQAEiwQR9Zn9i35b7vt78H8DNmSCR9ahOx8mZlcBpBAiBBkABIECQAEgQJgARBAiBBkABIcB8S01hyDTwSJKYoxag0lle4uZddOGXHx60egBp/T3YhSAAkCBIACYIEQIIgwQZcR2IHVtnBJv4nSlbqUWCGBJhhkSBIwBiiRIAgAZAgSAAkCBIACYIEQIIgAZAgSAAkCBIACYIEQIIgAZAgSAAkCBIACYIEjOGJ30eoP6/Q9hMAC6jH5DeYIQHEnRCjIUgAVCwVpFN+JQCcaLlrSKtFyYVigJ9Zaoa0otUCCjCLIAGQIEgAJAgSAAmCBECCIAGQIEh8nKXwPT4TCgSJKRwAO3wWVCx3Yyz7cCAEHpkhAZAgSAAkCBIACYIEQIIgAZAgSAAkCNIH2IIC4HvXGMPNIItyHw/s76QftGZICzvpiwonOu1/XJAASBAkABIECYAEQQIgQZAASBAkgKDTVtgNQQLoOTFGQ5AAqBAkABIECYAEQQIgQZAAQk5d0DDGGF+zBwDwW04+mO9AkIDlCdEenLIDIEGQgKWZHe1DkABIECQAEgQJgARBAiBBkABIECQAEgQJgARBAiBBkABIECQAEgQJgARBAiBBkABIECQAEgQJgARBAiBBkABIECQAEgQJgARBAiBBkABIECQAEgQJgARBAiBBkABIECQAEgQJgARBAiBBkABIEKTFXdc1ewgwje//Xq4xxj17EABghgRAgiABkCBIACQIEgAJggRAgiABkCBIACQIEgAJggRAgiABkPAXKHI2d/E3Y2oAAAAASUVORK5CYII=';
 const ENV_PROP_ASSETS=[
   ['prop_toolbox','assets/environment/props/toolbox.png'],
   ['prop_box_1','assets/environment/props/box_1.png'],
@@ -97,18 +120,79 @@ function loadDayRoomLayersAsync(scene,onReady){
 }
 function applyDayRoomLayers(scene,g,W,H){
   const add=()=>{
-    if(scene.dayRoomLayers||!scene.textures.exists('day_room_floor'))return;
+    const mounted=scene.dayRoomLayers&&scene.dayRoomLayers.some(layer=>layer&&layer.active);
+    if(mounted||!scene.textures.exists('day_room_floor'))return;
+    scene.dayRoomLayers=null;
     if(g)g.setVisible(false);
-    const scale=Math.min(W/DAY_ROOM_W,H/DAY_ROOM_H);
-    const ox=Math.round((W-DAY_ROOM_W*scale)/2),oy=18;
+    const layout=workshopLayout(W,H,DAY_ROOM_W,DAY_ROOM_H,18);
+    const scale=layout.scale,ox=Math.round(layout.ox),oy=layout.oy;
     scene.roomLayout={scale,ox,oy,w:DAY_ROOM_W,h:DAY_ROOM_H};
     scene.dayRoomLayers=DAY_ROOM_LAYERS.map(layer=>{
       if(!scene.textures.exists(layer.key))return null;
       const depth=layer.depth==='counter'?oy+174*scale:layer.depth;
-      return scene.add.image(ox,oy,layer.key).setOrigin(0,0).setScale(scale).setDepth(depth);
+      const image=scene.add.image(ox,oy,layer.key).setOrigin(0,0).setScale(scale).setDepth(depth);
+      if(layer.hidden)image.setVisible(false);
+      return image;
     }).filter(Boolean);
   };
   loadDayRoomLayersAsync(scene,add);
+}
+function loadNightRoomLayersAsync(scene,onReady){
+  const assets=NIGHT_ROOM_LAYERS.concat(NIGHT_ROOM_OBJECT_VARIANTS.slice(1));
+  const items=assets.filter(a=>!scene.textures.exists(a.key));
+  if(!items.length){if(onReady)onReady();return;}
+  let left=items.length;
+  const done=()=>{left--;if(left<=0&&onReady)onReady();};
+  items.forEach(a=>addImageFromImage(scene,a.key,a.src,done));
+}
+function applyNightRoomLayers(scene,g,W,H){
+  const add=()=>{
+    const mounted=scene.nightRoomLayers&&scene.nightRoomLayers.some(layer=>layer&&layer.active);
+    if(mounted||!scene.textures.exists('night_room_floor_v2'))return;
+    scene.nightRoomLayers=null;
+    if(g)g.setVisible(false);
+    const layout=workshopLayout(W,H,NIGHT_ROOM_W,NIGHT_ROOM_H,8);
+    const scale=layout.scale,ox=Math.round(layout.ox),oy=layout.oy;
+    scene.roomLayout={scale,ox,oy,w:NIGHT_ROOM_W,h:NIGHT_ROOM_H};
+    // Use pre-cleaned PNGs instead of copying a local image into a canvas. Chrome
+    // blocks that canvas upload under file:// and used to leave the night black.
+    const unlockedCount=Math.max(
+      (G.printers||[]).filter(p=>!p.locked).length,
+      Math.min(3,G.pCount)
+    );
+    const objectsKey=NIGHT_ROOM_OBJECT_VARIANTS[Math.min(3,unlockedCount)].key;
+    scene.nightRoomLayers=NIGHT_ROOM_LAYERS.map(layer=>{
+      if(!scene.textures.exists(layer.key))return null;
+      const textureKey=layer.key==='night_room_objects_v2'?objectsKey:layer.key;
+      const image=scene.add.image(ox,oy,textureKey).setOrigin(0,0).setScale(scale).setDepth(layer.depth);
+      if(layer.hidden)image.setVisible(false);
+      if(layer.key==='night_room_floor_v2'||layer.key==='night_room_objects_v2')image.setTint(0x747b9e).setAlpha(.82);
+      else image.setTint(0x9ba5c9).setAlpha(.72);
+      return image;
+    }).filter(Boolean);
+  };
+  loadNightRoomLayersAsync(scene,add);
+}
+function loadDayWalkMask(scene,onReady){
+  if(scene.dayWalkMask){if(onReady)onReady();return;}
+  const img=new Image();
+  img.onload=()=>{
+    try{
+      const canvas=document.createElement('canvas');canvas.width=img.width;canvas.height=img.height;
+      const ctx=canvas.getContext('2d',{willReadFrequently:true});ctx.drawImage(img,0,0);
+      scene.dayWalkMask={w:img.width,h:img.height,data:ctx.getImageData(0,0,img.width,img.height).data};
+    }catch(error){console.warn('Walk mask could not be read.',error);}
+    if(onReady)onReady();
+  };
+  img.onerror=()=>{console.warn('Walk mask failed to load.');if(onReady)onReady();};
+  img.src=DAY_WALK_MASK_PATH;
+}
+function dayWalkMaskAllows(scene,x,y){
+  const mask=scene.dayWalkMask;if(!mask)return null;
+  const room=scene.room(),lx=Math.round((x-room.ox)/room.s),ly=Math.round((y-room.oy)/room.s);
+  if(lx<0||ly<0||lx>=mask.w||ly>=mask.h)return false;
+  const i=(ly*mask.w+lx)*4;
+  return mask.data[i]>200&&mask.data[i+1]>200&&mask.data[i+2]>200;
 }
 function addEnvSprite(scene,key,x,y,scale,depth){
   if(!scene.textures.exists(key))return null;
@@ -261,6 +345,153 @@ function drawPlayer(g,light,tired){
   g.fillStyle(0xd4a870);g.fillRect(-1,-13,2,3);
   g.fillStyle(tired?0x665544:0xaa6040);g.fillRect(-3,-9,7,2);
   if(light){g.fillStyle(0xddcc88);g.fillRect(13,3,9,5);g.fillStyle(0xffffff,.35);g.fillTriangle(22,2,22,10,40,6);}
+}
+// ═══ ACCIONES DEL PERSONAJE (tomar algo / reparar) ═══
+// El personaje de Mati sólo tiene ciclos de caminata, así que la acción se arma por código:
+// se le suma el objeto (taza o llave) al contenedor del jugador y se anima con tweens.
+// Si algún día llegan frames dibujados, alcanza con reemplazar esto.
+function drawMug(g,hot){
+  g.clear();
+  const body=hot?0x3a2a18:0x2e2438;
+  g.fillStyle(0x111018,1).fillRect(-5,-7,11,12);            // contorno
+  g.fillStyle(body,1).fillRect(-4,-6,9,10);                 // cuerpo
+  g.fillStyle(hot?0x6b4a1c:0x4a3a5e,1).fillRect(-4,-6,9,2); // borde superior
+  g.fillStyle(0x8a5a2a,1).fillRect(-3,-4,7,3);              // bebida
+  g.fillStyle(0x111018,1).fillRect(5,-4,3,2).fillRect(7,-4,2,6).fillRect(5,1,3,2); // asa
+}
+function drawWrench(g){
+  g.clear();
+  g.fillStyle(0x111018,1).fillRect(-2,-11,5,20);            // contorno mango
+  g.fillStyle(0xb8c0d8,1).fillRect(-1,-10,3,18);            // mango
+  g.fillStyle(0xe8eefc,1).fillRect(-1,-10,1,18);            // brillo
+  g.fillStyle(0x111018,1).fillRect(-5,-14,11,5);            // contorno boca
+  g.fillStyle(0xb8c0d8,1).fillRect(-4,-13,9,3);             // boca
+  g.fillStyle(0x0b0a12,1).fillRect(-2,-13,3,2);             // hueco de la boca
+}
+// Lanza la acción sobre el jugador de la escena. kind: 'drink' | 'repair'
+function playerActionFacing(scene,kind){
+  const previous=scene.pDir||'down';
+  if(kind==='drink')return {dir:'down',side:previous==='left'?-1:1,restore:previous};
+  let side=previous==='left'?-1:1,best=Infinity;
+  (scene.pObjs||[]).forEach(po=>{
+    if(!po||typeof po.px!=='number')return;
+    const d=Math.abs(po.px-scene.player.x);
+    if(d<best){best=d;side=po.px<scene.player.x?-1:1;}
+  });
+  const dir=side<0?'left':'right';
+  return {dir,side,restore:dir};
+}
+function setPlayerActionIdle(scene,dir){
+  if(scene.pSp){
+    if(scene.pSp.anims)scene.pSp.anims.stop();
+    const tex={down:PLAYER_DOWN,left:PLAYER_LEFT,right:PLAYER_RIGHT,up:PLAYER_UP}[dir]||PLAYER_DOWN;
+    scene.pSp.setTexture(tex,0);
+  }else if(scene.player){
+    scene.player.scaleX=dir==='left'?-1:1;
+  }
+}
+function playerActionAnchors(scene,side){
+  const sp=scene.pSp&&scene.pSp.visible?scene.pSp:null;
+  if(!sp)return {handX:side*10,handY:-18,mouthX:side*6,mouthY:-46,toolY:-23};
+  const sx=Math.abs(sp.scaleX||1),sy=Math.abs(sp.scaleY||1);
+  // Los frames del jugador son de 50 px. La mano estÃ¡ cerca de y=31 y la boca
+  // cerca de y=17; convertir esos puntos a coordenadas del container evita que
+  // los props queden en el pecho al cambiar la escala de la escena.
+  return {
+    handX:side*5.5*sx,
+    handY:sp.y-(50-31)*sy,
+    mouthX:side*2.5*sx,
+    mouthY:sp.y-(50-17)*sy,
+    toolY:sp.y-(50-29)*sy
+  };
+}
+function playPlayerAction(scene,kind){
+  if(!scene||!scene.player||!scene.add)return null;
+  const cont=scene.player,body=scene.pSp||scene.pGr;
+  if(scene._actBusy)return null;                            // no encimar dos acciones
+  scene._actBusy=true;
+  const facing=playerActionFacing(scene,kind),dir=facing.side;
+  const anchor=playerActionAnchors(scene,dir);
+  scene.pDir=facing.dir;
+  setPlayerActionIdle(scene,facing.dir);
+  const prop=scene.add.graphics(),hand=scene.add.graphics();
+  hand.fillStyle(0xe8c090,1).fillRect(-3,-3,6,6);
+  cont.add([hand,prop]);
+  const base={x:body?body.x:0,y:body?body.y:0,angle:body?body.angle:0,
+    scaleX:body?body.scaleX:1,scaleY:body?body.scaleY:1};
+  const particles=[];
+  let ended=false;
+  const finish=()=>{
+    if(ended)return;                                        // idempotente: puede llegar por tween o por red de seguridad
+    ended=true;
+    scene._actBusy=false;
+    // Matar los tweens antes de resetear: si no, uno a medio camino vuelve a torcer al personaje.
+    if(scene.tweens){if(body)scene.tweens.killTweensOf(body);scene.tweens.killTweensOf(prop);scene.tweens.killTweensOf(hand);}
+    if(prop&&prop.destroy)prop.destroy();
+    if(hand&&hand.destroy)hand.destroy();
+    particles.forEach(p=>{if(p&&p.active)p.destroy();});
+    if(body){body.setPosition(base.x,base.y).setAngle(base.angle).setScale(base.scaleX,base.scaleY).setAlpha(1);}
+    scene.pDir=facing.restore;
+    setPlayerActionIdle(scene,facing.restore);
+  };
+  // Red de seguridad: si la cadena de tweens se corta (cambio de escena, pausa, lo que sea),
+  // igual se limpia el objeto y se libera la acción. Si no, no volvería a dispararse nunca.
+  scene.time.delayedCall(kind==='drink'?1700:1900,finish);
+  if(scene.events)scene.events.once('shutdown',finish);
+
+  if(kind==='drink'){
+    drawMug(prop,true);
+    const cupStartX=anchor.handX+dir*5,cupStartY=anchor.handY+4;
+    const cupMouthX=anchor.mouthX,cupMouthY=anchor.mouthY+9;
+    prop.setPosition(cupStartX,cupStartY).setScale(1.45);
+    hand.setPosition(anchor.handX,anchor.handY+5);
+    // la taza sube a la cara, se queda un toque y baja
+    scene.tweens.add({targets:prop,x:cupMouthX,y:cupMouthY,duration:280,ease:'Sine.easeOut'});
+    scene.tweens.add({targets:hand,x:cupMouthX+dir*7,y:cupMouthY+7,duration:280,ease:'Sine.easeOut',
+      onComplete:()=>{
+        if(body)scene.tweens.add({targets:body,y:base.y+2,angle:dir*-3,duration:120,yoyo:true,repeat:2,hold:90});
+        scene.tweens.add({targets:prop,angle:dir*-30,duration:130,yoyo:true,repeat:2,hold:100,
+          onComplete:()=>{
+            scene.tweens.add({targets:prop,x:cupStartX,y:cupStartY,alpha:0,duration:220,onComplete:finish});
+            scene.tweens.add({targets:hand,x:anchor.handX,y:anchor.handY+5,alpha:0,duration:220});
+          }});
+      }});
+    // vapor
+    for(let i=0;i<6;i++){
+      scene.time.delayedCall(170+i*145,()=>{
+        if(!cont.active)return;
+        const s=scene.add.circle(cont.x+cupMouthX+Phaser.Math.Between(-2,2),cont.y+anchor.mouthY-3,Phaser.Math.Between(1,2),0xffffff,.65).setDepth(cont.depth+1);
+        particles.push(s);
+        scene.tweens.add({targets:s,x:s.x+Phaser.Math.Between(-5,5),y:s.y-20,alpha:0,duration:620,onComplete:()=>s.destroy()});
+      });
+    }
+    return prop;
+  }
+
+  // reparar: la llave gira de un lado al otro y saltan chispas
+  drawWrench(prop);
+  prop.setPosition(dir*17,anchor.toolY).setScale(1.35).setAngle(dir*-30);
+  hand.setPosition(anchor.handX,anchor.handY);
+  scene.tweens.add({targets:prop,angle:dir*28,duration:150,yoyo:true,repeat:4,ease:'Sine.easeInOut',
+    onComplete:()=>scene.tweens.add({targets:prop,alpha:0,duration:180,onComplete:finish})});
+  // El bamboleo va por ángulo: la Y del sprite la reescribe el rebote de caminar en cada frame.
+  scene.tweens.add({targets:hand,x:dir*14,y:anchor.toolY,duration:150,yoyo:true,repeat:4,ease:'Sine.easeInOut'});
+  if(body)scene.tweens.add({targets:body,x:base.x+dir*2,angle:dir*2,duration:150,yoyo:true,repeat:4,ease:'Sine.easeInOut'});
+  for(let i=0;i<8;i++){
+    scene.time.delayedCall(100+i*105,()=>{
+      if(!cont.active)return;
+      const sp=scene.add.rectangle(cont.x+dir*20+Phaser.Math.Between(-4,4),cont.y-20+Phaser.Math.Between(-4,4),3,3,i%2?0xffb347:0x5bc8fa,.95).setDepth(cont.depth+1);
+      particles.push(sp);
+      scene.tweens.add({targets:sp,x:sp.x+dir*Phaser.Math.Between(4,14),y:sp.y+Phaser.Math.Between(6,16),alpha:0,duration:420,onComplete:()=>sp.destroy()});
+    });
+  }
+  return prop;
+}
+// Busca la escena activa (día o noche) y dispara la acción ahí.
+function playerAction(kind){
+  if(typeof game==='undefined'||!game.scene)return;
+  const sc=['Day','Night'].map(k=>game.scene.getScene(k)).find(s=>s&&s.scene.isActive()&&s.player);
+  if(sc)playPlayerAction(sc,kind);
 }
 // ═══ BENCHY: la pieza que sale de la impresora ═══
 // El clásico barquito de test, revelado de abajo hacia arriba según el progreso.

@@ -18,7 +18,7 @@ G.bStk=function(k,c,id){
   document.getElementById('hg').textContent=G.gold;
   doSave(G);
 };
-G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();if(ns&&ns.juice)ns.juice('IMPRESORA SALVADA','P'+(ev.printer.id+1)+' · '+ev.ti,'success');showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
+G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();try{playerAction('repair');}catch(e){}if(ns&&ns.juice)ns.juice('IMPRESORA SALVADA','P'+(ev.printer.id+1)+' · '+ev.ti,'success');showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
 G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();if(ns&&ns.juice)ns.juice('AUTO-REPARADO','Rodrigo salvó P'+(ev.printer.id+1),'success');showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
 G.startNozzleMini=function(){
@@ -92,7 +92,7 @@ G.buildNozzleMini=function(m){
         '<img class="nzSprite" id="nzBase" alt="">'+
         '<img class="nzSprite nzTop" id="nzNext" alt="">'+
         '<div class="nzHeat" id="nzHeat"></div>'+
-        '<img class="nzPua" id="nzPua" src="'+NZ_ART+'pua.png" alt="">'+
+        '<img class="nzPua" id="nzPua" src="'+NZ_ART+'pua2.png" alt="">'+
         '<div class="nzFilament" id="nzFil"></div>'+
       '</div>'+
       '<div class="nzClean" id="nzClean"></div>'+
@@ -121,12 +121,10 @@ G.renderNozzleMini=function(){
   }
   const pua=document.getElementById('nzPua');
   if(pua){
-    // La púa entra RECTA desde abajo según la fuerza; en la fase de filamento se guarda.
-    // El rotate(135deg) endereza el sprite (viene en diagonal) y va primero para que
-    // el translate mueva la aguja en vertical de pantalla, no sobre su eje inclinado.
+    // pua2 ya viene dibujada vertical, así que entra recta desde abajo sin rotarla.
     const ins=Math.min(1,m.power/(m.targetB||82));
     pua.style.opacity=isNeedle?'1':'0';
-    pua.style.transform='translate(-50%,'+Math.round(70-ins*64)+'%) rotate(135deg)';
+    pua.style.transform='translate(-50%,'+Math.round(58-ins*56)+'%)';
   }
   const fil=document.getElementById('nzFil');
   if(fil){
@@ -169,46 +167,138 @@ G.completeNozzleHold=function(){
   }
 };
 G.moveNozzleMaze=function(dx,dy){if(G._mini&&G._mini.type==='nozzle')G.applyNozzleMove(dy<0?'needle':'filament',1);};
+// ═══ NIVELAR LA CAMA — juego de ritmo tipo Pump It Up ═══
+// Las flechas suben por 4 carriles hacia los receptores de arriba. Se marcan por timing
+// (PERFECTO / BIEN), no por orden. Cada acierto empuja la cama para ese lado con la
+// animación de Mati; los fallos cortan el combo y descuentan tiempo.
+const BED_DIRS=['arr','der','abj','izq'];       // 0=↑ 1=→ 2=↓ 3=←  (igual que las teclas)
+const BED_ARROWS=['↑','→','↓','←'];
+const BED_PERFECT_MS=110,BED_GOOD_MS=240;
 G.startBedMini=function(){
+  if(G._mini)return;
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='bed')return;
   if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}
   document.getElementById('evp').style.display='none';
-  const pool=[0,1,2,3],len=G.day>=3?9:7;
-  const seq=Array.from({length:len},()=>pool[Math.floor(Math.random()*pool.length)]);
-  G._mini={type:'bed',ev,time:G.day>=3?30000:26000,max:G.day>=3?30000:26000,seq,idx:0,combo:0,done:false,tick:null};
+  const hard=G.day>=3,dur=hard?32000:28000,now=performance.now();
+  G._mini={type:'bed',ev,time:dur,max:dur,
+    notes:[],nextId:0,gap:hard?620:780,travel:1500,spawnAt:now+500,
+    hits:0,perfect:0,miss:0,combo:0,best:0,needHits:hard?14:10,
+    last:now,done:false,tick:null};
   document.getElementById('miniGame').style.display='flex';
   {const ab=document.getElementById('mgAbandon');if(ab)ab.style.display=BETA_DAYS[G.day]?'none':'';}
   document.getElementById('mgTitle').textContent='📐 '+tr('bedTitle')+' - P'+(ev.printer.id+1);
-  document.getElementById('mgDesc').textContent=G.lang==='en'?'Hit the arrows in order. Misses break the combo and cost time.':'Marcá las flechas en orden. Si fallás, perdés combo y tiempo.';
+  document.getElementById('mgDesc').textContent=tr('bedDesc');
   document.getElementById('mgTimerFill').style.width='100%';
+  G.buildBedMini();
+  G._mini.tick=setInterval(()=>G.bedTick(),16);
+  SFX.clk();
+};
+G.buildBedMini=function(){
+  const lanes=[0,1,2,3].map(d=>
+    '<div class="bgLane" onclick="G.tapBedMini('+d+')">'+
+      '<div class="bgRecep" id="bgRecep'+d+'">'+BED_ARROWS[d]+'</div>'+
+      '<div class="bgNotes" id="bgNotes'+d+'"></div>'+
+    '</div>').join('');
+  document.getElementById('mgGrid').innerHTML=
+    '<div class="bedGame">'+
+      '<div class="bgLanes">'+lanes+'</div>'+
+      '<div class="bgStage">'+
+        '<div class="bgBed" id="bgBed"></div>'+
+        '<div class="bgKnobs"></div>'+
+        '<div class="bgJudge" id="bgJudge"></div>'+
+      '</div>'+
+      '<div class="bgHud"><b id="bgProg"></b><b id="bgCombo"></b></div>'+
+    '</div>';
+};
+G.spawnBedNote=function(dir,now){
+  const m=G._mini;if(!m)return;
+  const wrap=document.getElementById('bgNotes'+dir);
+  const note={id:m.nextId++,dir,hitTime:now+m.travel,el:null,judged:false};
+  if(wrap){
+    const el=document.createElement('i');
+    el.className='bgNote';el.textContent=BED_ARROWS[dir];
+    wrap.appendChild(el);note.el=el;
+    const h=wrap.clientHeight||150;
+    // La animación es puramente visual: el juicio se calcula con tiempos, no con píxeles.
+    if(el.animate)el.animate([{transform:'translateY('+h+'px)'},{transform:'translateY(0px)'}],{duration:m.travel,easing:'linear',fill:'forwards'});
+  }
+  m.notes.push(note);
+};
+G.bedJudge=function(txt,cls){
+  const j=document.getElementById('bgJudge');if(!j)return;
+  j.textContent=txt;j.className='bgJudge '+cls;
+  void j.offsetWidth;j.classList.add('show');
+};
+// Empuja la cama hacia el lado acertado usando la tira de 4 frames de Mati.
+G.nudgeBed=function(dir){
+  const bed=document.getElementById('bgBed');if(!bed)return;
+  const cls='n'+BED_DIRS[dir];
+  bed.className='bgBed';void bed.offsetWidth;
+  bed.classList.add(cls);
+  clearTimeout(G._bedNudgeT);
+  G._bedNudgeT=setTimeout(()=>{const b=document.getElementById('bgBed');if(b)b.className='bgBed';},300);
+};
+G.bedTick=function(nowIn){
+  const m=G._mini;if(!m||m.type!=='bed'||m.done)return;
+  const now=(nowIn===undefined)?performance.now():nowIn;
+  const dt=Math.max(0,Math.min(250,now-m.last));m.last=now;
+  m.time-=dt;
+  if(now>=m.spawnAt){
+    G.spawnBedNote(Math.floor(Math.random()*4),now);
+    m.spawnAt=Math.max(now,m.spawnAt)+m.gap;
+  }
+  m.notes.forEach(n=>{
+    if(n.judged||now<=n.hitTime+BED_GOOD_MS)return;
+    n.judged=true;n.result='miss';m.miss++;m.combo=0;m.time-=1200;
+    if(n.el){const el=n.el;el.classList.add('gone');setTimeout(()=>el.remove(),200);}
+    G.bedJudge(tr('bedMiss'),'miss');SFX.err();shakeUI();
+  });
+  m.notes=m.notes.filter(n=>!n.judged);
   G.renderBedMini();
-  G._mini.tick=setInterval(()=>{if(!G._mini)return;G._mini.time-=250;document.getElementById('mgTimerFill').style.width=Math.max(0,G._mini.time/G._mini.max*100)+'%';G.renderBedMini();if(G._mini.time<=0)G.failNozzleMini();},250);
+  if(m.hits>=m.needHits){m.done=true;setTimeout(()=>G.winNozzleMini(),200);return;}
+  if(m.time<=0){G.failNozzleMini();return;}
 };
 G.renderBedMini=function(){
   const m=G._mini;if(!m||m.type!=='bed')return;
-  const labels=['↑','→','↓','←'];
-  const seq=m.seq.map((i,n)=>'<span class="'+(n<m.idx?'done':n===m.idx?'now':'')+'">'+labels[i]+'</span>').join('');
-  document.getElementById('mgGrid').innerHTML=
-    '<div class="pumpGame">'+
-      '<div class="pumpSeq">'+seq+'</div>'+
-      '<div class="pumpPads">'+
-        '<button class="pumpPad up '+(m.seq[m.idx]===0?'here':'')+'" onclick="G.tapBedMini(0)">↑</button>'+
-        '<button class="pumpPad left '+(m.seq[m.idx]===3?'here':'')+'" onclick="G.tapBedMini(3)">←</button>'+
-        '<button class="pumpPad right '+(m.seq[m.idx]===1?'here':'')+'" onclick="G.tapBedMini(1)">→</button>'+
-        '<button class="pumpPad down '+(m.seq[m.idx]===2?'here':'')+'" onclick="G.tapBedMini(2)">↓</button>'+
-      '</div>'+
-      '<div class="pumpMeter"><b style="width:'+(m.idx/m.seq.length*100)+'%"></b></div>'+
-    '</div>';
-  document.getElementById('mgHint').textContent=(G.lang==='en'?'Step ':'Paso ')+(m.idx+1)+'/'+m.seq.length+' | Combo '+(m.combo||0)+' | '+Math.ceil(m.time/1000)+'s';
+  const bar=document.getElementById('mgTimerFill');
+  if(bar)bar.style.width=Math.max(0,m.time/m.max*100)+'%';
+  const pr=document.getElementById('bgProg');
+  if(pr)pr.textContent=tr('bedProgress')+' '+m.hits+'/'+m.needHits;
+  const cb=document.getElementById('bgCombo');
+  if(cb){cb.textContent=tr('bedCombo')+' '+m.combo;cb.className=m.combo>=5?'hot':'';}
+  const hint=document.getElementById('mgHint');
+  if(hint)hint.textContent=tr('bedControls')+' '+Math.ceil(Math.max(0,m.time)/1000)+'s';
 };
-G.tapBedMini=function(i){
+G.tapBedMini=function(dir){
   const m=G._mini;if(!m||m.type!=='bed'||m.done)return;
-  if(m.seq[m.idx]!==i){
-    m.combo=0;m.idx=Math.max(0,m.idx-2);m.time=Math.max(0,m.time-1800);
-    SFX.err();shakeUI();G.renderBedMini();return;
+  const now=performance.now();
+  let best=null,bd=1e9;
+  m.notes.forEach(n=>{
+    if(n.judged||n.dir!==dir)return;
+    const d=Math.abs(now-n.hitTime);
+    if(d<bd){bd=d;best=n;}
+  });
+  const rec=document.getElementById('bgRecep'+dir);
+  if(rec){
+    rec.classList.remove('lit');void rec.offsetWidth;rec.classList.add('lit');
+    setTimeout(()=>{if(rec.isConnected)rec.classList.remove('lit');},130);
   }
-  m.idx++;m.combo=(m.combo||0)+1;SFX.clk();
-  if(m.idx>=m.seq.length){m.done=true;setTimeout(()=>G.winNozzleMini(),120);}else G.renderBedMini();
+  if(!best||bd>BED_GOOD_MS){
+    // Apretar de más también cuesta: corta el combo y descuenta un poco de tiempo.
+    m.combo=0;m.time-=500;SFX.err();
+    G.bedJudge(tr('bedEarly'),'bad');
+    G.renderBedMini();return;
+  }
+  best.judged=true;
+  const perfect=bd<=BED_PERFECT_MS;
+  if(perfect)m.perfect++;
+  m.hits++;m.combo++;if(m.combo>m.best)m.best=m.combo;
+  if(best.el){const el=best.el;el.classList.add('hit');setTimeout(()=>el.remove(),180);}
+  m.notes=m.notes.filter(n=>n!==best);
+  G.nudgeBed(dir);
+  G.bedJudge(perfect?tr('bedPerfect'):tr('bedGood'),perfect?'perfect':'good');
+  SFX.ok();
+  G.renderBedMini();
 };
 G.winNozzleMini=function(){
   if(!G._mini)return;
@@ -218,7 +308,7 @@ G.winNozzleMini=function(){
     ev.printer._ev=null;ev.printer._pau=false;
     const ns=game.scene.getScene('Night');if(ns)ns.aEv=null;
     document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
-    SFX.fix();if(ns&&ns.juice)ns.juice('BOQUILLA LIMPIA','P'+(ev.printer.id+1)+' vuelve a imprimir','success');showNotif('🪡 '+tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));return;
+    SFX.fix();try{playerAction('repair');}catch(e){}if(ns&&ns.juice)ns.juice('BOQUILLA LIMPIA','P'+(ev.printer.id+1)+' vuelve a imprimir','success');showNotif('🪡 '+tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));return;
   }
   G.nFix();
 };
@@ -237,36 +327,60 @@ G.failNozzleMini=function(){
   }
   showNotif(type==='bed'?tr('bedFail'):tr('nozzleFailed'),'error');G.nSkip();
 };
-// Beta escape valve: after 2 failed minigame attempts the player can pay reputation to get
-// unstuck. The printer keeps working (no break, no soft-lock) — rep is the price for not
-// finishing the repair properly. Rep can't run out the way gold/parts can, so no dead-end.
+// Beta escape valve: after 2 failed attempts the player may pay a technician. Retrying the
+// minigame remains free, so being short on cash can never create a dead-end.
+G.emergencyRepairCost=function(){return 30+Math.max(1,G.day)*25;};
 G.nForceRepair=function(){
   const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;
-  G.rep=Math.max(0,G.rep-ev.rp);
+  if((ev._fails||0)<2)return;
+  const cost=G.emergencyRepairCost();
+  if(G.gold<cost){showNotif('💸 '+tr('noFunds'),'error');return;}
+  G.gold-=cost;
   ev.printer._ev=null;ev.printer._pau=false;if(ev.printer.order)ev.printer.busy=true;
   ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;
   G.nFixes=(G.nFixes||0)+1;if(G.stats)G.stats.fix++;
-  SFX.fix();shakeUI();if(ns&&ns.juice)ns.juice('REPARACIÓN DE EMERGENCIA','P'+(ev.printer.id+1)+' sigue viva','success');
-  showNotif(tr('repairAnyway')+' — -'+ev.rp+' REP','warning');
-  sLog('🛠️ '+ev.ti+' — -'+ev.rp+' REP');
-  renderRepHUD();doSave(G);
+  SFX.fix();try{playerAction('repair');}catch(e){}shakeUI();if(ns&&ns.juice)ns.juice('REPARACIÓN DE EMERGENCIA','P'+(ev.printer.id+1)+' sigue viva','success');
+  showNotif(tr('repairAnyway')+' — -$'+cost,'warning');
+  sLog('🛠️ '+ev.ti+' — -$'+cost);
+  document.getElementById('hg').textContent=G.gold;doSave(G);
 };
 G.cancelMiniGame=function(){G.failNozzleMini();};
 G._bk=function(seq){
   const ns=game.scene.getScene('Night');if(!ns)return;
-  // Find position value for this button (bkOrd[seq])
-  const pos=G._bkOrd[seq];
-  const expectedPos=G._bkNext;
-  if(pos===expectedPos){
-    document.getElementById('bk'+seq).classList.add('up');
-    G._bkNext++;SFX.clk();
-    document.getElementById('bhint').textContent=G._bkNext<G._bkNum?'✅ '+trf('nowBreaker',{num:G._bkNext+1}):tr('completed');
-    if(G._bkNext>=G._bkNum)setTimeout(()=>{document.getElementById('bkg').style.display='none';ns.resPwr(true);},600);
+  if(G._bkBusy||!G.pActive)return;
+  const expected=G._bkOrd[G._bkNext],button=document.getElementById('bk'+seq);
+  if(!button)return;
+  if(seq===expected){
+    G._bkBusy=true;button.classList.add('correcting');SFX.clk();
+    const step=document.getElementById('bkStep'+G._bkNext);if(step)step.classList.add('done');
+    setTimeout(()=>{
+      if(!G.pActive)return;
+      button.classList.remove('correcting');button.classList.add('up');
+      G._bkNext++;G._bkBusy=false;
+      if(G._bkNext<G._bkNum){
+        document.getElementById('bhint').textContent='✅ '+trf('nowBreaker',{num:G._bkOrd[G._bkNext]+1});
+        const next=document.getElementById('bk'+G._bkOrd[G._bkNext]);if(next)next.focus();
+        return;
+      }
+      if((G._bkRound||0)+1<(G._bkRounds||1)){
+        G._bkBusy=true;document.getElementById('bhint').textContent='✅ '+tr('breakerNextRound');
+        setTimeout(()=>ns.nextBreakerRound(),700);
+        return;
+      }
+      G._bkBusy=true;document.getElementById('bhint').textContent='✅ '+tr('completed');
+      setTimeout(()=>{document.getElementById('bkg').style.display='none';ns.resPwr(true);},750);
+    },650);
   } else {
-    const b=document.getElementById('bk'+seq);
-    b.classList.add('bad');setTimeout(()=>b.classList.remove('bad'),300);
-    G._bkNext=0;document.querySelectorAll('.bk').forEach(b=>b.classList.remove('up'));
+    G._bkBusy=true;button.classList.add('failing','bad');G._bkNext=0;
     document.getElementById('bhint').textContent='❌ '+tr('wrongOrder');SFX.err();
+    shakeUI();
+    setTimeout(()=>{
+      document.querySelectorAll('#bks .bk').forEach(b=>b.classList.remove('up','correcting','failing','bad'));
+      document.querySelectorAll('#bkseq span').forEach(s=>s.classList.remove('done'));
+      G._bkBusy=false;
+      document.getElementById('bhint').textContent=trf('nowBreaker',{num:G._bkOrd[0]+1});
+      const first=document.getElementById('bk'+G._bkOrd[0]);if(first)first.focus();
+    },500);
   }
 };
 G._dcb=function(i){const cb=G._dch&&G._dch[i]&&G._dch[i].cb;if(cb)cb();};
@@ -341,10 +455,12 @@ G.useConsumable=function(id){
   if((G.cons[id]||0)<=0){showNotif((G.lang==='en'?'No ':'Sin ')+it.n,'error');return;}
   if(id==='coffee'){
     if(G.mateActive){showNotif(tr('alreadyTurbo'),'info');return;}
-    G.cons.coffee--;startTurbo(12000,30,'☕ '+tr('coffee')+' +30 '+tr('energy')+' | TURBO');
+    G.cons.coffee--;if(typeof isShown==='function'&&isShown('sto'))G.cSto();
+    startTurbo(12000,30,'☕ '+tr('coffee')+' +30 '+tr('energy')+' | TURBO');
   } else if(id==='mate'){
     if(G.mateActive){showNotif(tr('alreadyTurbo'),'info');return;}
-    G.cons.mate--;startTurbo(30000,40,'🧉 '+tr('mateConsumable')+' +40 '+tr('energy')+' | TURBO');
+    G.cons.mate--;if(typeof isShown==='function'&&isShown('sto'))G.cSto();
+    startTurbo(30000,40,'🧉 '+tr('mateConsumable')+' +40 '+tr('energy')+' | TURBO');
   } else if(id==='bar'){
     G.cons.bar--;G.energy=Math.min(100,G.energy+20);G.stress=Math.max(0,(G.stress||0)-8);
     SFX.up();showNotif(tr('bar')+' +20 '+tr('energy')+', -8 '+tr('stress'),'success');

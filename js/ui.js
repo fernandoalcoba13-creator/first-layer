@@ -141,6 +141,7 @@ function startTurbo(ms,energyGain,label){
   G.mateActive=true;G.turboMax=ms;G.mateTimer=Math.max(G.mateTimer||0,ms);
   G.energy=Math.min(100,G.energy+energyGain);
   SFX.up();showNotif(label,'success');updateMateHUD();
+  try{playerAction('drink');}catch(e){}
 }
 G.tomarMate=function(){
   if(G.mateActive){showNotif('🧉 '+tr('alreadyTurbo'),'info');return;}
@@ -164,7 +165,12 @@ function isShown(id){const el=document.getElementById(id);return !!el&&getComput
 function setGameMenu(open){
   const el=document.getElementById('titleScreen');
   if(!el)return;
+  G.menuOpen=!!open;
   el.style.display=open?'flex':'none';
+  if(typeof game!=='undefined'&&game.scene){
+    const key=G.phase==='night'?'Night':'Day';
+    if(open)game.scene.pause(key);else game.scene.resume(key);
+  }
   if(open){const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)maker.value=G.makerName||'';if(shop)shop.value=G.shopName||'';setTimeout(()=>focusPanelFirst('#titleScreen .makerInput,#titleScreen .tsBtn,#titleScreen .langBtn'),0);}
 }
 function openGameMenu(){setGameMenu(true);}
@@ -362,8 +368,8 @@ document.addEventListener('keydown',e=>{
   if(handlePanelKeys('titleScreen','#titleScreen .tsBtn,#titleScreen .langBtn',k,e,2))return;
   if(handlePanelKeys('miniGame','#miniGame button',k,e,2))return;
   if(isShown('miniGame'))return;
-  if(handlePanelKeys('bkg','#bks .bk',k,e,6))return;
-  if(isShown('bkg')&&/^[1-6]$/.test(k)){G._bk(Number(k)-1);e.preventDefault();return;}
+  if(handlePanelKeys('bkg','#bks .bk',k,e,4))return;
+  if(isShown('bkg')&&/^[1-4]$/.test(k)){G._bk(Number(k)-1);e.preventDefault();return;}
   if(handlePanelKeys('evp','#ebs .eb',k,e,3))return;
   if(isShown('evp')){
     if(/^[1-3]$/.test(k)){clickButton('#ebs .eb',Number(k)-1);e.preventDefault();return;}

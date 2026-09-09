@@ -3,8 +3,8 @@
 class DayScene extends Phaser.Scene{
   constructor(){super({key:'Day'});}
   room(){
-    const s=Math.min(this.W/DAY_ROOM_W,this.H/DAY_ROOM_H);
-    return {s,ox:(this.W-DAY_ROOM_W*s)/2,oy:18};
+    if(!this.roomLayout)this.roomLayout=workshopLayout(this.W,this.H,DAY_ROOM_W,DAY_ROOM_H,18);
+    return {s:this.roomLayout.scale,ox:this.roomLayout.ox,oy:this.roomLayout.oy};
   }
   rp(x,y){
     const r=this.room();
@@ -16,7 +16,8 @@ class DayScene extends Phaser.Scene{
       return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
     };
     return [
-      R(88,176,150,56),       // complete L-counter body; front remains reachable from below
+      R(83,174,142,18),       // counter front: narrow contact strip instead of a solid block
+      R(153,147,18,44),       // short return of the L-shaped counter
       R(33,139,34,15),        // stacked boxes
       R(71,141,30,13),        // display/mannequin floor footprint
       R(294,153,96,18),       // model display cabinet base
@@ -29,7 +30,7 @@ class DayScene extends Phaser.Scene{
   }
   footRect(x=this.player.x,y=this.player.y){
     const s=this.room().s;
-    return new Phaser.Geom.Rectangle(x-5*s,y-7*s,10*s,7*s);
+    return new Phaser.Geom.Rectangle(x-4*s,y-5*s,8*s,5*s);
   }
   hitsSolid(x,y){
     const f=this.footRect(x,y);
@@ -45,6 +46,9 @@ class DayScene extends Phaser.Scene{
   }
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
+    // Phaser reuses this scene instance on Day 2/3; rebuild destroyed room objects.
+    this.dayRoomLayers=null;this.roomLayout=null;
+    this.resetNightOverlay();
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.dayBought=0;G.dayBoughtMaterial=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     BGM.playDay();
@@ -54,8 +58,8 @@ class DayScene extends Phaser.Scene{
     if(freshDayOne){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;ensureStockShape();ensureConsumables();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
     this.clients=[];this.clientQueue=this._shuffleCL();this.cTimer=0;this.cInt=this.beta.interval-(G.upg.ig?2500:0)-(G.emp.juli2?2000:0);
-    this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;this.overtimeWarned=false;
-    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;this._ysort=[];
+    this.dur=this.beta.duration||90000;this.timer=this.dur;this.IA=[];this.near=null;this.nearClient=null;this.dlgOpen=false;this.overtimeWarned=false;this.fastCloseDay=false;this.cheapStockTip=false;
+    this.wt=0;this.st=0;this.wb=0;this.dir=1;this.tired=false;this._ysort=[];this._actBusy=false;
     this.initPrinters();this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadBenchyAsync(this,()=>this.refreshBenchySprites());
@@ -70,6 +74,14 @@ class DayScene extends Phaser.Scene{
     updateMarket();this.applyDayMod();this.cInt=Math.max(7000,Math.round(this.cInt*repStanding().flow));this.announceStanding();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
     sHint('Click objetos | WASD + E');
     setSaveCheckpoint(G,'day');
+    if(G.menuOpen)this.scene.pause();
+  }
+  resetNightOverlay(){
+    const pov=document.getElementById('pov');if(pov)pov.className='';
+    ['phud','bkg','evp','miniGame'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
+    const stack=document.getElementById('notifStack');if(stack)stack.replaceChildren();
+    if(G._mini&&G._mini.tick)clearInterval(G._mini.tick);
+    G._mini=null;G.pActive=false;G.pType=null;G.pTimer=0;G.pMax=0;G._bkBusy=false;
   }
   initPrinters(){
     G.printers=[];
@@ -153,11 +165,11 @@ class DayScene extends Phaser.Scene{
   refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,false);if(this.pSp){this.pSp.setScale(2.6);this.pGr.setVisible(false);}}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
-    this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
+    this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block||this._actBusy)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
   }
   setupPointer(){
     this.input.on('pointerdown',p=>{
-      if(this.dlgOpen||G.block||G.phase!=='day')return;
+      if(this.dlgOpen||G.block||this._actBusy||G.phase!=='day')return;
       const x=p.worldX,y=p.worldY;
       const c=this.clientAt(x,y,78);
       if(c){this.openCounter(c);return;}
@@ -582,18 +594,20 @@ class DayScene extends Phaser.Scene{
     const nt=pct<.15;
     if(nt!==this.tired){this.tired=nt;drawPlayer(this.pGr,false,nt);}
     const k=this.keys;let vx=0,vy=0;const spd=energySpeed();
-    if(k.a.isDown||k.lt.isDown){vx=-168*spd;this.dir=-1;}
-    if(k.d.isDown||k.rt.isDown){vx=168*spd;this.dir=1;}
-    if(k.w.isDown||k.up.isDown)vy=-101*spd;
-    if(k.s.isDown||k.dn.isDown)vy=101*spd;
-    this.movePlayer(vx*dt/1000,vy*dt/1000);
-    this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
-    if(!this.pSp)this.player.scaleX=this.dir;
+    if(!this._actBusy){
+      if(k.a.isDown||k.lt.isDown){vx=-168*spd;this.dir=-1;}
+      if(k.d.isDown||k.rt.isDown){vx=168*spd;this.dir=1;}
+      if(k.w.isDown||k.up.isDown)vy=-101*spd;
+      if(k.s.isDown||k.dn.isDown)vy=101*spd;
+      this.movePlayer(vx*dt/1000,vy*dt/1000);
+      this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
+      if(!this.pSp)this.player.scaleX=this.dir;
+    }
     // Walk-bob is purely cosmetic: offset the sprite child, never the container's logical Y
     // (that Y drives collision, interaction range and y-sorting — mutating it made things jitter).
     if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>180){this.wb^=1;this.wt=0;}if(this.st>360){this.st=0;SFX.step();}}
     else this.wb=0;
-    const bobT=this.pSp||this.pGr;if(bobT)bobT.y=(vx||vy)&&this.wb?-2:0;
+    const bobT=this.pSp||this.pGr;if(bobT&&!this._actBusy)bobT.y=(vx||vy)&&this.wb?-2:0;
     this.ySortWorld();
     const cNear=this.nearestClient();
     this.nearClient=cNear;

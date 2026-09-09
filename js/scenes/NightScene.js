@@ -4,12 +4,21 @@
 class NightScene extends Phaser.Scene{
   constructor(){super({key:'Night'});}
   room(){
-    const s=Math.min(this.W/420,this.H/270);
-    return {s,ox:(this.W-420*s)/2,oy:8};
+    if(!this.roomLayout)this.roomLayout=workshopLayout(this.W,this.H,NIGHT_ROOM_W,NIGHT_ROOM_H,8);
+    return {s:this.roomLayout.scale,ox:this.roomLayout.ox,oy:this.roomLayout.oy};
   }
   rp(x,y){
     const r=this.room();
     return {x:r.ox+x*r.s,y:r.oy+y*r.s,s:r.s};
+  }
+  printerSlots(){
+    // These anchors match the visual centers and support line of Mati's room.
+    // The first three sit on the central bench; the fourth uses the storage rack.
+    return [[155,107],[190,107],[230,107],[350,107]].map(p=>this.rp(p[0],p[1]));
+  }
+  fitPrinterSprite(sp){
+    if(!sp)return null;
+    return sp.setScale(this.room().s);
   }
   solidRects(){
     const s=this.room().s,R=(x,y,w,h)=>{
@@ -17,29 +26,29 @@ class NightScene extends Phaser.Scene{
       return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
     };
     return [
-      R(32,119,28,14),        // left shelf feet
-      R(134,145,34,15),       // filament shelf feet
-      R(232,145,52,16),       // workbench base
-      R(310,145,56,15),       // large shelf feet
-      R(362,145,36,15),       // right shelf feet
-      R(185,212,25,15),       // printer cabinet 1
-      R(225,212,29,15),       // printer cabinet 2
-      R(268,208,40,16),       // printer cabinet 3
-      R(176,157,22,8),        // toolbox
-      R(47,174,25,12),        // left boxes
-      R(381,174,25,12)        // right boxes
+      R(27,158,31,64),        // coffee station
+      R(107,117,38,18),       // left filament shelf
+      R(194,119,120,18),      // central printer bench
+      R(288,118,57,18),       // tool workbench
+      R(364,118,85,18),       // upper-right printer shelf
+      R(202,204,78,24),       // office desk: only the physical tabletop/base
+      R(246,192,14,25),       // plant beside the office desk
+      R(49,228,76,64),        // lower-left filament rack
+      R(371,226,94,82),       // lower-right boxes and storage
+      R(386,151,52,28)        // upper-right box pile
     ];
   }
   footRect(x=this.player.x,y=this.player.y){
     const s=this.room().s;
-    return new Phaser.Geom.Rectangle(x-5*s,y-7*s,10*s,7*s);
+    return new Phaser.Geom.Rectangle(x-3.5*s,y-4.5*s,7*s,4.5*s);
   }
   hitsSolid(x,y){
     const f=this.footRect(x,y);
     return this.solidRects().some(r=>Phaser.Geom.Intersects.RectangleToRectangle(f,r));
   }
   movePlayer(dx,dy){
-    const minY=this.H*.28,maxY=this.H*.82,minX=28,maxX=this.W-28;
+    const room=this.room(),minY=room.oy+106*room.s,maxY=room.oy+244*room.s;
+    const minX=room.ox+12*room.s,maxX=room.ox+(420-12)*room.s;
     const nx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX);
     if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
     const ny=Phaser.Math.Clamp(this.player.y+dy,minY,maxY);
@@ -47,13 +56,17 @@ class NightScene extends Phaser.Scene{
   }
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
+    // Phaser reuses this scene instance after Night 1. Its display objects were
+    // destroyed on stop, so Night 2 must rebuild the same workshop dressing.
+    this.envPropsPlaced=false;this.nightRoomLayers=null;this.roomLayout=null;this.powerSprite=null;this.bgImg=null;this.windowMood=null;
+    ['dlg','evp','miniGame','bkg'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='night';G.block=false;
     BGM.playNight();
     this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
-    this.earn=0;this.done=0;G.nightDone=0;G.breakerFixes=0;G.lastPowerResolved=null;this.wt=0;this.st=0;this.wb=0;this.dir=1;
+    this.earn=0;this.done=0;G.nightDone=0;G.breakerFixes=0;G.lastPowerResolved=null;this.wt=0;this.st=0;this.wb=0;this.dir=1;this._actBusy=false;this.nightOvertimeWarned=false;this.fastCloseNight=false;
     this.startPwr=(G.stats&&G.stats.pwr)||0;
-    const tabPt=this.rp(112,89);
+    const tabPt=this.rp(24,70);
     this.bkOrd=[];this.bkNext=0;this.tZone={x:tabPt.x,y:tabPt.y};
     if(G.syncPrinters)G.syncPrinters();
     G.printers.forEach(p=>{if(p.order&&!p.broken&&!p.locked){p.busy=true;p._dayLoaded=false;}});
@@ -63,7 +76,6 @@ class NightScene extends Phaser.Scene{
     loadPrinterAssetsAsync(this,()=>this.refreshPrinterSprites());
     loadPlayerAssetsAsync(this,()=>this.refreshPlayerSprite());
     loadBenchyAsync(this,()=>this.refreshBenchySprites());
-    loadEnvironmentPropsAsync(this,()=>this.placeEnvironmentProps());
     this.schedPwr();this.schedEvs();
     document.getElementById('ptag').className='ptag night';
     document.getElementById('ptag').textContent='🌙 '+tr('night')+' — '+tr('dayDyn')+' '+G.day;
@@ -72,6 +84,7 @@ class NightScene extends Phaser.Scene{
     sLog(G.orders.length?tr('choosePrinterJob'):tr('noOrdersToPrint'));
     sHint(tr('assignHint'));
     setSaveCheckpoint(G,'night');
+    if(G.menuOpen)this.scene.pause();
   }
   assignOrders(){
     const av=G.printers.filter(p=>!p.broken&&!p.locked);
@@ -136,38 +149,31 @@ class NightScene extends Phaser.Scene{
     if(G.gold<cost){showNotif('💸 '+tr('noFunds'),'error');return;}
     G.gold-=cost;p.broken=false;p._ev=null;p._pau=false;if(p.order)p.busy=true;
     G.nFixes=(G.nFixes||0)+1;G.stats.fix++;document.getElementById('hg').textContent=G.gold;
-    G.cSto();SFX.fix();this.juice('IMPRESORA SALVADA','P'+(p.id+1)+' vuelve al taller','success');showNotif('P'+(p.id+1)+' '+tr('repair')+' OK','success');this.refreshPrinterLabels();doSave(G);
+    G.cSto();SFX.fix();try{playPlayerAction(this,'repair');}catch(e){}this.juice('IMPRESORA SALVADA','P'+(p.id+1)+' vuelve al taller','success');showNotif('P'+(p.id+1)+' '+tr('repair')+' OK','success');this.refreshPrinterLabels();doSave(G);
   }
   buildWorld(){
     const W=this.W,H=this.H;
-    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,true);this.bgImg=applyRoomBackground(this,this.bgG,W,H,true);
-    this.windowMood=addRoomWindowMood(this,true);
+    this.bgG=this.add.graphics();drawBG(this.bgG,W,H,true);applyNightRoomLayers(this,this.bgG,W,H);
     const nbg=this.add.rectangle(W/2,20,300,7,0x0d0a20).setOrigin(.5);
     this.nBf=this.add.rectangle(W/2-150,20,0,7,0x9d7fe3).setOrigin(0,.5).setDepth(20);
     this.add.text(W/2,30,tr('nightActive').toUpperCase(),{fontSize:'7px',color:'#2a2040',fontFamily:'Press Start 2P'}).setOrigin(.5,0).setDepth(20);
     this.tG=this.add.graphics();this.drawTblN(false);
-    const shopPt=this.rp(178,88),invPt=this.rp(310,184);
+    const shopPt=this.rp(205,190),invPt=this.rp(43,225);
     this.shopZone={x:shopPt.x,y:shopPt.y};
     this.invZone={x:invPt.x,y:invPt.y};
-    const sg=this.add.graphics();
-    sg.fillStyle(0x0c180c);sg.fillRect(this.shopZone.x-38,this.shopZone.y-26,76,50);
-    sg.lineStyle(1,0x2a4a2a);sg.strokeRect(this.shopZone.x-38,this.shopZone.y-26,76,50);
-    this.add.text(this.shopZone.x,this.shopZone.y,'🔧\n'+tr('shopTitle'),{fontSize:'9px',color:'#4dff91',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
-    sg.fillStyle(0x10101e);sg.fillRect(this.invZone.x-38,this.invZone.y-26,76,50);
-    sg.lineStyle(1,0x2a2040);sg.strokeRect(this.invZone.x-38,this.invZone.y-26,76,50);
-    this.add.text(this.invZone.x,this.invZone.y,'📦\n'+tr('inventoryShort'),{fontSize:'9px',color:'#5bc8fa',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5);
-    const printerSlots=[[185,176],[225,176],[265,176],[310,176]].map(p=>this.rp(p[0],p[1]));
+    const printerSlots=this.printerSlots();
     G.printers.forEach((p,i)=>{
       if(p.locked)return;
-      const slot=printerSlots[i]||this.rp(185+i*40,176),px=slot.x,py=slot.y;
+      const slot=printerSlots[i]||this.rp(151+i*40,107),px=slot.x,py=slot.y;
       const ct=this.add.container(px,py).setDepth(3);
-      const spr=createPrinterSprite(this,px,py);if(spr)spr.setScale(Math.max(3.2,this.room().s));
+      const spr=this.fitPrinterSprite(createPrinterSprite(this,px,py),i);
       const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
       const arm=this.add.graphics();
       arm.fillStyle(0x8888cc);arm.fillRect(-2,-64,4,22);
       arm.fillStyle(0x5bc8fa);arm.fillTriangle(-4,-42,4,-42,0,-36);
+      arm.setVisible(!spr);
       ct.add(arm);
-      if(p.busy&&!p.broken){
+      if(p.busy&&!p.broken&&!spr){
         this.tweens.add({targets:arm,x:{from:-26,to:26},duration:750,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
         this.time.addEvent({delay:300,callback:()=>{
           if(!p.busy||p.broken)return;
@@ -232,27 +238,32 @@ class NightScene extends Phaser.Scene{
     this.pObjs.forEach(po=>{
       if(po.spr||!this.textures.exists(PRINTER_ASSET))return;
       po.spr=createPrinterSprite(this,po.px,po.py);
-      if(po.spr)po.spr.setScale(Math.max(3.2,this.room().s));
-      if(po.spr)po.pg.setVisible(false);
+      if(po.spr){
+        this.fitPrinterSprite(po.spr,this.pObjs.indexOf(po));
+        po.pg.setVisible(false);
+        if(po.arm)po.arm.setVisible(false);
+      }
     });
   }
   ensureUnlockedPrinterVisuals(){
     if(!this.pObjs)return;
     const unlocked=G.printers.filter(p=>!p.locked);
-    const slots=[[185,176],[225,176],[265,176],[310,176]].map(p=>this.rp(p[0],p[1]));
+    const slots=this.printerSlots();
     unlocked.forEach((p,i)=>{
-      const slot=slots[i]||this.rp(185+i*40,176),px=slot.x,py=slot.y;
+      const slot=slots[i]||this.rp(151+i*40,107),px=slot.x,py=slot.y;
       let po=this.pObjs.find(o=>o.p===p);
       if(po){
-        po.px=px;po.py=py;po.ct.setPosition(px,py);if(po.spr)po.spr.setPosition(px,py);
+        po.px=px;po.py=py;po.ct.setPosition(px,py);
+        if(po.spr){po.spr.setPosition(px,py);this.fitPrinterSprite(po.spr,i);}
         return;
       }
       const ct=this.add.container(px,py).setDepth(3);
-      const spr=createPrinterSprite(this,px,py);if(spr)spr.setScale(Math.max(3.2,this.room().s));
+      const spr=this.fitPrinterSprite(createPrinterSprite(this,px,py),i);
       const pg=this.add.graphics();drawPrinter(pg,p.busy,p.broken,0,p.order?p.order.pr.c:0x5bc8fa);pg.setVisible(!spr);ct.add(pg);
       const arm=this.add.graphics();
       arm.fillStyle(0x8888cc);arm.fillRect(-2,-64,4,22);
       arm.fillStyle(0x5bc8fa);arm.fillTriangle(-4,-42,4,-42,0,-36);
+      arm.setVisible(!spr);
       ct.add(arm);
       const pbB=this.add.rectangle(0,-16,70,5,0x070510).setOrigin(.5).setDepth(4);
       const pbF=this.add.rectangle(-35,-16,0,5,p.order?p.order.pr.c:0x5bc8fa).setOrigin(0,.5).setDepth(4);
@@ -269,7 +280,7 @@ class NightScene extends Phaser.Scene{
     if(this.powerSprite)this.powerSprite.clearTint().setTint(pwr?0xff4d6a:0x8da0ff).setAlpha(pwr?1:.88);
   }
   createPlayer(){
-    const start=this.rp(127,178);
+    const start=this.rp(205,235);
     this.player=this.add.container(start.x,start.y).setDepth(5);
     this.pGr=this.add.graphics();drawPlayer(this.pGr,true,false);
     this.player.add(this.pGr);
@@ -280,7 +291,7 @@ class NightScene extends Phaser.Scene{
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
     this.input.keyboard.on('keydown-E',()=>{
-      if(G.block)return;
+      if(G.block||this._actBusy)return;
       const dS=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.shopZone.x,this.shopZone.y);
       if(dS<78){G.openShop('stk');return;}
       const dI=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.invZone.x,this.invZone.y);
@@ -292,7 +303,7 @@ class NightScene extends Phaser.Scene{
   }
   setupPointer(){
     this.input.on('pointerdown',p=>{
-      if(G.block||G.phase!=='night')return;
+      if(G.block||this._actBusy||G.phase!=='night')return;
       const x=p.worldX,y=p.worldY;
       const dS=Phaser.Math.Distance.Between(x,y,this.shopZone.x,this.shopZone.y);
       if(dS<82){G.openShop('stk');return;}
@@ -352,16 +363,28 @@ class NightScene extends Phaser.Scene{
   }
   openBk(){
     if(!G.pActive||!G.pType||G.pType.id==='micro')return;
-    const num=G.pType.id==='long'?6:4;
-    this.bkOrd=Array.from({length:num},(_,i)=>i).sort(()=>Math.random()-.5);
-    G.block=true;G._bkNum=num;G._bkNext=0;G._bkOrd=[...this.bkOrd];
-    document.getElementById('bks').innerHTML=this.bkOrd.map((pos,seq)=>
-      '<div class="bk" id="bk'+seq+'" tabindex="0" onclick="G._bk('+seq+')"><div class="bkn">'+(pos+1)+'</div><div class="bksw"></div><div class="bkl"></div></div>').join('');
-    document.getElementById('bkd').textContent=trf('breakerOrder',{num});
-    document.getElementById('bhint').textContent=trf('orderFromTo',{num});
+    G.block=true;G._bkRounds=G.pType.id==='long'?2:1;G._bkRound=0;
     document.getElementById('bkg').style.display='block';
-    setTimeout(()=>focusPanelFirst('#bks .bk'),0);
+    this.startBreakerRound();
     SFX.clk();
+  }
+  startBreakerRound(){
+    const num=4;
+    this.bkOrd=Phaser.Utils.Array.Shuffle(Array.from({length:num},(_,i)=>i));
+    G._bkNum=num;G._bkNext=0;G._bkOrd=[...this.bkOrd];G._bkBusy=false;
+    document.getElementById('bks').innerHTML=Array.from({length:num},(_,i)=>
+      '<button type="button" class="bk" id="bk'+i+'" style="--slot:'+i+'" aria-label="'+trf('breakerSwitch',{num:i+1})+'" onclick="G._bk('+i+')"><span class="breakerSprite" aria-hidden="true"></span></button>').join('');
+    document.getElementById('bkd').textContent=trf('breakerRound',{round:G._bkRound+1,total:G._bkRounds})+' — '+tr('breakerOrder');
+    document.getElementById('bkseq').innerHTML='<b>'+tr('breakerSequence')+'</b>'+this.bkOrd.map((pos,step)=>
+      '<span id="bkStep'+step+'">'+(pos+1)+'</span>').join('<i>→</i>');
+    document.getElementById('bhint').textContent=trf('nowBreaker',{num:this.bkOrd[0]+1});
+    setTimeout(()=>focusPanelFirst('#bks .bk'),0);
+  }
+  nextBreakerRound(){
+    if(!G.pActive)return;
+    G._bkRound++;
+    this.startBreakerRound();
+    showNotif('⚡ '+trf('breakerRound',{round:G._bkRound+1,total:G._bkRounds}),'warning');
   }
   inspect(po){
     const p=po.p;
@@ -451,7 +474,10 @@ class NightScene extends Phaser.Scene{
         ?'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.startBedMini()">📐 '+tr('bedMini')+(ev.g>0?' (-$'+ev.g+')':'')+'</button>'
         :'<button class="eb fix"'+(canFix?'':' disabled')+' onclick="G.nFix()">🔧 '+ev.fx+(ev.g>0?' (-$'+ev.g+')':(ev.pts>0?' (-'+ev.pts+' rep)':''))+'</button>')
         +(beta?'':'<button class="eb skip" onclick="G.nSkip()">⏭ '+tr('ignore')+' (-'+ev.rp+' REP)</button>');
-    if(beta&&(ev._fails||0)>=2)buttons+='<button class="eb skip" onclick="G.nForceRepair()">🛠️ '+tr('repairAnyway')+' (-'+ev.rp+' REP)</button>';
+    if(beta&&(ev._fails||0)>=2){
+      const repairCost=G.emergencyRepairCost();
+      buttons+='<button class="eb skip" onclick="G.nForceRepair()">🛠️ '+tr('repairAnyway')+' (-$'+repairCost+')</button>';
+    }
     document.getElementById('ebs').innerHTML=buttons;
     document.getElementById('evp').style.display='block';
     setTimeout(()=>focusPanelFirst('#ebs .eb'),0);
@@ -507,23 +533,32 @@ class NightScene extends Phaser.Scene{
     if(!G.block){
       const k=this.keys;let vx=0,vy=0;
       const spd=energySpeed();
-      if(k.a.isDown||k.lt.isDown){vx=-172*spd;this.dir=-1;}
-      if(k.d.isDown||k.rt.isDown){vx=172*spd;this.dir=1;}
-      if(k.w.isDown||k.up.isDown)vy=-103*spd;
-      if(k.s.isDown||k.dn.isDown)vy=103*spd;
-      this.movePlayer(vx*dt/1000,vy*dt/1000);
-      this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
-      if(!this.pSp)this.player.scaleX=this.dir;
-      this.fc.scaleX=this.dir;
+      if(!this._actBusy){
+        if(k.a.isDown||k.lt.isDown){vx=-172*spd;this.dir=-1;}
+        if(k.d.isDown||k.rt.isDown){vx=172*spd;this.dir=1;}
+        if(k.w.isDown||k.up.isDown)vy=-103*spd;
+        if(k.s.isDown||k.dn.isDown)vy=103*spd;
+        this.movePlayer(vx*dt/1000,vy*dt/1000);
+        this.pDir=setPlayerSpriteState(this.pSp,vx,vy,this.pDir);
+        if(!this.pSp)this.player.scaleX=this.dir;
+        this.fc.scaleX=this.dir;
+      }
       if(vx||vy){this.wt+=dt;this.st+=dt;if(this.wt>175){this.wb^=1;this.wt=0;}if(this.st>360){this.st=0;SFX.step();}}
       else this.wb=0;
-      const bobT=this.pSp||this.pGr;if(bobT)bobT.y=(vx||vy)&&this.wb?-2:0;
+      const bobT=this.pSp||this.pGr;if(bobT&&!this._actBusy)bobT.y=(vx||vy)&&this.wb?-2:0;
     }
     tickMate(dt);this.el+=dt;this.nBf.width=300*Math.min(1,this.el/this.dur);
     if(this.el>=this.dur){
       // In the beta the night can't just time out while a scripted failure is still unresolved:
       // the player must clear the minigame. Hold the clock full and keep waiting until it's fixed.
-      if(BETA_DAYS[G.day]&&!this.nightObjectiveReady()){this.el=this.dur;}
+      if(BETA_DAYS[G.day]&&!this.nightObjectiveReady()){
+        this.el=this.dur;
+        if(!this.nightOvertimeWarned){
+          this.nightOvertimeWarned=true;
+          showNotif(tr('nightTasksPending'),'warning');
+          sHint(tr('nightTasksPending'));
+        }
+      }
       else{this.endNight();return;}
     }
     G.printers.forEach(p=>{
@@ -610,6 +645,15 @@ class NightScene extends Phaser.Scene{
   updateHUD(){document.getElementById('hg').textContent=G.gold;renderRepHUD();}
   endNight(){
     if(G.phase!=='night')return;
+    if(BETA_DAYS[G.day]&&!this.nightObjectiveReady()){
+      this.el=this.dur;
+      if(!this.nightOvertimeWarned){
+        this.nightOvertimeWarned=true;
+        showNotif(tr('nightTasksPending'),'warning');
+        sHint(tr('nightTasksPending'));
+      }
+      return;
+    }
     G.phase='transition';G.block=true;
     let sal=0;
     Object.keys(G.emp).forEach(id=>{const e=EMP.find(x=>x.id===id);if(e){sal+=e.sal;G.gold=Math.max(0,G.gold-e.sal);}});
