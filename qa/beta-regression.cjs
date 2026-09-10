@@ -1,0 +1,557 @@
+// Logic regression host. This does NOT render Phaser or replace browser QA.
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const vm = require('node:vm');
+const { EventEmitter } = require('node:events');
+const { execFileSync } = require('node:child_process');
+const root = path.resolve(__dirname, '..');
+const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+const scripts = [...html.matchAll(/<script src="(js\/[^"?]+)(?:\?[^" ]*)?"/g)].map(m => m[1]);
+
+class Clock {
+  constructor() { this.now = 0; this.next = 0; this.jobs = new Map(); }
+  add(fn, delay = 0, repeat = false) {
+    const id = ++this.next;
+    this.jobs.set(id, { fn, at: this.now + Math.max(1, delay), delay, repeat });
+    return id;
+  }
+  advance(ms) {
+    const end = this.now + ms;
+    for (let turns = 0; turns < 10000; turns++) {
+      const job = [...this.jobs].filter(([,j]) => j.at <= end).sort((a,b) => a[1].at-b[1].at)[0];
+      if (!job) { this.now = end; return; }
+      const [id,j] = job;
+      this.now = j.at;
+      if (j.repeat) j.at += Math.max(1,j.delay); else this.jobs.delete(id);
+      j.fn();
+    }
+    throw new Error('Unbounded timer loop');
+  }
+}
+
+function host(saved = null, width = 1366, height = 768, options = {}) {
+  const clock = new Clock(), elements = new Map(), storage = new Map(), messages = [];
+  if (saved) storage.set('first_layer_save', JSON.stringify(saved));
+  const modalIds = ['dlg','shop','sto','evp','miniGame','bkg','dayEnd','betaEnd'];
+  function element(id = '') {
+    const classes = new Set();
+    const el = {
+      id, style: { display: modalIds.includes(id) ? 'none' : 'block' }, dataset: {},
+      childNodes: [{ nodeValue: '' }], children: [], textContent: '', innerHTML: '',
+      value: '', active: true, disabled: false, tagName: 'DIV', tabIndex: 0,
+      classList: { add: (...v) => v.forEach(x => classes.add(x)), remove: (...v) => v.forEach(x => classes.delete(x)), contains: v => classes.has(v), toggle: (v,on) => on ? classes.add(v) : classes.delete(v) },
+      appendChild(c) { c.parentNode = el; el.children.push(c); if(c.id)elements.set(c.id,c); },
+      prepend(c) { el.appendChild(c); }, remove() {}, replaceChildren() { el.children=[]; },
+      removeChild(c) { el.children=el.children.filter(x=>x!==c); },
+      replaceChild(a,b) { elements.set(b.id,a); a.parentNode=el; },
+      cloneNode() { return element(id); }, setAttribute() {}, getAttribute() { return ''; },
+      focus() { document.activeElement=el; }, addEventListener() {},
+      querySelectorAll() { return []; }, querySelector() { return null; }, animate() {},
+      getBoundingClientRect() { return {right:284,left:12,top:82,width:272,height:400}; }
+    };
+    return el;
+  }
+  for (const m of html.matchAll(/\bid="([^"]+)"/g)) elements.set(m[1],element(m[1]));
+  const document = {
+    activeElement: null, documentElement: element('html'), body: element('body'),
+    getElementById: id => elements.get(id) || null, createElement: () => element(),
+    querySelectorAll: () => [], querySelector: () => null, addEventListener() {}
+  };
+  for(const el of elements.values()) el.parentNode=document.body;
+  function drawable(x=0,y=0) {
+    const node={x,y,visible:true,active:true,scaleX:1,scaleY:1,angle:0,alpha:1,
+      anims:{play(){},pause(){},resume(){},stop(){},isPlaying:false},
+      setPosition(x,y){this.x=x;this.y=y;return this;},
+      setVisible(v){this.visible=v;return this;},
+      setScale(x,y=x){this.scaleX=x;this.scaleY=y;return this;},
+      setAngle(v){this.angle=v;return this;},
+      setText(v){this.text=v;return this;}, destroy(){this.active=false;}, add(){return this;}
+    };
+    return node;
+  }
+  // Keep drawing chains inert without swallowing calls to gameplay methods.
+  function graphic(x,y) {
+    const obj=drawable(x,y);
+    const chain=new Proxy(obj,{get:(target,k)=>{
+      const v=Reflect.get(target,k);
+      if(k in target)return typeof v==='function'?v.bind(chain):v;
+      return ()=>chain;
+    }});
+    return chain;
+  }
+  const sceneMap={};
+  class Scene {
+    constructor(config) {
+      this.key=config.key; this.events=new EventEmitter(); this.sys={isActive:()=>!this.paused};
+      this.scale={width,height}; this.cameras={main:{flash(){},shake(){},setZoom(){},centerOn(){}}};
+      this.time={now:0,delayedCall:(delay,fn)=>clock.add(fn,delay),addEvent:o=>clock.add(o.callback,o.delay,o.repeat===-1)};
+      this.add=new Proxy({},{get:()=> (x,y)=>graphic(x,y)});
+      this.textures={exists:()=>false}; this.anims={exists:()=>false};
+      this.tweens={add:()=>({stop(){},remove(){}}),killTweensOf(){}};
+      this.input=new EventEmitter(); this.input.keyboard=new EventEmitter();
+      this.input.keyboard.addKeys=keys=>Object.fromEntries(Object.keys(keys).map(k=>[k,{isDown:false}]));
+      this.scene={pause:()=>{this.paused=true;},stop:()=>{this.events.emit('shutdown');},start:key=>{this.nextScene=key;}};
+      sceneMap[config.key]=this;
+    }
+  }
+  class Rectangle { constructor(x,y,width,height){Object.assign(this,{x,y,width,height});} }
+  const math=Object.create(Math); let seed=513;
+  math.random=()=>((seed=(seed*1664525+1013904223)>>>0)/4294967296);
+  const context={
+    console:{log(){},warn:(...args)=>messages.push(args.join(' ')),error:(...args)=>messages.push(args.join(' '))},
+    Math:math,performance:{now:()=>clock.now},document,innerWidth:width,innerHeight:height,
+    localStorage:{getItem:k=>{if(options.denyStorage)throw Error('Storage denied');return storage.get(k)||null;},setItem:(k,v)=>{if(options.denyStorage)throw Error('Storage denied');storage.set(k,v);},removeItem:k=>{if(options.denyStorage)throw Error('Storage denied');storage.delete(k);}},
+    getComputedStyle:el=>el.style,addEventListener(){},location:{reload(){}},confirm:()=>true,
+    setTimeout:(fn,ms)=>clock.add(fn,ms),clearTimeout:id=>clock.jobs.delete(id),
+    setInterval:(fn,ms)=>clock.add(fn,ms,true),clearInterval:id=>clock.jobs.delete(id),
+    Image:class {}, Audio:class { play(){return Promise.resolve();} pause(){} },
+    Phaser:{CANVAS:1,Scale:{RESIZE:1,CENTER_BOTH:1},Scene,
+      Game:class {constructor(config){this.config=config;this.scene={getScene:key=>sceneMap[key],pause:key=>{if(sceneMap[key])sceneMap[key].paused=true;},resume:key=>{if(sceneMap[key])sceneMap[key].paused=false;}};for(const S of config.scene)new S();}},
+      Math:{Clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),Between:(a,b)=>a,Distance:{Between:(x,y,a,b)=>Math.hypot(x-a,y-b)}},
+      Geom:{Rectangle,Intersects:{RectangleToRectangle:(a,b)=>a.x<b.x+b.width&&a.x+a.width>b.x&&a.y<b.y+b.height&&a.y+a.height>b.y}},
+      Utils:{Array:{Shuffle:a=>a}}
+    }
+  };
+  context.window=context;
+  vm.createContext(context);
+  for(const file of scripts) vm.runInContext(fs.readFileSync(path.join(root,file),'utf8'),context,{filename:file});
+  const api=vm.runInContext('({G,game,BETA_DAYS,SK,doSave,setSaveCheckpoint,buildSaveCheckpoint,prepareOrderMaterial})',context);
+  function start(phase,day=1) {
+    api.G.day=day; api.G.menuOpen=false;elements.get('titleScreen').style.display='none';
+    const scene=sceneMap[phase==='night'?'Night':'Day'];
+    scene.create();return scene;
+  }
+  return {...api,context,sceneMap,elements,storage,clock,messages,start,run:code=>vm.runInContext(code,context)};
+}
+
+const tests=[];
+function test(name,fn){tests.push([name,fn]);}
+function loadedJob(h,time=1.2) {
+  const o={pr:{e:'',n:'Test',c:0xffffff,t:time},material:'pla',units:1,time,pay:100,diff:1,risk:.1,filament:{id:'eco',n:'PLA Basic',rep:-1}};
+  h.G.orders.push(o);
+  const p={id:0,locked:false,busy:true,broken:false,order:o,progress:0,_ev:null,_pau:false};
+  h.G.printers=[p];return p;
+}
+
+test('all classic scripts parse and keep their dependency order',()=>{
+  assert.deepEqual(scripts,['js/audio.js','js/data.js','js/state.js','js/i18n.js','js/draw.js','js/ui.js','js/g-methods.js','js/pro-patch.js','js/scenes/DayScene.js','js/scenes/NightScene.js','js/main.js']);
+  for(const file of scripts)execFileSync(process.execPath,['--check',path.join(root,file)]);
+});
+test('referenced local asset paths exist with exact case',()=>{
+  const sources=[html,fs.readFileSync(path.join(root,'styles.css'),'utf8'),...scripts.map(f=>fs.readFileSync(path.join(root,f),'utf8'))].join('\n');
+  const refs=new Set([...sources.matchAll(/assets\/[A-Za-z0-9_./ -]+\.(?:png|jpg|jpeg|webp|mp3|wav|json)/g)].map(m=>m[0]));
+  for(const ref of refs){let dir=root;for(const part of ref.split('/')){assert.ok(fs.readdirSync(dir).includes(part),ref);dir=path.join(dir,part);}}
+});
+test('Day and Night boot for days 1, 2, 3 at both desktop sizes (mock rendering)',()=>{
+  for(const [w,h] of [[1366,768],[1920,1080]]){
+    const env=host(null,w,h);
+    for(let day=1;day<=3;day++){
+      env.start('day',day);assert.equal(env.G.phase,'day');
+      const ns=env.start('night',day);assert.equal(env.G.phase,'night');assert.equal(ns.pObjs.length,1);
+    }
+    assert.deepEqual(env.messages,[]);
+  }
+});
+test('v2 save resumes the shift checkpoint and preserves order identity',()=>{
+  const h=host();h.start('day');const p=loadedJob(h);h.G.gold=345;
+  h.setSaveCheckpoint(h.G,'night');h.G.gold=999;h.doSave(h.G);
+  const restored=host(JSON.parse(h.storage.get(h.SK)));
+  assert.equal(restored.G.resumePhase,'night');assert.equal(restored.G.gold,345);
+  assert.equal(restored.G.printers[0].order,restored.G.orders[0]);
+  assert.equal(restored.G.printers[0].order.pay,p.order.pay);
+});
+test('material is consumed only once for an already prepared order',()=>{
+  const h=host();h.G.stk.pla.eco=3;
+  const o={material:'pla',units:2,diff:1,risk:.1};
+  assert.equal(h.prepareOrderMaterial(o),true);assert.equal(h.G.stk.pla.eco,1);
+  assert.equal(h.prepareOrderMaterial(o),true);assert.equal(h.G.stk.pla.eco,1);
+});
+test('opening dialogue blocks the day and closing it respects another overlay',()=>{
+  const h=host(),ds=h.start('day');
+  ds.oDlg('Test','','',[]);assert.equal(h.G.block,true);
+  h.elements.get('sto').style.display='block';h.run('cDlg()');assert.equal(h.G.block,true);
+  h.G.cSto();assert.equal(h.G.block,false);
+});
+test('forced failure waits for the shop and does not replace another event',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night');
+  h.elements.get('shop').style.display='block';h.G.block=true;
+  h.clock.advance(45000);assert.equal(ns.aEv,null);
+  h.G.cShop();h.clock.advance(4000);
+  const first=ns.aEv;assert.ok(first);
+  h.clock.advance(10000);assert.equal(ns.aEv,first);
+});
+test('night clock and printing pause while a modal is open',()=>{
+  const h=host();const p=loadedJob(h);const ns=h.start('night');
+  h.G.block=true;ns.update(0,1000);
+  assert.equal(p.progress,0);assert.equal(ns.el,0);
+});
+test('last fast print receives every mandatory failure before being paid',()=>{
+  for(const day of [1,2,3]){
+    const h=host();const p=loadedJob(h);const ns=h.start('night',day);
+    for(const expected of h.BETA_DAYS[day].forcedFails){
+      p.progress=1;ns.completePrint(p);
+      assert.ok(ns.aEv,'missing '+expected.id+' on night '+day);
+      assert.equal(ns.aEv.id,expected.id);assert.equal(ns.done,0);
+      h.G.nFix();
+    }
+    ns.completePrint(p);assert.equal(ns.done,1);assert.equal(h.G.orders.length,0);
+    ns.completePrint(p);assert.equal(ns.done,1);
+  }
+});
+test('second failure stays blocked until first repair ends',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night',3);
+  const second={...h.G.orders[0]};h.G.orders.push(second);
+  h.G.printers.push({...h.G.printers[0],id:1,order:second});
+  ns.trigEv('clog',true,0);const first=ns.aEv;
+  ns.trigEv('bed',true,1);assert.equal(ns.aEv,first);
+  h.G.nFix();h.clock.advance(4000);assert.equal(ns.aEv.id,'bed');
+});
+test('a resolved script does not fire again at its scheduled time',()=>{
+  const h=host();const p=loadedJob(h);const ns=h.start('night');
+  p.progress=1;ns.completePrint(p);h.G.nFix();ns.completePrint(p);
+  h.clock.advance(20000);assert.equal(ns.aEv,null);assert.equal(h.G.nFixes,1);
+});
+test('active failure prevents night closure even when numeric counters pass',()=>{
+  const h=host();const p=loadedJob(h);const ns=h.start('night');
+  ns.trigEv('clog',true,0);h.G.nFixes=1;h.G.nightDone=1;p.busy=false;
+  assert.equal(ns.nightObjectiveReady(),false);
+});
+test('repair during an outage does not resume an unpowered printer',()=>{
+  const h=host();const p=loadedJob(h);const ns=h.start('night');
+  ns.trigEv('clog',true,0);h.G.pActive=true;h.G.upsLeft=0;h.G.nFix();
+  assert.equal(p._pau,true);h.G.nFix();assert.equal(h.G.nFixes,1);
+});
+test('stale minigame success cannot complete a replacement attempt',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night');ns.trigEv('clog',true,0);
+  const old={ev:ns.aEv,type:'nozzle'},current={ev:ns.aEv,type:'nozzle'};
+  h.G._mini=current;h.G.winNozzleMini(old);assert.equal(h.G._mini,current);
+  assert.equal(h.G.nFixes,0);
+});
+test('a retired night callback cannot open an event in the next night',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night');ns.events.emit('shutdown');
+  // Reuse the same Phaser scene instance, as Day 2 does.
+  h.G.printers[0]._pau=false;h.start('night',3);h.clock.advance(9500);
+  assert.equal(ns.aEv,null,'Night 1 nozzle timer leaked into Night 2');
+});
+test('menu pause and close restore input without unlocking a story panel',()=>{
+  const h=host();h.start('day');h.run('openGameMenu()');assert.equal(h.G.block,true);
+  h.run('closeGameMenu()');assert.equal(h.G.block,false);
+  h.G.showSto('Story','Text');h.run('openGameMenu(); closeGameMenu()');
+  assert.equal(h.G.block,true);h.G.cSto();assert.equal(h.G.block,false);
+});
+test('scheduled day arrivals wait until the dialogue closes',()=>{
+  const h=host(),ds=h.start('day');h.clock.jobs.clear();ds.oDlg('Test','','',[]);
+  ds.spawn();assert.equal(h.G.dayCli,0);
+  h.run('cDlg()');h.clock.advance(800);assert.equal(h.G.dayCli,1);
+});
+test('micro-outage waits during a modal and restores power only once',()=>{
+  const h=host();const p=loadedJob(h),ns=h.start('night',2);
+  ns.trigPwr('micro');assert.equal(p._pau,true);
+  h.G.block=true;ns.update(0,5000);assert.equal(h.G.pActive,true);
+  h.G.block=false;ns.update(0,4100);assert.equal(h.G.pActive,false);assert.equal(p._pau,false);
+  const count=h.G.breakerFixes;ns.resPwr(true);assert.equal(h.G.breakerFixes,count);
+});
+test('winning and losing nozzle/bed attempts preserve the owning failure',()=>{
+  for(const type of ['nozzle','bed']){
+    const h=host();const p=loadedJob(h),ns=h.start('night',type==='bed'?2:1);
+    ns.trigEv(type==='bed'?'bed':'clog',true,0);
+    for(let attempt=0;attempt<2;attempt++){
+      h.G._mini={type,ev:ns.aEv,tick:h.clock.add(()=>{},250,true)};
+      h.G.failNozzleMini();assert.ok(p._ev);assert.equal(h.G.nFixes,0);assert.equal(h.G.block,true);
+    }
+    h.G.gold=0;h.G.stk.parts=0;
+    const m={type,ev:ns.aEv,tick:h.clock.add(()=>{},250,true)};h.G._mini=m;
+    h.G.winNozzleMini(m);assert.equal(p._ev,null);assert.equal(h.G.nFixes,1);assert.equal(h.G.block,false);
+    h.G.winNozzleMini(m);assert.equal(h.G.nFixes,1);
+  }
+});
+test('money and assignments survive every shift checkpoint across the beta',()=>{
+  for(const day of [1,2,3])for(const phase of ['day','night']){
+    const h=host();h.start('day',day);loadedJob(h);h.G.gold=200+day;
+    h.setSaveCheckpoint(h.G,phase);
+    const restored=host(JSON.parse(h.storage.get(h.SK)));
+    restored.start(phase,day);
+    assert.equal(restored.G.phase,phase);assert.equal(restored.G.gold,200+day);
+    assert.equal(restored.G.orders.length,1);
+    if(phase==='night')assert.equal(restored.G.printers[0].order,restored.G.orders[0]);
+  }
+});
+test('legacy stock save remains loadable',()=>{
+  const h=host({day:2,gold:220,stk:{pla:3,petg:2,resin:0,tpu:0,parts:1},orders:[]});
+  assert.equal(h.G.gold,220);assert.equal(h.G.stk.pla.std,3);assert.equal(h.G.stk.petg.std,2);
+  h.start('day',2);assert.equal(h.G.phase,'day');
+});
+test('day cannot close before objectives and transitions once when ready',()=>{
+  const h=host(),ds=h.start('day');h.clock.jobs.clear();ds.endDay();assert.equal(h.G.phase,'day');
+  loadedJob(h);Object.assign(h.G,{dayOrd:3,dayPrints:2,dayBoughtPlaBasic:true});
+  ds.endDay();assert.equal(h.G.phase,'transition');assert.equal(h.elements.get('dayEnd').style.display,'flex');
+  h.G.continueToNight();h.G.continueToNight();h.clock.advance(5000);
+  assert.equal(ds.nextScene,'Night');assert.equal(h.G._dayCloseCb,null);
+});
+test('completed third night opens beta ending without creating day four',()=>{
+  const h=host();const p=loadedJob(h),ns=h.start('night',3);h.clock.jobs.clear();
+  for(let i=0;i<2;i++){ns.completePrint(p);h.G.nFix();}
+  ns.completePrint(p);h.G.upg.unlock2=true;h.G.syncPrinters();
+  h.G.dayPrints=2;h.G.breakerFixes=1;
+  ns.endNight();assert.equal(h.G.phase,'transition');h.clock.advance(5000);
+  assert.equal(h.G.day,3);assert.equal(ns.nextScene,undefined);
+  assert.equal(h.elements.get('betaEnd').style.display,'flex');
+});
+
+test('night breaker has a walkable route and E/click dispatch the same single action',()=>{
+  for(const [w,h] of [[1366,768],[1920,1080]]){
+    const env=host(null,w,h),ns=env.start('night',2);ns.trigPwr('norm');
+    // Flood the real foot hitboxes from spawn, without crossing any solid.
+    const start=[205,235],queue=[start],seen=new Set([start.join(',')]);
+    for(let i=0;i<queue.length;i++)for(const [dx,dy] of [[2,0],[-2,0],[0,2],[0,-2]]){
+      const [x,y]=[queue[i][0]+dx,queue[i][1]+dy],key=x+','+y;
+      const p=ns.rp(x,y);
+      if(x<12||x>408||y<106||y>244||seen.has(key)||ns.hitsSolid(p.x,p.y))continue;
+      seen.add(key);queue.push([x,y]);
+    }
+    assert.ok(seen.has('55,117'),'breaker is unreachable');
+    for(const t of ns.interactionTargets())assert.ok(!ns.hitsSolid(t.access.x,t.access.y),t.type+' access inside furniture');
+    Object.assign(ns.player,ns.breakerAccess);
+    ns.input.keyboard.emit('keydown-E',{repeat:false});
+    assert.equal(env.elements.get('bkg').style.display,'block');const sequence=env.G._bkOrd;
+    ns.input.emit('pointerdown',{worldX:ns.tZone.x,worldY:ns.tZone.y});
+    assert.equal(env.G._bkOrd,sequence,'second activation replaced live round');
+    env.elements.get('bkg').style.display='none';env.G.block=false;
+    ns.input.emit('pointerdown',{worldX:ns.tZone.x,worldY:ns.tZone.y});
+    assert.equal(env.elements.get('bkg').style.display,'block');assert.equal(env.G._bkRounds,1);
+    env.elements.get('bkg').style.display='none';env.G.block=false;
+    ns.input.keyboard.emit('keydown-E',{repeat:true});assert.equal(env.G.block,false);
+    const wall=ns.rp(194,115);assert.ok(ns.hitsSolid(wall.x,wall.y));
+  }
+});
+
+test('client cap recovers only missing mandatory work, one offer at a time',()=>{
+  for(const day of [1,2,3]){
+    const h=host(),ds=h.start('day',day);h.clock.jobs.clear();
+    h.G.dayCli=h.BETA_DAYS[day].maxClients;h.G.dayOrd=4;h.G.dayPrints=4;
+    ds.spawn();assert.equal(ds.clients.length,1);ds.spawn();assert.equal(ds.clients.length,1);
+    const c=ds.clients[0];ds.acceptOrd(c,'man');
+    if(day===3){ds.spawn();ds.acceptOrd(ds.clients[0],'man');}
+    const count=h.G.dayCli;ds.spawn();assert.equal(h.G.dayCli,count,'normal cap was removed');
+    assert.equal(ds.needsRecoveryClient(),false);
+    h.G.orders=[];ds.spawn();assert.equal(ds.clients.length,1);
+    ds.leaveClient(ds.clients[0],true);ds.spawn();assert.equal(ds.clients.length,1,'declining recovery must not lock the run');
+  }
+});
+test('every visible task uses the exact day/night gate predicates in both languages',()=>{
+  for(const lang of ['es','en'])for(const day of [1,2,3])for(const phase of ['day','night']){
+    const h=host(),sc=h.start(phase,day);h.G.lang=lang;
+    for(const ready of [false,true]){
+      if(ready){
+        Object.assign(h.G,{dayOrd:4,dayPrints:4,dayBoughtPlaBasic:true,dayBoughtMaterial:1,nightDone:2,nFixes:2,breakerFixes:1});
+        h.G.upg.unlock2=true;h.G.syncPrinters();
+        if(phase==='day'){loadedJob(h);h.G.orders.push({...h.G.orders[0]});}
+        else sc.forcedFails.forEach(e=>{e.triggered=true;e.resolved=true;});
+      }
+      h.run('updateProPanel()');
+      const tasks=h.run('betaObjectives()');
+      assert.equal(phase==='day'?sc.dayObjectiveReady():sc.nightObjectiveReady(),tasks.every(t=>t.done));
+      for(const task of tasks)assert.ok(h.elements.get('objList').innerHTML.includes('<b>'+task.txt+'</b>'));
+    }
+  }
+});
+test('day three must retain two spares to close',()=>{
+  const h=host(),ds=h.start('day',3);loadedJob(h);h.G.orders.push({...h.G.orders[0]});
+  h.G.dayOrd=4;h.G.dayPrints=2;h.G.stk.parts=1;
+  assert.equal(ds.dayObjectiveReady(),false);h.G.stk.parts=2;assert.equal(ds.dayObjectiveReady(),true);
+});
+test('night two assignment remains complete after cashout',()=>{
+  const h=host();const p=loadedJob(h),ns=h.start('night',2);
+  const assigned=()=>h.run("betaObjectives('night').find(t=>t.id==='assign').done");
+  assert.equal(assigned(),true);ns.completePrint(p);h.G.nFix();ns.completePrint(p);
+  assert.equal(p.order,null);assert.equal(assigned(),true);
+});
+test('acceptance never counts unearned money and day cashout is idempotent',()=>{
+  const h=host(),ds=h.start('day',2);ds.spawn();const c=ds.clients[0],pay=c.pay;
+  ds.acceptOrd(c,'man');assert.equal(h.G.dayEarn,0);
+  const o=h.G.orders[0],p=h.G.printers[0];o.filament={rep:0};p.busy=true;p.order=o;
+  ds.completePrint(p);assert.equal(h.G.dayEarn,pay);ds.completePrint(p);assert.equal(h.G.dayEarn,pay);
+});
+
+test('no-money no-material run can buy only essential stock on explicit credit',()=>{
+  const h=host(),ds=h.start('day');ds.spawn();ds.acceptOrd(ds.clients[0],'man');h.G.gold=0;
+  const cost=h.run("getFilPrice('pla','eco')"),o=h.G.orders[0];
+  h.context.confirm=()=>false;h.G.bStk('pla',cost,'eco');assert.equal(h.G.gold,0);assert.equal(h.G.stk.pla.eco,0);
+  h.context.confirm=()=>true;h.G.bStk('pla',cost,'eco');
+  assert.equal(h.G.gold,-cost-Math.ceil(cost*.1));assert.equal(h.G.dayBoughtPlaBasic,true);
+  assert.equal(ds.assignOrderToPrinter(h.G.printers[0],o),true);
+  const debt=h.G.gold;h.G.buyConsumable('coffee');assert.equal(h.G.gold,debt);
+  ds.completePrint(h.G.printers[0]);assert.equal(h.G.gold,debt+o.pay);
+});
+test('credit stops at required material and is unavailable while another job can pay',()=>{
+  const h=host(),ds=h.start('day',2);ds.spawn();ds.acceptOrd(ds.clients[0],'man');
+  const o=h.G.orders[0];o.material='pla';o.units=2;h.G.stk.pla.eco=0;h.G.gold=0;
+  const cost=h.run("getFilPrice('pla','eco')");
+  h.G.bStk('pla',cost,'eco');h.G.bStk('pla',cost,'eco');assert.equal(h.G.stk.pla.eco,2);
+  const debt=h.G.gold;h.G.bStk('pla',cost,'eco');h.G.bStk('pla',1,'std');
+  assert.equal(h.G.gold,debt);assert.equal(h.G.stk.pla.std,0);
+  assert.equal(h.run('betaCanEarn()'),true);
+});
+test('night three can finance P2 after all income is exhausted, not beforehand',()=>{
+  const h=host();const p=loadedJob(h),ns=h.start('night',3);h.G.gold=0;
+  h.G._bUpg('unlock2');assert.equal(h.G.upg.unlock2,undefined);
+  for(let i=0;i<2;i++){ns.completePrint(p);h.G.nFix();}ns.completePrint(p);h.G.gold=0;
+  h.G._bUpg('unlock2');assert.equal(h.G.upg.unlock2,true);assert.equal(h.G.gold,-440);
+  h.G._bUpg('unlock2');assert.equal(h.G.gold,-440);
+  h.setSaveCheckpoint(h.G,'night');const restored=host(JSON.parse(h.storage.get(h.SK)));
+  assert.equal(restored.G.gold,-440);assert.equal(restored.G.upg.unlock2,true);
+});
+test('mandatory spares can recover with no income and stop at two',()=>{
+  const h=host();h.start('day',3);h.G.gold=0;h.G.stk.parts=0;h.G.orders=[];
+  const cost=h.G.market.parts.cur;
+  h.G.bStk('parts',cost,'');h.G.bStk('parts',cost,'');const debt=h.G.gold;
+  h.G.bStk('parts',cost,'');assert.equal(h.G.stk.parts,2);assert.equal(h.G.gold,debt);
+});
+test('broken printer recovery is idempotent and preserves an active blackout',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night',3);h.G.gold=0;
+  const p=h.G.printers[0];p.broken=true;p.busy=false;h.G.pActive=true;h.G.upsLeft=0;
+  ns.repairBrokenPrinter(0);assert.equal(p.broken,false);assert.equal(p._pau,true);
+  const debt=h.G.gold;ns.repairBrokenPrinter(0);assert.equal(h.G.gold,debt);
+});
+
+function finishThirdNight(h){
+  const p=loadedJob(h),ns=h.start('night',3);h.clock.jobs.clear();
+  for(let i=0;i<2;i++){ns.completePrint(p);h.G.nFix();}ns.completePrint(p);
+  h.G.upg.unlock2=true;h.G.syncPrinters();h.G.dayPrints=2;h.G.breakerFixes=1;
+  ns.endNight();h.clock.advance(5000);return ns;
+}
+test('beta result survives reload and boots into the ending, without a new night',()=>{
+  const h=host();finishThirdNight(h);
+  const saved=JSON.parse(h.storage.get(h.SK));assert.ok(saved.checkpoint.betaResult);assert.equal(saved.version,2);
+  const restored=host(saved),ns=restored.start('night',3);
+  assert.equal(restored.G.phase,'complete');assert.equal(restored.G.day,3);
+  assert.equal(restored.elements.get('betaEnd').style.display,'flex');
+  assert.equal(ns.pObjs,undefined,'completed save must not restart printing');
+  assert.deepEqual(JSON.parse(JSON.stringify(restored.G.betaResult)),JSON.parse(JSON.stringify(h.G.betaResult)));
+});
+test('back to menu preserves completed save; continue reopens final; reset needs confirmation',()=>{
+  const h=host();finishThirdNight(h);const saved=h.storage.get(h.SK);let reloads=0;
+  h.context.location.reload=()=>reloads++;
+  h.G.betaToMenu();assert.equal(h.storage.get(h.SK),saved);assert.equal(h.G.menuOpen,true);
+  assert.equal(h.elements.get('betaEnd').style.display,'none');
+  h.run('closeGameMenu()');assert.equal(h.G.phase,'complete');assert.equal(h.elements.get('betaEnd').style.display,'flex');
+  h.context.confirm=()=>false;h.G.confirmReset();assert.equal(h.storage.get(h.SK),saved);assert.equal(reloads,0);
+  h.context.confirm=()=>true;h.G.confirmReset();assert.equal(h.storage.has(h.SK),false);assert.equal(reloads,1);
+  const fresh=host();assert.equal(fresh.G.day,1);assert.equal(fresh.G.betaResult,null);
+});
+test('final labels localize and show recorded statistics, never accepted orders as completions',()=>{
+  const h=host();finishThirdNight(h);h.G.stats.ord=900;
+  for(const lang of ['es','en']){
+    h.G.lang=lang;h.G.showBetaEnd();
+    assert.equal(h.elements.get('beTitle').textContent,lang==='es'?'FIN DE LA BETA':'END OF THE BETA');
+    assert.ok(!h.elements.get('beTease').textContent.includes('900'));
+    assert.equal(h.elements.get('beWishlist').style.display,'none');
+  }
+});
+test('null and malformed save fields do not crash scenes or lose valid order references',()=>{
+  const order={pr:{n:'Valid',t:2},material:'pla',units:1,pay:100};
+  const h=host({version:2,checkpoint:{day:2,phase:'night',gold:120,stk:null,cons:42,upg:null,emp:[],stats:null,market:{pla:null},orders:[null,order],printers:[{id:0,busy:true,orderIndex:1},null]}});
+  assert.equal(h.G.gold,120);assert.equal(h.G.orders.length,1);assert.equal(h.G.printers[0].order,h.G.orders[0]);
+  h.start('night',2);assert.equal(h.G.phase,'night');assert.deepEqual(h.messages,[]);
+});
+test('legacy empty night reopens that day instead of leaving impossible missions',()=>{
+  const h=host({version:2,checkpoint:{day:2,phase:'night',gold:77,orders:[],stk:{pla:4,parts:2}}});
+  assert.equal(h.G.resumePhase,'day');h.start('day',2);
+  assert.equal(h.G.day,2);assert.equal(h.G.gold,77);assert.equal(h.G.stk.pla.std,4);
+});
+test('denied storage cannot crash music, scenes, final or reset',()=>{
+  const h=host(null,1366,768,{denyStorage:true});h.run('BGM.toggle()');h.start('day');
+  assert.equal(h.doSave(h.G),false);finishThirdNight(h);
+  assert.ok(h.elements.get('beSaveWarning').textContent);h.G.confirmReset();assert.deepEqual(h.messages,[]);
+});
+test('unlocking P2 refreshes the existing clean object layer without replacing an asset',()=>{
+  const h=host(),ns=h.start('night',3);let texture=null;
+  ns.textures.exists=key=>key===h.run('NIGHT_ROOM_OBJECT_VARIANTS[2].key');
+  ns.nightObjectsLayer={active:true,setTexture:key=>texture=key};
+  h.G.upg.unlock2=true;h.G.syncPrinters();ns.ensureUnlockedPrinterVisuals();
+  assert.equal(texture,h.run('NIGHT_ROOM_OBJECT_VARIANTS[2].key'));assert.equal(ns.pObjs.length,2);
+});
+
+test('scripted campaign completes all six shifts with actual orders, purchases and gates',()=>{
+  for(const overspend of [false,true])for(const [w,height] of [[1366,768],[1920,1080]]){
+    const h=host(null,w,height);
+    function wasteCash(){if(overspend)for(let i=0;i<100&&h.G.gold>=45;i++)h.G.buyConsumable('coffee');}
+    function buy(mat,id){h.G.bStk(mat,h.run(`getFilPrice('${mat}','${id}')`),id);}
+    function printOne(scene){
+      const candidates=h.G.orders.map(o=>{
+        const f=h.run(`cheapestBetaFilament('${o.material}')`);
+        return {o,f,cost:o.filament?0:Math.max(0,o.units-h.run(`matStock('${o.material}')`))*h.run(`getFilPrice('${o.material}','${f.id}')`)};
+      }).sort((a,b)=>a.cost-b.cost);
+      const {o,f}=candidates[0];
+      for(let tries=0;!o.filament&&h.run(`matStock('${o.material}')`)<o.units&&tries<50;tries++){
+        const before=h.G.gold;buy(o.material,f.id);assert.notEqual(h.G.gold,before,'essential purchase could not progress');
+      }
+      const p=h.G.printers[0];assert.equal(scene.assignOrderToPrinter(p,o),true);
+      // Invoke completion/result callbacks, not a claim of played mini-game input.
+      for(let attempts=0;p.order&&attempts<5;attempts++){
+        scene.completePrint(p);if(scene.aEv)h.G.nFix();
+      }
+      assert.equal(p.order,null);wasteCash();
+    }
+    for(let day=1;day<=3;day++){
+      const ds=h.start('day',day);h.clock.jobs.clear();wasteCash();
+      const needs=h.run('betaDayNeeds()');
+      for(let i=0;i<needs.accept;i++){ds.spawn();assert.ok(ds.clients[0]);ds.acceptOrd(ds.clients[0],'man');}
+      if(day===1)buy('pla','eco');
+      if(day===2){const o=h.G.orders[0],f=h.run(`cheapestBetaFilament('${o.material}')`);buy(o.material,f.id);}
+      for(let i=0;i<needs.produce;i++)printOne(ds);
+      assert.equal(ds.dayObjectiveReady(),true,'day '+day+' could not close');
+      h.clock.jobs.clear();ds.endDay();h.G.continueToNight();h.clock.advance(5000);
+      assert.equal(ds.nextScene,'Night');
+      const ns=h.start('night',day);h.clock.jobs.clear();
+      if(day>1){ns.trigPwr(day===2?'norm':'long');ns.resPwr(true);}
+      while(h.G.orders.length)printOne(ns);
+      if(day===3)h.G._bUpg('unlock2');
+      assert.equal(ns.nightObjectiveReady(),true,'night '+day+' could not close');
+      h.clock.jobs.clear();ns.endNight();h.clock.advance(5000);
+      if(day<3)assert.equal(h.G.day,day+1);
+    }
+    assert.equal(h.G.phase,'complete');assert.equal(h.G.day,3);assert.ok(h.G.betaResult);
+    assert.deepEqual(h.messages,[]);
+  }
+});
+
+test('job trapped on a broken printer is not counted as available income',()=>{
+  const h=host();loadedJob(h);h.G.upg.unlock2=true;const ns=h.start('night',3);
+  h.G.printers[0].broken=true;h.G.gold=0;
+  assert.equal(h.run('betaCanEarn()'),false);ns.repairBrokenPrinter(0);
+  assert.equal(h.G.printers[0].broken,false);assert.ok(h.G.gold<0);
+});
+test('old jobs using a locked material can buy only its entry grade',()=>{
+  const h=host();const p=loadedJob(h);p.order.filament=null;p.order.material='resin';
+  const ns=h.start('night',2);h.G.gold=0;
+  assert.equal(h.run("betaShopAllows('resin','basic')"),true);
+  assert.equal(h.run("betaShopAllows('resin','std')"),false);
+  h.G.bStk('resin',0,'basic');assert.equal(h.prepareOrderMaterial(p.order),true);
+  assert.equal(h.run("betaShopAllows('resin','basic')"),false);
+  ns.completePrint(p);h.G.nFix();ns.completePrint(p);assert.equal(h.G.orders.length,0);
+});
+
+test('insufficient legacy night quota reopens day with valid jobs intact',()=>{
+  const o={pr:{n:'Old job',t:2},material:'pla',units:1,pay:100};
+  const h=host({version:2,checkpoint:{day:2,phase:'night',dayPrints:0,gold:50,orders:[o],printers:[]}});
+  assert.equal(h.G.resumePhase,'day');assert.equal(h.G.orders.length,1);assert.equal(h.G.gold,50);
+});
+test('old assignments on locked printers return to queue without losing prepaid material',()=>{
+  const o={pr:{n:'Old job',t:2},material:'pla',units:1,pay:100,filament:{id:'eco',rep:0}};
+  const h=host({version:2,checkpoint:{day:2,phase:'night',dayPrints:2,orders:[o],printers:[{}, {id:8,orderIndex:0,busy:true}]}});
+  const ns=h.start('night',2);assert.equal(h.G.printers[1].order,null);
+  assert.equal(ns.assignOrderToPrinter(h.G.printers[0],h.G.orders[0]),true);
+});
+test('legacy power protection satisfies its task without demanding an impossible outage',()=>{
+  for(const [day,upgrade] of [[2,'ups2'],[3,'gen'],[3,'solar']]){
+    const h=host();h.G.upg[upgrade]=true;h.start('night',day);
+    assert.equal(h.run("betaObjectives('night').find(t=>t.id==='power').done"),true);
+  }
+});
+
+let failed=0;
+for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}
+console.log(`${tests.length-failed}/${tests.length} passed. Logic only; real rendering/audio/file:// QA remains mandatory.`);
+process.exitCode=failed?1:0;

@@ -160,21 +160,25 @@ function tickMate(dt){
   }
   updateMateHUD();
 }
-function cDlg(){document.getElementById('dlg').style.display='none';const d=game.scene.getScene('Day');if(d)d.dlgOpen=false;}
+function cDlg(){document.getElementById('dlg').style.display='none';G._dch=null;const d=game.scene.getScene('Day');if(d)d.dlgOpen=false;syncGameplayBlock();}
 function isShown(id){const el=document.getElementById(id);return !!el&&getComputedStyle(el).display!=='none';}
+function syncGameplayBlock(){
+  G.block=!!(G.menuOpen||G.phase==='transition'||['dlg','shop','sto','evp','miniGame','bkg','dayEnd','betaEnd'].some(isShown));
+}
 function setGameMenu(open){
   const el=document.getElementById('titleScreen');
   if(!el)return;
   G.menuOpen=!!open;
   el.style.display=open?'flex':'none';
+  syncGameplayBlock();
   if(typeof game!=='undefined'&&game.scene){
     const key=G.phase==='night'?'Night':'Day';
-    if(open)game.scene.pause(key);else game.scene.resume(key);
+    if(open)game.scene.pause(key);else if(!G.betaResult)game.scene.resume(key);
   }
   if(open){const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)maker.value=G.makerName||'';if(shop)shop.value=G.shopName||'';setTimeout(()=>focusPanelFirst('#titleScreen .makerInput,#titleScreen .tsBtn,#titleScreen .langBtn'),0);}
 }
-function openGameMenu(){setGameMenu(true);}
-function closeGameMenu(){const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)G.makerName=maker.value.trim().slice(0,18);if(shop)G.shopName=shop.value.trim().slice(0,22);const obj=document.getElementById('obj');if(obj)obj.textContent=makerDisplayName()+' · '+shopDisplayName();const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=G.shopName?shopDisplayName():gameTitle();doSave(G);setGameMenu(false);SFX.ok();}
+function openGameMenu(){if(['miniGame','evp','bkg','dayEnd','betaEnd'].some(isShown)||G.phase==='transition')return;setGameMenu(true);}
+function closeGameMenu(){if(G.betaResult){G.showBetaEnd();return;}const maker=document.getElementById('makerName'),shop=document.getElementById('shopName');if(maker)G.makerName=maker.value.trim().slice(0,18);if(shop)G.shopName=shop.value.trim().slice(0,22);const obj=document.getElementById('obj');if(obj)obj.textContent=makerDisplayName()+' · '+shopDisplayName();const brand=document.getElementById('brand');if(brand)brand.childNodes[0].nodeValue=G.shopName?shopDisplayName():gameTitle();doSave(G);setGameMenu(false);SFX.ok();}
 function clickButton(sel,idx=0){
   const list=[...document.querySelectorAll(sel)].filter(b=>!b.disabled&&b.offsetParent!==null);
   if(list[idx]){list[idx].click();return true;}
@@ -377,6 +381,7 @@ document.addEventListener('keydown',e=>{
     if(k==='i'){clickButton('#ebs .eb.skip',0);e.preventDefault();return;}
   }
   if(handlePanelKeys('dayEnd','#dayEnd .deBtn',k,e,1))return;
+  if(handlePanelKeys('betaEnd','#betaEnd .deBtn',k,e,1))return;
   if(isShown('dayEnd')&&(k==='enter'||k===' ')){G.continueToNight();e.preventDefault();return;}
   if(handleStoryKeys(k,e))return;
   if(handleDialogKeys(k,e))return;
@@ -393,6 +398,7 @@ document.addEventListener('keydown',e=>{
     if(k==='s'){G.tab('stk');e.preventDefault();return;}
     if(/^[1-9]$/.test(k)){if(buyShopCard(Number(k)-1))e.preventDefault();return;}
   }
+  if(G.block||G.menuOpen||G.phase==='transition')return;
   if(!G.block&&k==='i'){G.showInventory();e.preventDefault();return;}
   if(!G.block&&k==='o'){G.openShop('stk');e.preventDefault();return;}
   if(k==='m'){G.tomarMate();e.preventDefault();return;}
@@ -450,7 +456,7 @@ G.continueToNight=function(){
   G._dayCloseCb=null;
   if(cb)cb();
 };
-window.resetGame=()=>{localStorage.removeItem(SK);location.reload();};
+window.resetGame=()=>{try{localStorage.removeItem(SK);location.reload();}catch(e){showNotif(tr('storageUnavailable'),'error');}};
 G.confirmReset=function(){
   if(window.confirm(tr('confirmReset')))window.resetGame();
 };
@@ -459,16 +465,23 @@ G.confirmReset=function(){
 // Fernando: cuando publiques la página de Steam, pegá su URL acá (ej: 'https://store.steampowered.com/app/XXXXXX/').
 // Dejala en '' hasta entonces: el botón mostrará "próximamente" y no navega a ningún lado.
 const STEAM_PAGE_URL='';
-G.showBetaEnd=function(stats){
+G.showBetaEnd=function(){
   const el=document.getElementById('betaEnd');
   if(!el){setGameMenu(true);return;}
   const set=(id,txt)=>{const n=document.getElementById(id);if(n)n.textContent=txt;};
-  set('beK',tr('betaThanksK'));
+  G.phase='complete';G.menuOpen=false;G.block=true;
+  document.getElementById('titleScreen').style.display='none';
+  set('beK','FIRST LAYER');
   set('beTitle',tr('betaEndTitle'));
-  set('beMood',stats||'');
-  const tease=document.getElementById('beTease');if(tease)tease.innerHTML=tr('betaTease');
+  set('beMood',tr('betaEndSub'));
+  const stats=G.betaResult;
+  const tease=document.getElementById('beTease');
+  if(tease)tease.textContent=stats?tr('finalMoney')+': $'+stats.gold+' | '+tr('finalRep')+': '+stats.rep+' | '+tr('finalRepairs')+': '+stats.repairs:'';
   set('beWishlist',tr('betaWishlistBtn'));
   set('beMenu',tr('betaMenuBtn'));
+  set('beReset',tr('betaResetBtn'));
+  const wishlist=document.getElementById('beWishlist');if(wishlist)wishlist.style.display=STEAM_PAGE_URL?'':'none';
+  set('beSaveWarning',G.saveUnavailable?tr('storageUnavailable'):'');
   el.style.display='flex';
   setTimeout(()=>focusPanelFirst('#betaEnd .deBtn'),0);
   SFX.ok();
@@ -482,5 +495,6 @@ G.betaWishlist=function(){
   window.open(STEAM_PAGE_URL,'_blank','noopener');
 };
 G.betaToMenu=function(){
-  window.resetGame();
+  document.getElementById('betaEnd').style.display='none';
+  setGameMenu(true);
 };

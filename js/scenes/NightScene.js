@@ -55,19 +55,26 @@ class NightScene extends Phaser.Scene{
     if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
   }
   create(){
+    if(G.betaResult){G.showBetaEnd();this.scene.pause();return;}
     this.W=this.scale.width;this.H=this.scale.height;
     // Phaser reuses this scene instance after Night 1. Its display objects were
     // destroyed on stop, so Night 2 must rebuild the same workshop dressing.
-    this.envPropsPlaced=false;this.nightRoomLayers=null;this.roomLayout=null;this.powerSprite=null;this.bgImg=null;this.windowMood=null;
+    this.envPropsPlaced=false;this.nightRoomLayers=null;this.nightObjectsLayer=null;this.roomLayout=null;this.powerSprite=null;this.bgImg=null;this.windowMood=null;
     ['dlg','evp','miniGame','bkg'].forEach(id=>{const el=document.getElementById(id);if(el)el.style.display='none';});
     this.beta=BETA_DAYS[G.day]||BETA_DAYS[3];
     G.phase='night';G.block=false;
     BGM.playNight();
-    this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;
+    this._nightRun={};
+    this.events.once('shutdown',()=>{
+      this._nightRun=null;
+      if(G._mini){clearInterval(G._mini.tick);G._mini=null;}
+    });
+    this.dur=80000;this.el=0;this.aEv=null;this.pObjs=[];this.near=null;G.nFixes=0;
     this.earn=0;this.done=0;G.nightDone=0;G.breakerFixes=0;G.lastPowerResolved=null;this.wt=0;this.st=0;this.wb=0;this.dir=1;this._actBusy=false;this.nightOvertimeWarned=false;this.fastCloseNight=false;
     this.startPwr=(G.stats&&G.stats.pwr)||0;
     const tabPt=this.rp(24,70);
     this.bkOrd=[];this.bkNext=0;this.tZone={x:tabPt.x,y:tabPt.y};
+    this.breakerAccess=this.rp(55,117);
     if(G.syncPrinters)G.syncPrinters();
     G.printers.forEach(p=>{if(p.order&&!p.broken&&!p.locked){p.busy=true;p._dayLoaded=false;}});
     this.buildWorld();this.createPlayer();this.setupKeys();this.setupPointer();
@@ -97,7 +104,7 @@ class NightScene extends Phaser.Scene{
     if(this.pObjs)this.pObjs.forEach(po=>po.lb.setText('P'+(po.p.id+1)+'\n'+(po.p.order?po.p.order.pr.e+po.p.order.pr.n.slice(0,8):'💤')));
   }
   assignOrderToPrinter(p,o){
-    if(!p||!o||p.busy||p.broken||p.locked)return false;
+    if(!p||!o||p.busy||p.broken||p.locked||!G.orders.includes(o))return false;
     if(G.printers.some(x=>x.order===o)){showNotif(tr('jobLoaded'),'info');return false;}
     if(!prepareOrderMaterial(o)){
       o.waitingMaterial=true;doSave(G);
@@ -140,14 +147,14 @@ class NightScene extends Phaser.Scene{
     document.getElementById('stoTabs').innerHTML='';
     document.getElementById('sp').textContent=tr('brokenPrinter')+'\n'+tr('cost')+': $'+cost;
     document.getElementById('stoActions').innerHTML=
-      '<button class="eb fix"'+(G.gold>=cost?'':' disabled')+' onclick="game.scene.getScene(\'Night\').repairBrokenPrinter('+p.id+')">🔧 '+tr('repair')+' $'+cost+'</button>';
+      '<button class="eb fix"'+(G.gold>=cost||betaCreditAllows('repair',p.id)?'':' disabled')+' onclick="game.scene.getScene(\'Night\').repairBrokenPrinter('+p.id+')">🔧 '+tr(G.gold>=cost?'repair':'buyOnCredit')+' $'+cost+'</button>';
     document.getElementById('sto').style.display='block';
     setTimeout(()=>focusPanelFirst('#stoActions .eb'),0);
   }
   repairBrokenPrinter(id){
-    const p=G.printers[id],cost=this.manualRepairCost(p);if(!p)return;
-    if(G.gold<cost){showNotif('💸 '+tr('noFunds'),'error');return;}
-    G.gold-=cost;p.broken=false;p._ev=null;p._pau=false;if(p.order)p.busy=true;
+    const p=G.printers[id],cost=this.manualRepairCost(p);if(!p||!p.broken)return;
+    if(!payBetaPurchase(cost,'repair',id))return;
+    p.broken=false;p._ev=null;p._pau=!!(G.pActive&&!G.upsLeft);if(p.order)p.busy=true;
     G.nFixes=(G.nFixes||0)+1;G.stats.fix++;document.getElementById('hg').textContent=G.gold;
     G.cSto();SFX.fix();try{playPlayerAction(this,'repair');}catch(e){}this.juice('IMPRESORA SALVADA','P'+(p.id+1)+' vuelve al taller','success');showNotif('P'+(p.id+1)+' '+tr('repair')+' OK','success');this.refreshPrinterLabels();doSave(G);
   }
@@ -247,6 +254,7 @@ class NightScene extends Phaser.Scene{
   }
   ensureUnlockedPrinterVisuals(){
     if(!this.pObjs)return;
+    refreshNightRoomObjects(this);
     const unlocked=G.printers.filter(p=>!p.locked);
     const slots=this.printerSlots();
     unlocked.forEach((p,i)=>{
@@ -290,30 +298,39 @@ class NightScene extends Phaser.Scene{
   refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,true);if(this.pSp){this.pSp.setScale(2.45);this.pGr.setVisible(false);}}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
-    this.input.keyboard.on('keydown-E',()=>{
-      if(G.block||this._actBusy)return;
-      const dS=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.shopZone.x,this.shopZone.y);
-      if(dS<78){G.openShop('stk');return;}
-      const dI=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.invZone.x,this.invZone.y);
-      if(dI<78){G.showInventory();return;}
-      if(this.near)this.openPrinterQueue(this.near);
-      const dT=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.tZone.x,this.tZone.y);
-      if(dT<90&&G.pActive&&G.pType&&G.pType.id!=='micro')this.openBk();
+    this.input.keyboard.on('keydown-E',e=>{
+      if(e&&e.repeat)return;
+      this.activateTarget(this.targetAt(this.player.x,this.player.y,false));
     });
   }
   setupPointer(){
     this.input.on('pointerdown',p=>{
-      if(G.block||this._actBusy||G.phase!=='night')return;
-      const x=p.worldX,y=p.worldY;
-      const dS=Phaser.Math.Distance.Between(x,y,this.shopZone.x,this.shopZone.y);
-      if(dS<82){G.openShop('stk');return;}
-      const dI=Phaser.Math.Distance.Between(x,y,this.invZone.x,this.invZone.y);
-      if(dI<82){G.showInventory();return;}
-      const dT=Phaser.Math.Distance.Between(x,y,this.tZone.x,this.tZone.y);
-      if(dT<95&&G.pActive&&G.pType&&G.pType.id!=='micro'){this.openBk();return;}
-      const po=this.printerAt(x,y,86);
-      if(po)this.openPrinterQueue(po);
+      this.activateTarget(this.targetAt(p.worldX,p.worldY,true));
     });
+  }
+  interactionTargets(){
+    const targets=[];
+    if(G.pActive&&G.pType&&G.pType.id!=='micro')targets.push({type:'breaker',visual:this.tZone,access:this.breakerAccess,label:tr('boardTitle')});
+    targets.push({type:'shop',visual:this.shopZone,access:this.rp(203,212),label:tr('shopTitle')});
+    targets.push({type:'inventory',visual:this.invZone,access:this.rp(93,223),label:tr('inventory')});
+    this.pObjs.forEach(po=>targets.push({type:'printer',po,visual:{x:po.px,y:po.py},access:{x:po.px,y:this.rp(0,126).y},label:'P'+(po.p.id+1)+' '+tr('interact')}));
+    return targets;
+  }
+  targetAt(x,y,click){
+    let best=null,distance=20*this.room().s;
+    this.interactionTargets().forEach(t=>{
+      const point=click?t.visual:t.access;
+      const d=Phaser.Math.Distance.Between(x,y,point.x,point.y);
+      if(d<distance){best=t;distance=d;}
+    });
+    return best;
+  }
+  activateTarget(t){
+    if(!t||G.block||G.menuOpen||this._actBusy||G.phase!=='night')return;
+    if(t.type==='breaker')return this.openBk();
+    if(t.type==='shop')return G.openShop('stk');
+    if(t.type==='inventory')return G.showInventory();
+    if(t.type==='printer')return this.openPrinterQueue(t.po);
   }
   printerAt(x,y,range){
     let best=null,md=range;
@@ -323,19 +340,28 @@ class NightScene extends Phaser.Scene{
     });
     return best;
   }
+  nightDelay(delay,callback){
+    const run=this._nightRun;
+    return this.time.delayedCall(delay,()=>{
+      if(run&&run===this._nightRun&&G.phase==='night')callback();
+    });
+  }
   schedPwr(){
     if(G.upg.solar)return;
     if(this.beta&&this.beta.forcedPower){
-      this.beta.forcedPower.forEach(e=>this.time.delayedCall(e.at,()=>this.trigPwr(e.id)));
+      this.beta.forcedPower.forEach(e=>this.nightDelay(e.at,()=>this.trigPwr(e.id)));
       return;
     }
     if(Math.random()>Math.min(.85,.3+G.day*.04))return;
     [8,22,42,58].filter(()=>Math.random()>.4).forEach(s=>
-      this.time.delayedCall(s*1000+Math.random()*3500,()=>this.trigPwr()));
+      this.nightDelay(s*1000+Math.random()*3500,()=>this.trigPwr()));
   }
   trigPwr(forceId){
-    if(G.phase!=='night'||G.pActive||G.upg.solar)return;
-    G.stats.pwr++;
+    if(G.phase!=='night'||G.upg.solar)return;
+    if(G.pActive||G.block||G.menuOpen||this.aEv||G._mini){
+      if(forceId)this.nightDelay(750,()=>this.trigPwr(forceId));
+      return;
+    }
     let pool=PE.filter(e=>{
       if(e.id==='micro'&&G.upg.prot)return false;
       if(e.id==='norm'&&G.upg.ups2)return false;
@@ -345,6 +371,7 @@ class NightScene extends Phaser.Scene{
     if(forceId)pool=pool.filter(e=>e.id===forceId);
     if(!pool.length)return;
     const ev=forceId?pool[0]:pool[Math.floor(Math.random()*pool.length)];
+    G.stats.pwr++;
     const evLabel=powerText(ev);
     G.pActive=true;G.pType=ev;G.pTimer=ev.dur;G.pMax=ev.dur;
     G.upsLeft=G.upg.ups2?600000:G.upg.ups1?180000:0;
@@ -357,12 +384,11 @@ class NightScene extends Phaser.Scene{
     document.getElementById('phint').textContent=ev.id==='micro'?tr('waitReturn'):tr('runToBreaker');
     document.getElementById('ptag').className='ptag pwr';
     document.getElementById('ptag').textContent='⚡ CORTE DE LUZ';
-    if(ev.id==='micro')this.time.delayedCall(ev.dur,()=>this.resPwr(false));
     this.drawTblN(true);
     sLog('⚡ '+evLabel.ti+' — '+(ev.id==='micro'?tr('powerLogWait'):tr('powerLogRun')));
   }
   openBk(){
-    if(!G.pActive||!G.pType||G.pType.id==='micro')return;
+    if(G.block||G.menuOpen||!G.pActive||!G.pType||G.pType.id==='micro')return;
     G.block=true;G._bkRounds=G.pType.id==='long'?2:1;G._bkRound=0;
     document.getElementById('bkg').style.display='block';
     this.startBreakerRound();
@@ -393,20 +419,29 @@ class NightScene extends Phaser.Scene{
     else showNotif('P'+(p.id+1)+': '+tr('noWorkTonight'));
   }
   schedEvs(){
+    this.forcedFails=(this.beta&&this.beta.forcedFails||[]).map(e=>({...e,triggered:false,resolved:false}));
     if(this.beta&&this.beta.forcedFails){
-      this.beta.forcedFails.forEach(e=>this.time.delayedCall(e.at,()=>this.trigEv(e.id,true)));
+      this.forcedFails.forEach((e,i)=>this.nightDelay(e.at,()=>this.trigEv(e.id,true,i)));
       return;
     }
     const n=2+Math.floor(G.day/3);
     [9,18,30,44,56].slice(0,Math.min(n,5)).forEach(s=>
-      this.time.delayedCall(s*1000+Math.random()*3000,()=>this.trigEv()));
+      this.nightDelay(s*1000+Math.random()*3000,()=>this.trigEv()));
   }
-  trigEv(forceId,forced=false){
+  trigEv(forceId,forced=false,scriptIndex){
     if(G.phase!=='night')return;
+    if(forced&&scriptIndex===undefined)scriptIndex=(this.forcedFails||[]).findIndex(e=>e.id===forceId&&!e.triggered);
+    const scripted=forced&&this.forcedFails&&this.forcedFails[scriptIndex];
+    if(forced&&(!scripted||scripted.triggered))return;
+    // Scripted events wait their turn; never replace a live repair or cover a modal.
+    if(G.block||G.menuOpen||this.aEv||G._mini){
+      if(forced)this.nightDelay(750,()=>this.trigEv(forceId,true,scriptIndex));
+      return;
+    }
     let busy=G.printers.filter(p=>p.busy&&!p.broken&&!p._ev&&!p._pau);
     // A failure can only hit a printer that's actually printing. If nothing's running yet,
     // a forced (beta) fail waits and retries until the player has a job on a printer.
-    if(!busy.length){if(forced)this.time.delayedCall(3500,()=>this.trigEv(forceId,true));return;}
+    if(!busy.length){if(forced)this.nightDelay(750,()=>this.trigEv(forceId,true,scriptIndex));return;}
     const avgRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||0),0)/busy.length;
     if(!forced&&Math.random()>Math.min(.9,.22+G.day*.025+avgRisk))return;
     const totalRisk=busy.reduce((s,p)=>s+(p.order&&p.order.risk||.05),0);
@@ -448,10 +483,11 @@ class NightScene extends Phaser.Scene{
     }
     const defLabel=evText(def);
     const matLine=fil?(G.lang==='en'?'\nMaterial used: ':'\nMaterial usado: ')+fil.n:(G.day===1&&forceId==='clog'&&G.dayUsedPlaBasic?(G.lang==='en'?'\nMaterial used earlier: PLA Basic':'\nMaterial usado antes: PLA Basic'):'');
-    const ev={...defLabel,printer:tgt,desc:defLabel.de.replace('{P}','P'+(tgt.id+1))+matLine,resolved:false};
+    const ev={...defLabel,printer:tgt,desc:defLabel.de.replace('{P}','P'+(tgt.id+1))+matLine,resolved:false,scriptIndex:scripted?scriptIndex:null};
     // Beta: fixes are always free and the nozzle minigame always has its consumable, so the player
     // can never get soft-locked once the skip button is removed (see showEv).
     if(BETA_DAYS[G.day]){ev.g=0;ev.pts=0;if(ev.id==='clog'){ensureConsumables();if(G.cons.cleaner<1)G.cons.cleaner=1;}}
+    if(scripted)scripted.triggered=true;
     tgt._ev=ev;this.aEv=ev;G.block=true;SFX.alm();
     const po=this.pObjs.find(o=>o.p===tgt);
     if(po){po.wn.setText('⚠️');this.tweens.add({targets:po.wn,alpha:{from:1,to:0},duration:350,yoyo:true,repeat:5});}
@@ -485,7 +521,23 @@ class NightScene extends Phaser.Scene{
   juice(title,sub='',type='success'){
     nightJuice(this,title,sub,type);
   }
+  resolveFailure(ev){
+    if(!ev||ev.resolved||this.aEv!==ev||ev.printer._ev!==ev)return false;
+    ev.resolved=true;ev.printer._ev=null;
+    ev.printer._pau=!!(G.pActive&&!G.upsLeft);
+    if(Number.isInteger(ev.scriptIndex)&&this.forcedFails[ev.scriptIndex])this.forcedFails[ev.scriptIndex].resolved=true;
+    this.aEv=null;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
+    const po=this.pObjs.find(o=>o.p===ev.printer);if(po)po.wn.setText('');
+    return true;
+  }
   completePrint(p){
+    if(!p||!p.busy||!p.order||p._ev||p.broken||p._pau||G.block)return;
+    // A very short final job must not leave a mandatory failure waiting forever.
+    const pending=(this.forcedFails||[]).findIndex(e=>!e.triggered);
+    if(G.orders.length===1&&pending>=0){
+      this.trigEv(this.forcedFails[pending].id,true,pending);
+      return;
+    }
     const o=p.order,earned=o.pay;
     const repGain=2+(o.filament&&o.filament.rep||0);
     G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;this.earn+=earned;this.done++;G.nightDone=this.done;
@@ -503,6 +555,7 @@ class NightScene extends Phaser.Scene{
     this.updateHUD();
   }
   resPwr(panel){
+    if(!G.pActive)return;
     const resolvedType=G.pType&&G.pType.id;
     const pen=G.pType?G.pType.pen:.3;
     if(!G.upsLeft)G.printers.forEach(p=>{if(p._pau){p.progress=Math.max(0,p.progress-pen*.4);p._pau=false;}});
@@ -513,14 +566,14 @@ class NightScene extends Phaser.Scene{
     document.getElementById('bkg').style.display='none';
     document.getElementById('ptag').className='ptag night';
     document.getElementById('ptag').textContent='🌙 '+tr('night');
-    G.block=false;this.drawTblN(false);
+    syncGameplayBlock();this.drawTblN(false);
     this.cameras.main.flash(400,255,220,100,.4);
     showNotif(panel?'✅ '+tr('breakerRestored'):'⚡ '+tr('lightBack'));
     if(panel){SFX.fix();this.juice('LUZ RESTAURADA','Las impresoras retoman','power');}
     sLog('💡 Luz restablecida. Las impresoras retoman.');
   }
   update(_t,dt){
-    if(G.phase!=='night')return;
+    if(G.phase!=='night'||G.block||G.menuOpen)return;
     if(G.pActive){
       G.pTimer-=dt;
       document.getElementById('ptf').style.width=(Math.max(0,G.pTimer/G.pMax)*100)+'%';
@@ -529,6 +582,7 @@ class NightScene extends Phaser.Scene{
         if(BETA_DAYS[G.day])G.pTimer=0;
         else this.resPwr(false);
       }
+      if(G.pTimer<=0&&G.pType&&G.pType.id==='micro')this.resPwr(false);
     }
     if(!G.block){
       const k=this.keys;let vx=0,vy=0;
@@ -576,31 +630,12 @@ class NightScene extends Phaser.Scene{
       if(!updateBenchySprite(po.benchy,prog,c)&&po.job)drawPrintObject(po.job,prog,c,1);
       else if(po.job)po.job.clear();
     });
-    let near=null,md=95;
-    this.pObjs.forEach(po=>{
-      const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,po.px,po.py+15);
-      if(d<md){md=d;near=po;}
-    });
-    this.near=near;
-    const dT=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.tZone.x,this.tZone.y);
-    const dS=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.shopZone.x,this.shopZone.y);
-    const dI=Phaser.Math.Distance.Between(this.player.x,this.player.y,this.invZone.x,this.invZone.y);
-    if(G.pActive&&dT<90&&G.pType&&G.pType.id!=='micro'){
-      this.iLbl.setVisible(true).setText('Click/E Tablero!').setPosition(this.tZone.x,this.tZone.y-50);
-      sHint('Click o [E] tablero');
-    } else if(dS<78&&!G.block){
-      this.iLbl.setVisible(true).setText('Click/E '+tr('shopTitle')).setPosition(this.shopZone.x,this.shopZone.y-44);
-      sHint('Click o [E] '+tr('buy')+' '+tr('material'));
-    } else if(dI<78&&!G.block){
-      this.iLbl.setVisible(true).setText('Click/E '+tr('inventory')).setPosition(this.invZone.x,this.invZone.y-44);
-      sHint('Click o [E] '+tr('inventory'));
-    } else if(near&&!G.block){
-      const free=!near.p.busy&&!near.p.broken&&!near.p._ev;
-      this.iLbl.setVisible(true).setText(near.p.broken?'Click/E '+tr('repair'):free?'Click/E '+tr('loadJob'):'Click/E '+tr('interact')).setPosition(near.px,near.py-88);
-      sHint(near.p.broken?'Click o [E] '+tr('repair'):free?'Click o [E] '+tr('chooseJob'):'Click o [E] '+tr('inspectPrinter'));
-    } else {
-      this.iLbl.setVisible(false);
-    }
+    const target=this.targetAt(this.player.x,this.player.y,false);
+    this.near=target&&target.po||null;
+    if(target&&!G.block){
+      this.iLbl.setVisible(true).setText('Click/E '+target.label).setPosition(target.visual.x,target.visual.y-44);
+      sHint('Click / [E] '+target.label);
+    }else this.iLbl.setVisible(false);
     if(this.iLbl.visible){const pulse=.55+.35*Math.sin(this.time.now/120);this.iLbl.setAlpha(.72+pulse*.28).setScale(1+pulse*.05);}
     this.updateHUD();this.maybeFastCloseNight();
   }
@@ -619,20 +654,12 @@ class NightScene extends Phaser.Scene{
   betaNightClearable(){
     const ff=(this.beta&&this.beta.forcedFails)?this.beta.forcedFails.length:0;
     const anyEvActive=(G.printers||[]).some(p=>p._ev)||!!(this.aEv)||!!G._mini;
-    if(anyEvActive||G.pActive)return false;
+    if(anyEvActive)return false;
+    if((this.forcedFails||[]).some(e=>!e.resolved))return false;
     return (G.nFixes||0)>=ff;
   }
   nightObjectiveReady(){
-    const active=(G.printers||[]).some(p=>p.busy&&!p.broken&&!p._ev);
-    const printed=(G.dayPrints||0)+(G.nightDone||0);
-    const pwrDone=(G.breakerFixes||0)>=1&&!G.pActive;
-    if(G.day===1)return (G.nFixes||0)>=1&&(G.nightDone||0)>=1&&!G.pActive&&!active;
-    if(G.day===2)return pwrDone&&(G.nFixes||0)>=1&&printed>=3&&!active;
-    if(G.day===3){
-      const activePrinters=(G.printers||[]).filter(p=>!p.locked&&!p.broken).length;
-      return activePrinters>=2&&pwrDone&&(G.nFixes||0)>=2&&printed>=2&&!active;
-    }
-    return false;
+    return !!BETA_DAYS[G.day]&&betaObjectives('night').every(t=>t.done);
   }
   maybeFastCloseNight(){
     if(this.fastCloseNight||G.block||G.phase!=='night')return;
@@ -640,11 +667,11 @@ class NightScene extends Phaser.Scene{
     this.fastCloseNight=true;
     showNotif(tr('nightGoalComplete'),'success');
     sLog('✅ '+tr('nightGoalComplete'));
-    this.time.delayedCall(1100,()=>{if(G.phase==='night'&&!G.block)this.endNight();});
+    this.nightDelay(1100,()=>{this.fastCloseNight=false;if(!G.block)this.endNight();});
   }
   updateHUD(){document.getElementById('hg').textContent=G.gold;renderRepHUD();}
   endNight(){
-    if(G.phase!=='night')return;
+    if(G.phase!=='night'||G.block||G.menuOpen||G.pActive)return;
     if(BETA_DAYS[G.day]&&!this.nightObjectiveReady()){
       this.el=this.dur;
       if(!this.nightOvertimeWarned){
@@ -656,11 +683,13 @@ class NightScene extends Phaser.Scene{
     }
     G.phase='transition';G.block=true;
     let sal=0;
-    Object.keys(G.emp).forEach(id=>{const e=EMP.find(x=>x.id===id);if(e){sal+=e.sal;G.gold=Math.max(0,G.gold-e.sal);}});
+    Object.keys(G.emp).forEach(id=>{const e=EMP.find(x=>x.id===id);if(e){sal+=e.sal;G.gold=G.gold<0?G.gold-e.sal:Math.max(0,G.gold-e.sal);}});
     doSave(G);
     const sub=(G.lang==='en'?'Completed':'Completados')+': '+this.done+' | '+(G.lang==='en'?'Earned':'Ganado')+': $'+this.earn+'\nREP: '+G.rep+(sal?' | '+(G.lang==='en'?'Wages':'Salarios')+': -$'+sal:'');
     this.scene.pause();
     if(G.day>=3){
+      G.betaResult={gold:G.gold,rep:G.rep,repairs:G.stats.fix};
+      setSaveCheckpoint(G,'night');
       doTrans('🏁 '+(G.lang==='en'?'BETA COMPLETE':'BETA COMPLETA'),(G.lang==='en'?'End of the 3-day beta.':'Fin de la beta de 3 días.'),()=>{G.showBetaEnd(sub);});
       return;
     }

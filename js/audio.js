@@ -14,7 +14,7 @@ clk(){this._t(800,'square',.04,.15);},
 alm(){this._t(880,'square',.1,.18);this._t(660,'square',.1,.18,.15);},
 up(){[523,659,784,1047].forEach((f,i)=>this._t(f,'square',.14,.12,i*.1));}};
 var BGM={
-  on:localStorage.getItem('first_layer_music')!=='off',
+  on:(()=>{try{return localStorage.getItem('first_layer_music')!=='off';}catch(e){return true;}})(),
   phase:null,
   day:null,
   night:null,
@@ -40,7 +40,7 @@ var BGM={
   },
   stop(){if(this.day){this.day.pause();this.day.currentTime=0;}if(this.night){this.night.pause();this.night.currentTime=0;}this.phase=null;this._syncBtn();},
   toggle(){
-    this.on=!this.on;localStorage.setItem('first_layer_music',this.on?'on':'off');this._syncBtn();
+    this.on=!this.on;try{localStorage.setItem('first_layer_music',this.on?'on':'off');}catch(e){}this._syncBtn();
     if(this.on){if(this.phase==='day')this.playDay();else if(this.phase==='night')this.playNight();}
     else{if(this.day)this.day.pause();if(this.night)this.night.pause();}
   }

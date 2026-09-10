@@ -165,6 +165,7 @@ function applyNightRoomLayers(scene,g,W,H){
       if(!scene.textures.exists(layer.key))return null;
       const textureKey=layer.key==='night_room_objects_v2'?objectsKey:layer.key;
       const image=scene.add.image(ox,oy,textureKey).setOrigin(0,0).setScale(scale).setDepth(layer.depth);
+      if(layer.key==='night_room_objects_v2')scene.nightObjectsLayer=image;
       if(layer.hidden)image.setVisible(false);
       if(layer.key==='night_room_floor_v2'||layer.key==='night_room_objects_v2')image.setTint(0x747b9e).setAlpha(.82);
       else image.setTint(0x9ba5c9).setAlpha(.72);
@@ -172,6 +173,11 @@ function applyNightRoomLayers(scene,g,W,H){
     }).filter(Boolean);
   };
   loadNightRoomLayersAsync(scene,add);
+}
+function refreshNightRoomObjects(scene){
+  const count=Math.max(1,Math.min(3,G.pCount));
+  const key=NIGHT_ROOM_OBJECT_VARIANTS[count].key;
+  if(scene.nightObjectsLayer&&scene.nightObjectsLayer.active&&scene.textures.exists(key))scene.nightObjectsLayer.setTexture(key);
 }
 function loadDayWalkMask(scene,onReady){
   if(scene.dayWalkMask){if(onReady)onReady();return;}

@@ -1,11 +1,48 @@
 // ═══ G METHODS ═══
 // Methods attached to G for shop, fixes, breakers, story screen.
 // Called from HTML inline onclicks and Phaser scene logic.
+function cheapestBetaFilament(mat){
+  return (FILAMENTS[mat]||[]).filter(f=>betaShopAllows(mat,f.id)).sort((a,b)=>getFilPrice(mat,a.id)-getFilPrice(mat,b.id))[0];
+}
+function betaCanEarn(){
+  const printers=G.printers.filter(p=>!p.locked&&!p.broken&&(G.phase==='night'||p.id===0));
+  if(!printers.length)return false;
+  if(G.phase==='day'&&G.day===1&&!G.dayBoughtPlaBasic)return false;
+  return G.orders.some(o=>{
+    const owner=G.printers.find(p=>p.order===o);
+    if(owner&&!printers.includes(owner))return false;
+    if(o.filament)return true;
+    const missing=Math.max(0,o.units-matStock(o.material)),f=cheapestBetaFilament(o.material);
+    return missing===0||(f&&G.gold>=missing*getFilPrice(o.material,f.id));
+  });
+}
+function betaCreditAllows(kind,id){
+  if(!BETA_DAYS[G.day]||!['day','night'].includes(G.phase)||betaCanEarn())return false;
+  if(kind==='upg')return id==='unlock2'&&G.phase==='night'&&G.day===3&&!G.upg.unlock2;
+  if(kind==='repair')return G.phase==='night'&&G.printers.some(p=>p.id===id&&p.broken&&!p.locked);
+  if(kind==='parts')return G.phase==='day'&&G.day===3&&G.stk.parts<2;
+  const f=cheapestBetaFilament(kind);
+  if(!f||f.id!==id)return false;
+  if(G.phase==='day'&&kind==='pla'&&id==='eco'&&((G.day===1&&!G.dayBoughtPlaBasic)||(G.day===2&&!G.dayBoughtMaterial)))return true;
+  // Only enough of the cheapest grade to unblock one existing order.
+  return G.orders.some(o=>!o.filament&&o.material===kind&&matStock(kind)<o.units);
+}
+function payBetaPurchase(cost,kind,id){
+  if(!Number.isFinite(cost)||cost<=0)return false;
+  if(G.gold>=cost){G.gold-=cost;return true;}
+  if(!betaCreditAllows(kind,id)){showNotif(tr('noFunds'),'error');return false;}
+  const total=cost+Math.ceil(cost*.1);
+  if(!window.confirm(trf('creditConfirm',{cost:total,balance:G.gold-total})))return false;
+  // A negative balance is debt, repaid by normal cashouts; no new save field.
+  G.gold-=total;
+  showNotif(trf('creditUsed',{balance:G.gold}),'warning');
+  return true;
+}
 G.bStk=function(k,c,id){
   if(id&&!betaShopAllows(k,id)){showNotif('🔒 '+tr('lockedToday'),'info');return;}
   if(!id&&!betaShopAllows(k,'')){showNotif('🔒 '+tr('lockedToday'),'info');return;}
-  if(G.gold<c){showNotif('💸 '+tr('noFunds'),'error');return;}
-  G.gold-=c;
+  c=k==='parts'?G.market.parts.cur:filDef(k,id)?getFilPrice(k,id):NaN;
+  if(!payBetaPurchase(c,k,id))return;
   if(id&&G.stk[k])G.stk[k][id]=(G.stk[k][id]||0)+1;
   else G.stk[k]=(G.stk[k]||0)+1;
   if(G.phase==='day'){
@@ -18,8 +55,8 @@ G.bStk=function(k,c,id){
   document.getElementById('hg').textContent=G.gold;
   doSave(G);
 };
-G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}G.gold-=ev.g;G.stk.parts-=ev.pts;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;SFX.fix();try{playerAction('repair');}catch(e){}if(ns&&ns.juice)ns.juice('IMPRESORA SALVADA','P'+(ev.printer.id+1)+' · '+ev.ti,'success');showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
-G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;ev.printer._ev=null;ev.printer._pau=false;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;SFX.fix();if(ns&&ns.juice)ns.juice('AUTO-REPARADO','Rodrigo salvó P'+(ev.printer.id+1),'success');showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
+G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;if(ev.g>0&&G.gold<ev.g){showNotif('💸 '+tr('noFunds'));return;}if(ev.pts>0&&G.stk.parts<ev.pts){showNotif('🔩 '+tr('noSpares'));return;}if(!ns.resolveFailure(ev))return;G.gold-=ev.g;G.stk.parts-=ev.pts;document.getElementById('evp').style.display='none';syncGameplayBlock();SFX.fix();try{playerAction('repair');}catch(e){}if(ns&&ns.juice)ns.juice('IMPRESORA SALVADA','P'+(ev.printer.id+1)+' · '+ev.ti,'success');showNotif('🔧 '+ev.ti+' OK','success');sLog('✅ '+ev.ti+' OK.');};
+G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev||!ns.resolveFailure(ev))return;document.getElementById('evp').style.display='none';syncGameplayBlock();SFX.fix();if(ns&&ns.juice)ns.juice('AUTO-REPARADO','Rodrigo salvó P'+(ev.printer.id+1),'success');showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
 G.startNozzleMini=function(){
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
@@ -163,7 +200,7 @@ G.completeNozzleHold=function(){
   m.hits++;m.power=0;m.hold=0;m.heat=Math.max(0,m.heat-6);SFX.ok();
   if(m.hits>=m.needHits){
     if(m.phase==='needle'){m.phase='filament';m.hits=0;showNotif(G.lang==='en'?'Needle pass clear. Push filament.':'Aguja lista. Ahora empuja filamento.','success');}
-    else{m.done=true;setTimeout(()=>G.winNozzleMini(),160);}
+    else{m.done=true;setTimeout(()=>G.winNozzleMini(m),160);}
   }
 };
 G.moveNozzleMaze=function(dx,dy){if(G._mini&&G._mini.type==='nozzle')G.applyNozzleMove(dy<0?'needle':'filament',1);};
@@ -255,7 +292,7 @@ G.bedTick=function(nowIn){
   });
   m.notes=m.notes.filter(n=>!n.judged);
   G.renderBedMini();
-  if(m.hits>=m.needHits){m.done=true;setTimeout(()=>G.winNozzleMini(),200);return;}
+  if(m.hits>=m.needHits){m.done=true;setTimeout(()=>G.winNozzleMini(m),200);return;}
   if(m.time<=0){G.failNozzleMini();return;}
 };
 G.renderBedMini=function(){
@@ -300,14 +337,15 @@ G.tapBedMini=function(dir){
   SFX.ok();
   G.renderBedMini();
 };
-G.winNozzleMini=function(){
-  if(!G._mini)return;
+G.winNozzleMini=function(expected){
+  if(!G._mini||(expected&&expected!==G._mini))return;
   const type=G._mini.type,ev=G._mini.ev;
+  const ns=game.scene.getScene('Night');
+  if(!ns||!ev||ns.aEv!==ev||ev.printer._ev!==ev)return;
   clearInterval(G._mini.tick);G._mini=null;document.getElementById('miniGame').style.display='none';
   if(type==='nozzle'&&ev){
-    ev.printer._ev=null;ev.printer._pau=false;
-    const ns=game.scene.getScene('Night');if(ns)ns.aEv=null;
-    document.getElementById('evp').style.display='none';G.block=false;G.nFixes=(G.nFixes||0)+1;G.stats.fix++;
+    if(!ns.resolveFailure(ev))return;
+    document.getElementById('evp').style.display='none';syncGameplayBlock();
     SFX.fix();try{playerAction('repair');}catch(e){}if(ns&&ns.juice)ns.juice('BOQUILLA LIMPIA','P'+(ev.printer.id+1)+' vuelve a imprimir','success');showNotif('🪡 '+tr('nozzleCleaned'),'success');sLog('P'+(ev.printer.id+1)+': '+tr('nozzleCleaned'));return;
   }
   G.nFix();
@@ -335,10 +373,10 @@ G.nForceRepair=function(){
   if((ev._fails||0)<2)return;
   const cost=G.emergencyRepairCost();
   if(G.gold<cost){showNotif('💸 '+tr('noFunds'),'error');return;}
+  if(!ns.resolveFailure(ev))return;
   G.gold-=cost;
-  ev.printer._ev=null;ev.printer._pau=false;if(ev.printer.order)ev.printer.busy=true;
-  ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;
-  G.nFixes=(G.nFixes||0)+1;if(G.stats)G.stats.fix++;
+  if(ev.printer.order)ev.printer.busy=true;
+  document.getElementById('evp').style.display='none';syncGameplayBlock();
   SFX.fix();try{playerAction('repair');}catch(e){}shakeUI();if(ns&&ns.juice)ns.juice('REPARACIÓN DE EMERGENCIA','P'+(ev.printer.id+1)+' sigue viva','success');
   showNotif(tr('repairAnyway')+' — -$'+cost,'warning');
   sLog('🛠️ '+ev.ti+' — -$'+cost);
@@ -353,7 +391,7 @@ G._bk=function(seq){
   if(seq===expected){
     G._bkBusy=true;button.classList.add('correcting');SFX.clk();
     const step=document.getElementById('bkStep'+G._bkNext);if(step)step.classList.add('done');
-    setTimeout(()=>{
+    ns.nightDelay(650,()=>{
       if(!G.pActive)return;
       button.classList.remove('correcting');button.classList.add('up');
       G._bkNext++;G._bkBusy=false;
@@ -364,23 +402,23 @@ G._bk=function(seq){
       }
       if((G._bkRound||0)+1<(G._bkRounds||1)){
         G._bkBusy=true;document.getElementById('bhint').textContent='✅ '+tr('breakerNextRound');
-        setTimeout(()=>ns.nextBreakerRound(),700);
+        ns.nightDelay(700,()=>ns.nextBreakerRound());
         return;
       }
       G._bkBusy=true;document.getElementById('bhint').textContent='✅ '+tr('completed');
-      setTimeout(()=>{document.getElementById('bkg').style.display='none';ns.resPwr(true);},750);
-    },650);
+      ns.nightDelay(750,()=>{document.getElementById('bkg').style.display='none';ns.resPwr(true);});
+    });
   } else {
     G._bkBusy=true;button.classList.add('failing','bad');G._bkNext=0;
     document.getElementById('bhint').textContent='❌ '+tr('wrongOrder');SFX.err();
     shakeUI();
-    setTimeout(()=>{
+    ns.nightDelay(500,()=>{
       document.querySelectorAll('#bks .bk').forEach(b=>b.classList.remove('up','correcting','failing','bad'));
       document.querySelectorAll('#bkseq span').forEach(s=>s.classList.remove('done'));
       G._bkBusy=false;
       document.getElementById('bhint').textContent=trf('nowBreaker',{num:G._bkOrd[0]+1});
       const first=document.getElementById('bk'+G._bkOrd[0]);if(first)first.focus();
-    },500);
+    });
   }
 };
 G._dcb=function(i){const cb=G._dch&&G._dch[i]&&G._dch[i].cb;if(cb)cb();};
@@ -397,8 +435,8 @@ G._bUpg=function(id){
   const u=UPG.find(x=>x.id===id);if(!u||G.upg[id])return;
   if(!betaShopAllows('upg',id)){showNotif(betaEverAllows('upg',id)?'🔒 '+tr('lockedToday'):'⭐ '+tr('fullGameMsg'),'info');return;}
   if(u.req&&!G.upg[u.req]){showNotif('⚠️ '+tr('needs')+u.req);return;}
-  if(G.gold<u.co){showNotif('💸 '+tr('noFunds'));return;}
-  G.gold-=u.co;G.upg[id]=true;
+  if(!payBetaPurchase(u.co,'upg',id))return;
+  G.upg[id]=true;
   if(id.indexOf('unlock')===0){
     G.syncPrinters();
     const ns=game.scene.getScene('Night');
@@ -407,9 +445,9 @@ G._bUpg=function(id){
   SFX.ok();showNotif('✅ '+u.ic+' '+u.n+' OK');doSave(G);G.tab(G.stab);document.getElementById('hg').textContent=G.gold;
 };
 G.cShop=function(){
-  document.getElementById('shop').style.display='none';G.block=false;
+  document.getElementById('shop').style.display='none';syncGameplayBlock();
 };
-G.cSto=function(){document.getElementById('sto').style.display='none';G.block=false;};
+G.cSto=function(){document.getElementById('sto').style.display='none';syncGameplayBlock();};
 G.showInventory=function(){
   const orders=(G.orders||[]).map(o=>'• '+o.pr.e+' '+o.pr.n+' — '+o.material+' x'+o.units+(o.filament?' | '+o.filament.n:o.waitingMaterial?' | '+tr('missingMaterial'):'')).join('\n')||tr('noQueuedOrders');
   G.showSto(tr('inventory'),
@@ -528,7 +566,7 @@ G.shopStats=function(){
 G.shopCard=function(o){
   const fg=o.fullGame&&!o.done;
   const cls='si '+(o.done?'sb':fg?'sl sfg':o.locked?'sl':o.can?'sa':'');
-  const action=o.done?tr('ready'):fg?'★':o.locked?tr('locked'):o.can?tr('buy'):tr('noMoney');
+  const action=o.done?tr('ready'):fg?'★':o.locked?tr('locked'):o.credit?tr('buyOnCredit'):o.can?tr('buy'):tr('noMoney');
   const meta=o.done?'<div class="stg">'+(o.doneText||'Listo')+'</div>':(fg||o.locked)?'<div class="slock">'+(o.lockedText||'')+'</div>':'<div class="sc">$'+o.cost+'</div>';
   return '<div class="'+cls+'" tabindex="0" '+o.attr+'><div class="siTop"><div class="siIc">'+o.icon+'</div><div><h4>'+o.name+'</h4><p>'+o.desc+'</p></div></div><div class="siFoot">'+meta+'<span class="sact">'+action+'</span></div></div>';
 };
@@ -538,7 +576,10 @@ function betaShopAllows(kind,id){
   if(kind==='cons')return b.shop.includes(id);
   if(kind==='upg')return b.shop.includes(id);
   if(kind==='emp')return b.shop.includes('emp:'+id);
-  return b.shop.includes(kind+':'+id);
+  if(b.shop.includes(kind+':'+id))return true;
+  // Old saves can contain a job whose material is no longer sold on this day.
+  const first=(FILAMENTS[kind]||[])[0];
+  return !!(first&&first.id===id&&!b.shop.some(x=>x.indexOf(kind+':')===0)&&G.orders.some(o=>o.material===kind&&!o.filament));
 }
 // True if the item appears in ANY beta day's shop. If not, it's full-game-only content
 // (the 3-day demo never sells it) — we surface that honestly instead of "bloqueado hoy".
@@ -563,7 +604,7 @@ G.tab=function(t){
   const s=sgNew;
   if(t==='up'){
     s.style.gridTemplateColumns='repeat(3,1fr)';
-    s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],dayLock=!betaShopAllows('upg',u.id),fg=!betaEverAllows('upg',u.id),reqLock=u.req&&!G.upg[u.req],lk=dayLock||reqLock,af=G.gold>=u.co;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,can:af&&!lk,locked:lk,fullGame:fg,lockedText:fg?tr('fullGameMsg'):dayLock?tr('lockedToday'):tr('needs')+u.req,doneText:tr('installed'),attr:'data-upg="'+u.id+'"'});}).join('');
+    s.innerHTML=UPG.map(u=>{const b=!!G.upg[u.id],dayLock=!betaShopAllows('upg',u.id),fg=!betaEverAllows('upg',u.id),reqLock=u.req&&!G.upg[u.req],lk=dayLock||reqLock,credit=G.gold<u.co&&betaCreditAllows('upg',u.id),af=G.gold>=u.co||credit;return G.shopCard({icon:u.ic,name:u.n,desc:u.de,cost:u.co,done:b,credit,can:af&&!lk,locked:lk,fullGame:fg,lockedText:fg?tr('fullGameMsg'):dayLock?tr('lockedToday'):tr('needs')+u.req,doneText:tr('installed'),attr:'data-upg="'+u.id+'"'});}).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-upg]');if(d)G._bUpg(d.dataset.upg);});
   } else if(t==='emp'){
     s.style.gridTemplateColumns='repeat(3,1fr)';
@@ -587,7 +628,7 @@ G.tab=function(t){
     visibleItems.sort((a,b)=>(a.cons?1:0)-(b.cons?1:0)||a.c-b.c);
     s.innerHTML=visibleItems.map(o=>o.cons
       ?G.shopCard({icon:o.ic,name:o.n,desc:o.de,cost:o.c,done:false,can:G.gold>=o.c&&!o.locked,locked:o.locked,lockedText:tr('lockedToday'),attr:'data-cons="'+o.cons+'"'})
-      :G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.tier?tr('tier')+' '+filTier(o.f)+' | '+tr('stock')+' '+(G.stk[o.mat][o.f.id]||0)+' | '+tr('risk')+' '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+filDesc(o.f):tr('stock')+' '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,can:G.gold>=o.c&&!o.locked,locked:o.locked,lockedText:tr('lockedToday'),attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
+      :G.shopCard({icon:o.ic,name:o.f.n,desc:o.f.tier?tr('tier')+' '+filTier(o.f)+' | '+tr('stock')+' '+(G.stk[o.mat][o.f.id]||0)+' | '+tr('risk')+' '+(o.f.risk>0?'+':'')+Math.round(o.f.risk*100)+'%\n'+filDesc(o.f):tr('stock')+' '+G.stk.parts+'\n'+o.f.de,cost:o.c,done:false,credit:G.gold<o.c&&betaCreditAllows(o.mat,o.f.id),can:(G.gold>=o.c||betaCreditAllows(o.mat,o.f.id))&&!o.locked,locked:o.locked,lockedText:tr('lockedToday'),attr:'data-stk="'+o.mat+'" data-id="'+o.f.id+'" data-cost="'+o.c+'"'})).join('');
     s.addEventListener('click',e=>{const d=e.target.closest('[data-stk]'),c=e.target.closest('[data-cons]');if(d){if(d.classList.contains('sl')){showNotif('🔒 '+tr('lockedToday'),'info');return;}G.bStk(d.dataset.stk,Number(d.dataset.cost),d.dataset.id);G.tab(t);}else if(c){if(c.classList.contains('sl')){showNotif('🔒 '+tr('lockedToday'),'info');return;}G.buyConsumable(c.dataset.cons);G.tab(t);}});
   }
 };

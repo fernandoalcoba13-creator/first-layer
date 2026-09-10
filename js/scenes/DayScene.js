@@ -53,7 +53,7 @@ class DayScene extends Phaser.Scene{
     G.phase='day';G.stress=0;G.block=false;G.dayEarn=0;G.dayOrd=0;G.dayCli=0;G.dayPrints=0;G.dayBought=0;G.dayBoughtMaterial=0;G.nightDone=0;G.nFixes=0;G.pActive=false;G.dayMod=null;
     BGM.playDay();
     G.dayStartGold=G.gold;G.dayStartRep=G.rep;
-    const freshDayOne=G.day===1&&!(G.orders&&G.orders.length)&&!G.dayBoughtPlaBasic&&!G.dayUsedPlaBasic;
+    const freshDayOne=G.day===1&&!G.recoveredCheckpoint&&!(G.orders&&G.orders.length)&&!G.dayBoughtPlaBasic&&!G.dayUsedPlaBasic;
     if(G.day!==1){G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;}
     if(freshDayOne){G.stk={pla:{eco:0,std:0,pro:0},petg:{eco:0,std:0,pro:0},tpu:{basic:0,premium:0,pro:0},resin:{basic:0,std:0,pro:0},parts:3};G.cons={coffee:1,mate:0,bar:1,sandwich:0,cleaner:1};G.dayBoughtPlaBasic=false;G.dayUsedPlaBasic=false;ensureStockShape();ensureConsumables();}
     G.energy=100;G.mateActive=false;G.mateTimer=0;G.mateCount=3;
@@ -74,6 +74,7 @@ class DayScene extends Phaser.Scene{
     updateMarket();this.applyDayMod();this.cInt=Math.max(7000,Math.round(this.cInt*repStanding().flow));this.announceStanding();sLog((this.beta.title?this.beta.title+' - ':'')+this.beta.hint);
     sHint('Click objetos | WASD + E');
     setSaveCheckpoint(G,'day');
+    if(G.recoveredCheckpoint){G.recoveredCheckpoint=false;showNotif(G.lang==='en'?'The old night checkpoint lacked required jobs. This day reopened with your money and stock intact.':'Al checkpoint nocturno anterior le faltaban pedidos obligatorios. Reabrimos este dia conservando dinero y stock.','warning');}
     if(G.menuOpen)this.scene.pause();
   }
   resetNightOverlay(){
@@ -250,9 +251,11 @@ class DayScene extends Phaser.Scene{
     return {pay,time,diff,risk,pat,tag:style.tag,material,units};
   }
   spawn(){
-    const requiredOrders=G.day===1?3:4;
+    if(G.phase!=='day')return;
+    if(G.block||G.menuOpen){this.time.delayedCall(750,()=>this.spawn());return;}
     const arrivalCap=this.beta.maxClients||5;
-    if(this.clients.length>=5||G.phase!=='day'||(G.dayCli>=arrivalCap&&(G.dayOrd||0)>=requiredOrders))return;
+    const recovery=G.dayCli>=arrivalCap;
+    if(this.clients.length>=5||(recovery&&!this.needsRecoveryClient()))return;
     const slot=this.nextClientSlot();
     if(slot<0)return;
     const activeIds=this.clients.filter(c=>!c.served).map(c=>c.cl.id);
@@ -289,6 +292,7 @@ class DayScene extends Phaser.Scene{
     co.stepTw=this.tweens.add({targets:ct,y:yP-3,duration:150,yoyo:true,repeat:-1,ease:'Sine.easeInOut'});
     this.tweens.add({targets:ct,x:tX,duration:640,ease:'Power2',onComplete:()=>this.stopClientWalk(co)});
     this.clients.push(co);G.dayCli++;
+    if(recovery)showNotif(G.lang==='en'?'One extra client: pending jobs are still needed.':'Un cliente extra: todavia faltan pedidos obligatorios.','info');
     if(G.emp.lucas&&this.clients.filter(c=>!c.served).length===1)
       this.time.delayedCall(1800,()=>{if(!co.served)this.acceptOrd(co,'auto');});
     sLog(cl.e+' '+cl.n+': "'+clLine(cl)+'" — '+pr.e+' $'+pay);
@@ -297,6 +301,11 @@ class DayScene extends Phaser.Scene{
     const used=this.clients.filter(c=>!c.served).map(c=>c.slot);
     for(let i=0;i<5;i++)if(!used.includes(i))return i;
     return -1;
+  }
+  needsRecoveryClient(){
+    if(this.clients.some(c=>!c.served)||G.phase!=='day')return false;
+    const n=betaDayNeeds();
+    return (G.dayOrd||0)<n.accept||G.orders.length<Math.max(n.reserve,n.produce-(G.dayPrints||0));
   }
   nearestClient(){
     let best=null,md=76;
@@ -341,7 +350,7 @@ class DayScene extends Phaser.Scene{
     if(!c||c.served||this.clients.indexOf(c)<0)return false;
     const canPrint=matStock(c.order.material)>=c.order.units;
     G.orders.push({pr:c.pr,cl:c.cl.n,pay:c.pay,urg:c.urg,time:c.order.time,diff:c.order.diff,risk:c.order.risk,tag:c.order.tag,material:c.order.material,units:c.order.units,waitingMaterial:!canPrint});
-    G.dayOrd++;G.dayEarn+=c.pay;G.stats.ord++;
+    G.dayOrd++;G.stats.ord++;
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
     this.leaveClient(c,false);SFX.ok();
     if(mode==='auto')showNotif('👦 '+tr('lucasAccepted')+': '+c.pr.e+' '+c.pr.n);
@@ -416,7 +425,7 @@ class DayScene extends Phaser.Scene{
     setTimeout(()=>focusPanelFirst('#stoActions .eb'),0);
   }
   assignOrderToPrinter(p,o){
-    if(!p||!o||p.busy||p.locked)return false;
+    if(!p||!o||p.busy||p.locked||!G.orders.includes(o))return false;
     if(G.phase==='day'&&p.id>0){showNotif(tr('dayPrinterLimit'),'info');return false;}
     if(G.day===1&&!G.dayBoughtPlaBasic){showNotif(tr('dayOneShopTip'),'info');sHint(tr('dayOneShopTip'));G.openShop('stk');return false;}
     if(G.printers.some(x=>x.order===o)){showNotif(tr('jobLoaded'),'info');return false;}
@@ -439,6 +448,7 @@ class DayScene extends Phaser.Scene{
     return true;
   }
   completePrint(p){
+    if(!p||!p.busy||!p.order||p.broken||p._ev||p._pau||G.block)return;
     const o=p.order,earned=o.pay,repGain=1+(o.filament&&o.filament.rep||0);
     G.gold+=earned;G.rep=Math.max(0,G.rep+repGain);G.stats.earn+=earned;G.dayEarn+=earned;G.dayPrints++;
     G.orders=G.orders.filter(x=>x!==o);
@@ -480,6 +490,7 @@ class DayScene extends Phaser.Scene{
     document.getElementById('dlg').style.display='block';
     setTimeout(()=>{const b=document.querySelector('#dbs .db');if(b)b.focus();},0);
     this.dlgOpen=true;
+    G.block=true;
   }
   updatePrinters(dt){
     G.printers.forEach(p=>{
@@ -555,15 +566,7 @@ class DayScene extends Phaser.Scene{
     if(this.sLbl)this.sLbl.setText(this.stkTxt());
   }
   dayObjectiveReady(){
-    const loaded=(G.printers||[]).filter(p=>p.order).length;
-    const queued=(G.orders||[]).length;
-    if(G.day===1)
-      return (G.dayOrd||0)>=3&&(G.dayPrints||0)>=2&&queued>=1&&(G.dayBoughtPlaBasic||G.dayUsedPlaBasic);
-    if(G.day===2)
-      return (G.dayOrd||0)>=4&&((G.dayPrints||0)+loaded)>=3&&(G.dayBoughtMaterial||0)>=1&&queued>=1;
-    if(G.day===3)
-      return (G.dayOrd||0)>=4&&((G.dayPrints||0)+loaded)>=2&&queued>=2;
-    return false;
+    return !!BETA_DAYS[G.day]&&betaObjectives('day').every(t=>t.done);
   }
   maybeFastCloseDay(){
     if(this.fastCloseDay||G.block||G.phase!=='day')return;
@@ -571,7 +574,7 @@ class DayScene extends Phaser.Scene{
     this.fastCloseDay=true;
     showNotif(tr('dayGoalComplete'),'success');
     sHint(tr('dayGoalComplete'));
-    this.time.delayedCall(1000,()=>{if(G.phase==='day'&&!G.block)this.endDay();});
+    this.time.delayedCall(1000,()=>{this.fastCloseDay=false;if(G.phase==='day'&&!G.block)this.endDay();});
   }
   update(_t,dt){
     if(G.phase!=='day'||G.block)return;
@@ -633,7 +636,7 @@ class DayScene extends Phaser.Scene{
     tickMate(dt);this.updatePrinters(dt);this.updateHUD();this.maybeFastCloseDay();
   }
   endDay(){
-    if(G.phase!=='day')return;
+    if(G.phase!=='day'||G.block||G.menuOpen)return;
     if(!this.dayObjectiveReady()){
       this.timer=0;
       if(!this.overtimeWarned){

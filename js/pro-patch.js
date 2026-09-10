@@ -38,48 +38,7 @@
       tip.textContent=G.energy<35?'🧉 '+tr('drinkMate'):tr('buyCheap');
     }
     if(list){
-      const es=G.lang!=='en';
-      const dayTasks=G.day===1
-        ?[
-          {txt:es?'Aceptar 3 pedidos':'Accept 3 orders',done:(G.dayOrd||0)>=3},
-          {txt:es?'Comprar PLA Basic para imprimir':'Buy PLA Basic to print',done:!!G.dayBoughtPlaBasic||(G.stk&&G.stk.pla&&G.stk.pla.eco||0)>0||!!G.dayUsedPlaBasic},
-          {txt:es?'Cargar un trabajo en P1':'Load one job into P1',done:loaded>=1||(G.dayPrints||0)>=1},
-          {txt:es?'Cobrar 2 trabajos':'Cash out 2 jobs',done:(G.dayPrints||0)>=2},
-          {txt:es?'Dejar 1 trabajo para la noche':'Leave 1 job for night',done:(G.dayOrd||0)>=3&&(G.orders||[]).length>=1}
-        ]
-        :G.day===2
-        ?[
-          {txt:es?'Aceptar cuatro pedidos':'Accept four orders',done:(G.dayOrd||0)>=4},
-          {txt:es?'Imprimir o cargar tres trabajos':'Print or load three jobs',done:((G.dayPrints||0)+loaded)>=3},
-          {txt:es?'Comprar material para no frenar la cola':'Buy material so the queue does not stop',done:(G.dayBoughtMaterial||0)>=1},
-          {txt:es?'Dejar 1 trabajo para la noche':'Leave 1 job for night',done:(G.orders||[]).length>=1}
-        ]
-        :[
-          {txt:es?'Aceptar cuatro pedidos':'Accept four orders',done:(G.dayOrd||0)>=4},
-          {txt:es?'Imprimir o cargar dos trabajos':'Print or load two jobs',done:printed>=2||loaded>=2||((G.dayPrints||0)+loaded)>=2},
-          {txt:es?'Guardar repuestos para fallas fuertes':'Keep spares for serious failures',done:(G.stk&&G.stk.parts||0)>=2},
-          {txt:es?'Dejar cola suficiente para producir':'Leave enough queue to produce',done:(G.orders||[]).length>=2}
-        ];
-      const nightTasks=G.day===1
-        ?[
-          {txt:es?'Resolver la boquilla obstruida':'Fix the clogged nozzle',done:(G.nFixes||0)>=1},
-          {txt:es?'Terminar el primer trabajo':'Finish the first job',done:printed>=1},
-          {txt:es?'Terminar el trabajo reservado':'Finish the reserved night job',done:(G.nightDone||0)>=1}
-        ]
-        :G.day===2
-        ?[
-          {txt:es?'Asignar trabajos a impresoras libres':'Assign jobs to free printers',done:loaded>=1},
-          {txt:es?'Restablecer el tablero eléctrico':'Restore the breaker panel',done:(G.breakerFixes||0)>=1},
-          {txt:es?'Reparar la falla de adhesion':'Fix the adhesion failure',done:(G.nFixes||0)>=1},
-          {txt:es?'Terminar tres trabajos':'Finish three jobs',done:printed>=3}
-        ]
-        :[
-          {txt:es?'Comprar y activar la segunda impresora':'Buy and activate the second printer',done:activePrinters>=2},
-          {txt:es?'Reparar dos fallas':'Repair two failures',done:(G.nFixes||0)>=2},
-          {txt:es?'Restablecer el corte prolongado':'Restore power after the long outage',done:(G.breakerFixes||0)>=1},
-          {txt:es?'Terminar dos trabajos':'Finish two jobs',done:printed>=2}
-        ];
-      const tasks=G.phase==='night'?nightTasks:dayTasks;
+      const tasks=betaObjectives(G.phase==='night'?'night':'day');
       list.innerHTML=tasks.map(t=>
         '<div class="objRow '+(t.done?'done':'')+'"><span>'+(t.done?'✓':'□')+'</span><b>'+t.txt+'</b><em>'+(t.done?'OK':'')+'</em></div>'
       ).join('');

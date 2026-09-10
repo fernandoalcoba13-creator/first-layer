@@ -96,13 +96,15 @@
   </div>
   <div id="betaEnd">
     <div class="deBox beBox">
-      <div class="deK" id="beK">GRACIAS POR JUGAR</div>
-      <h2 id="beTitle">Terminaste la beta de 3 días</h2>
+      <div class="deK" id="beK">FIRST LAYER</div>
+      <h2 id="beTitle">FIN DE LA BETA</h2>
       <p id="beMood"></p>
       <div class="beTease" id="beTease"></div>
+      <p id="beSaveWarning" role="status"></p>
       <div class="beBtns">
         <button class="deBtn beWishlist" id="beWishlist" onclick="G.betaWishlist()">★ Sumá el juego a tu lista de deseos en Steam</button>
         <button class="deBtn beMenuBtn" id="beMenu" onclick="G.betaToMenu()">Volver al menú</button>
+        <button class="deBtn beMenuBtn" id="beReset" onclick="G.confirmReset()">Reiniciar beta</button>
       </div>
     </div>
   </div>
@@ -128,16 +130,16 @@
 <!-- Game scripts (orden de dependencias - NO cambiar) -->
 <!-- ?v=... = cache-buster. Subilo (v6, v7...) cada vez que publiques una versión nueva
      para forzar a los navegadores a bajar el JS actualizado en vez de servir el viejo cacheado. -->
-<script src="js/audio.js?v=20"></script>
+<script src="js/audio.js?v=21"></script>
 <script src="js/data.js?v=19"></script>
-<script src="js/state.js?v=20"></script>
-<script src="js/i18n.js?v=20"></script>
-<script src="js/draw.js?v=27"></script>
-<script src="js/ui.js?v=20"></script>
-<script src="js/g-methods.js?v=19"></script>
-<script src="js/pro-patch.js?v=19"></script>
-<script src="js/scenes/DayScene.js?v=30"></script>
-<script src="js/scenes/NightScene.js?v=35"></script>
+<script src="js/state.js?v=21"></script>
+<script src="js/i18n.js?v=21"></script>
+<script src="js/draw.js?v=28"></script>
+<script src="js/ui.js?v=22"></script>
+<script src="js/g-methods.js?v=21"></script>
+<script src="js/pro-patch.js?v=20"></script>
+<script src="js/scenes/DayScene.js?v=32"></script>
+<script src="js/scenes/NightScene.js?v=37"></script>
 <script src="js/main.js?v=19"></script>
 
 </body>
