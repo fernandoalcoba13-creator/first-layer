@@ -59,6 +59,7 @@ G.nFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!
 G.nAutoFix=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev||!ns.resolveFailure(ev))return;document.getElementById('evp').style.display='none';syncGameplayBlock();SFX.fix();if(ns&&ns.juice)ns.juice('AUTO-REPARADO','Rodrigo salvó P'+(ev.printer.id+1),'success');showNotif('👨‍🔧 Rodrigo reparó: '+ev.ti);};
 G.nSkip=function(){const ns=game.scene.getScene('Night');const ev=ns&&ns.aEv;if(!ev)return;G.rep=Math.max(0,G.rep-ev.rp);ev.printer.broken=true;ev.printer.busy=false;ev.printer._ev=null;ns.aEv=null;document.getElementById('evp').style.display='none';G.block=false;SFX.err();shakeUI();showNotif('⚠️ P'+(ev.printer.id+1)+' averiada. -'+ev.rp+' REP','error');};
 G.startNozzleMini=function(){
+  if(G._mini)return;
   const ns=game.scene.getScene('Night'),ev=ns&&ns.aEv;if(!ev||ev.id!=='clog')return;
   ensureConsumables();
   if(BETA_DAYS[G.day]&&G.cons.cleaner<1)G.cons.cleaner=1;
@@ -71,9 +72,9 @@ G.startNozzleMini=function(){
   document.getElementById('mgDesc').textContent=G.lang==='en'?'Use the needle from below and push filament from above. Work inside the sensitivity zone.':'Usá la aguja desde abajo y empujá filamento desde arriba. Trabajá dentro de la zona sensible.';
   document.getElementById('mgTimerFill').style.width='100%';
   G.renderNozzleMini();
-  G._mini.tick=setInterval(()=>{
-    if(!G._mini)return;
-    const m=G._mini;
+  const m=G._mini;
+  m.tick=setInterval(()=>{
+    if(G._mini!==m||m.done)return;
     m.time-=250;
     m.power=Math.max(0,m.power-3.6);
     const inZone=m.power>=m.targetA&&m.power<=m.targetB;
@@ -87,7 +88,7 @@ G.startNozzleMini=function(){
     m.heat=Math.max(0,m.heat-.45);
     document.getElementById('mgTimerFill').style.width=Math.max(0,m.time/m.max*100)+'%';
     G.renderNozzleMini();
-    if(m.heat>=100||m.time<=0)G.failNozzleMini();
+    if(!m.done&&(m.heat>=100||m.time<=0))G.failNozzleMini();
   },250);
   SFX.clk();
 };

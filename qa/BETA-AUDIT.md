@@ -10,9 +10,12 @@ Actualizado: 2026-09-10.
   de continuar. Los cinco P1 originales se confirmaron en el codigo.
 - La validacion manual NO se da por aprobada. Fernando confirmo el 10/09
   que aun no probo el juego. No iniciar polish visual.
-- Push solicitado por Fernando el 10/09; primero se versiona este bloque.
+- Push del bloque P1 confirmado el 10/09: `4e00937` en `origin/main`.
   El workflow existente publica GitHub Pages al recibir main.
+  No se verifico el resultado del deploy automatico.
   Sin tag de beta, release ni cambios en Steam o itch.io.
+- Continuacion acotada: dos bugs de temporizacion de boquilla reproducidos
+  y corregidos; seis pruebas adicionales de minijuegos. Puerta manual pendiente.
 - Esto NO certifica que la beta este terminada.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
@@ -107,6 +110,21 @@ No se hicieron refactors generales. Se dejaron intactas las definiciones
 duplicadas funcionales de inventario, el intervalo global de pro-patch
 y los sistemas de dibujo/animacion existentes.
 
+## Continuacion: temporizadores de minijuegos
+
+Tras el push P1 se probaron los handlers de teclado del documento con reloj
+simulado. Dos regresiones fallaron antes del cambio y pasan con la correccion:
+
+- Iniciar boquilla dos veces reemplazaba el intento sin cancelar su intervalo;
+  ambos temporizadores descontaban tiempo del intento nuevo. Ahora rechaza
+  un segundo inicio, igual que cama, y cada tick pertenece a su intento.
+- El ultimo hold valido al llegar a cero programaba victoria pero despues
+  ejecutaba derrota en el mismo tick. La victoria confirmada tiene prioridad,
+  igual que cama; el intento terminado no sigue descontando tiempo.
+
+Solo se modifico esta logica en js/g-methods.js y su cache en index.html.
+No se tocaron tiempos, dificultad, recompensas, assets, audio ni colisiones.
+
 ## Archivos modificados
 
 | Archivo | Alcance |
@@ -115,7 +133,7 @@ y los sistemas de dibujo/animacion existentes.
 | js/state.js | Misiones compartidas, normalizacion y snapshot terminal |
 | js/scenes/DayScene.js | Recuperacion de clientes, gate, cobro y aviso de checkpoint |
 | js/scenes/NightScene.js | Interacciones/accesos, gate, recuperacion y final |
-| js/g-methods.js | Compras indispensables a deuda y compatibilidad de materiales |
+| js/g-methods.js | Compras indispensables a deuda, compatibilidad de materiales y temporizador de boquilla |
 | js/pro-patch.js | Lista consumiendo betaObjectives |
 | js/ui.js | Final, menu sin borrar, confirmacion de reset, teclado del final |
 | js/i18n.js | ES/EN de final, credito y meta opcional |
@@ -136,7 +154,7 @@ node qa/beta-regression.cjs
 git diff --check
 ```
 
-Ultimo resultado: **47/47 pruebas aprobadas** (23 anteriores + 24 nuevas).
+Ultimo resultado: **53/53 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos).
 `git diff --check`: exit 0, sin errores de whitespace. Git solo avisa de la
 conversion habitual LF -> CRLF del repositorio en Windows.
 
@@ -165,6 +183,21 @@ Las campañas invocan callbacks de finalizacion y resolucion de eventos.
 NO son partidas completas jugadas en Chrome/Edge ni prueban animaciones,
 atlas cargados por Phaser, audio audible, input real, CORS o consola real.
 No satisfacen las dos partidas humanas requeridas para el tag.
+
+Seis casos adicionales de minijuegos:
+- Inicio doble de boquilla conserva un unico intento y temporizador.
+- Ultimo hold en el limite de tiempo resuelve una sola reparacion.
+- Boquilla: timeout, reintento y victoria con ALT/espacio temporizados.
+- Cama: victoria con flechas temporizadas en noches 2 y 3.
+- Cama: fallo por tiempo, golpe temprano, tecla repetida y reintento.
+- Termicas: secuencia incorrecta, recuperacion, pulsacion doble, corte normal
+  y las dos rondas del corte prolongado, con una sola restauracion de energia.
+
+Estas pruebas despachan eventos al handler real de document dentro del host
+simulado. No verifican propagacion/foco del navegador ni teclas reservadas
+como ALT. El caso limite de boquilla prepara explicitamente el ultimo hold;
+los casos completos de boquilla y cama usan entradas y reloj, no el callback
+de victoria como atajo.
 
 ## Riesgos y siguiente fase
 
@@ -195,7 +228,9 @@ en 1366x768 y 1920x1080. Mantener F12 > Console visible y anotar primer error.
 2. Dia 1: aceptar 3, comprar PLA Basic, cargar P1, cobrar 2 y reservar 1.
    Agotar el reloj con una tarea pendiente: no debe avanzar.
 3. Noche 1: cargar reserva, perder/reintentar/ganar boquilla, cobrar.
-   No debe cerrar con una falla o pedido pendiente.
+   Probar doble click al iniciar: no debe acelerar el reloj ni reiniciar.
+   No debe cerrar con una falla o pedido pendiente. ALT/espacio deben actuar
+   sobre el minijuego sin dejar el foco en el menu del navegador.
 4. Dia 2: imprimir todos los pedidos antes de cerrar, agotar las llegadas
    normales y dejar cola vacia. Debe ofrecer un solo cliente extra;
    aceptar/rechazar debe funcionar. Con reserva suficiente vuelve a respetar

@@ -32,6 +32,7 @@ class Clock {
 
 function host(saved = null, width = 1366, height = 768, options = {}) {
   const clock = new Clock(), elements = new Map(), storage = new Map(), messages = [];
+  const documentEvents=new EventEmitter();
   if (saved) storage.set('first_layer_save', JSON.stringify(saved));
   const modalIds = ['dlg','shop','sto','evp','miniGame','bkg','dayEnd','betaEnd'];
   function element(id = '') {
@@ -56,7 +57,7 @@ function host(saved = null, width = 1366, height = 768, options = {}) {
   const document = {
     activeElement: null, documentElement: element('html'), body: element('body'),
     getElementById: id => elements.get(id) || null, createElement: () => element(),
-    querySelectorAll: () => [], querySelector: () => null, addEventListener() {}
+    querySelectorAll: () => [], querySelector: () => null, addEventListener:(name,fn)=>documentEvents.on(name,fn)
   };
   for(const el of elements.values()) el.parentNode=document.body;
   function drawable(x=0,y=0) {
@@ -122,7 +123,8 @@ function host(saved = null, width = 1366, height = 768, options = {}) {
     const scene=sceneMap[phase==='night'?'Night':'Day'];
     scene.create();return scene;
   }
-  return {...api,context,sceneMap,elements,storage,clock,messages,start,run:code=>vm.runInContext(code,context)};
+  const key=(value,repeat=false)=>documentEvents.emit('keydown',{key:value,repeat,target:document.body,preventDefault(){}});
+  return {...api,context,sceneMap,elements,storage,clock,messages,start,key,run:code=>vm.runInContext(code,context)};
 }
 
 const tests=[];
@@ -548,6 +550,71 @@ test('legacy power protection satisfies its task without demanding an impossible
   for(const [day,upgrade] of [[2,'ups2'],[3,'gen'],[3,'solar']]){
     const h=host();h.G.upg[upgrade]=true;h.start('night',day);
     assert.equal(h.run("betaObjectives('night').find(t=>t.id==='power').done"),true);
+  }
+});
+
+test('nozzle cannot start a second timer for the same attempt',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night');h.clock.jobs.clear();ns.trigEv('clog',true,0);
+  h.G.startNozzleMini();const first=h.G._mini;h.G.startNozzleMini();
+  assert.equal(h.G._mini,first);h.clock.advance(250);assert.equal(first.time,35750);
+});
+test('nozzle last valid hold wins once at the deadline',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night');h.clock.jobs.clear();ns.trigEv('clog',true,0);
+  h.G.startNozzleMini();const m=h.G._mini;
+  Object.assign(m,{phase:'filament',hits:2,hold:1000,power:76,time:250});
+  h.clock.advance(500);
+  assert.equal(h.G.nFixes,1);assert.equal(ns.aEv,null);assert.equal(h.G._mini,null);
+});
+test('nozzle can be completed through timed input handlers and can retry after timeout',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night');h.clock.jobs.clear();ns.trigEv('clog',true,0);
+  h.G.startNozzleMini();h.clock.advance(36500);assert.equal(h.G._mini,null);assert.equal(ns.aEv._fails,1);
+  h.G.startNozzleMini();const m=h.G._mini;
+  // Input-only controller: fill to the safe zone, then tap as pressure decays.
+  for(let i=0;h.G._mini&&i<180;i++){
+    if(!m.done){
+      for(let taps=0;m.power<74&&taps<12;taps++)h.key(m.phase==='needle'?'Alt':' ');
+      assert.ok(m.power>=74,'timed input must raise pressure');
+    }
+    h.clock.advance(250);
+  }
+  assert.equal(h.G._mini,null);assert.equal(h.G.nFixes,1);assert.equal(ns.aEv,null);
+  h.key('Alt');h.clock.advance(1000);assert.equal(h.G.nFixes,1);
+});
+test('bed rhythm can be won with timed arrow handlers on nights two and three',()=>{
+  for(const day of [2,3]){
+    const h=host();loadedJob(h);const ns=h.start('night',day);h.clock.jobs.clear();ns.trigEv('bed',true,day===2?0:1);
+    h.G.startBedMini();const m=h.G._mini;
+    for(let i=0;h.G._mini&&i<2200;i++){
+      h.clock.advance(16);
+      if(h.G._mini&&!m.done)for(const note of [...m.notes])if(Math.abs(h.clock.now-note.hitTime)<=16)h.key(['ArrowUp','ArrowRight','ArrowDown','ArrowLeft'][note.dir]);
+    }
+    assert.equal(h.G._mini,null);assert.equal(h.G.nFixes,1);assert.equal(m.hits,m.needHits);
+  }
+});
+test('bed misses, early taps and retry preserve the original failure',()=>{
+  const h=host();loadedJob(h);const ns=h.start('night',2);h.clock.jobs.clear();ns.trigEv('bed',true,0);
+  const ev=ns.aEv;h.G.startBedMini();const m=h.G._mini;
+  h.key('ArrowUp');assert.equal(m.time,m.max-500);
+  h.key('ArrowUp',true);assert.equal(m.time,m.max-500,'key repeat should not double-penalize');
+  h.clock.advance(30000);assert.equal(h.G._mini,null);assert.equal(ns.aEv,ev);assert.equal(ev._fails,1);
+  h.G.startBedMini();assert.equal(h.G._mini.ev,ev);assert.equal(h.G._mini.hits,0);
+});
+test('breaker keyboard sequences recover after errors and finish both long-outage rounds',()=>{
+  for(const type of ['norm','long']){
+    const h=host();loadedJob(h);const ns=h.start('night',3);h.clock.jobs.clear();ns.trigPwr(type);ns.openBk();
+    // Only supply the dynamic button nodes used by _bk; no rendered UI is claimed.
+    for(let i=0;i<4;i++)h.elements.set('bk'+i,h.context.document.createElement('button'));
+    h.key('2');assert.equal(h.G._bkBusy,true);h.clock.advance(500);assert.equal(h.G._bkNext,0);
+    const rounds=type==='long'?2:1;
+    for(let round=0;round<rounds;round++){
+      for(let i=0;i<4;i++){
+        const seq=h.G._bkOrd[i]+1;h.key(String(seq));h.key(String(seq));
+        h.clock.advance(650);assert.equal(h.G._bkNext,i+1);
+      }
+      h.clock.advance(round+1<rounds?700:750);
+    }
+    assert.equal(h.G.pActive,false);assert.equal(h.G.breakerFixes,1);assert.equal(h.G.block,false);
+    h.G._bk(0);assert.equal(h.G.breakerFixes,1);
   }
 });
 
