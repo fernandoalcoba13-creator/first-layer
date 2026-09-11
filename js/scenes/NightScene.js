@@ -26,16 +26,19 @@ class NightScene extends Phaser.Scene{
       return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
     };
     return [
-      R(27,158,31,64),        // coffee station
-      R(107,117,38,18),       // left filament shelf
-      R(194,119,120,18),      // central printer bench
-      R(288,118,57,18),       // tool workbench
-      R(364,118,85,18),       // upper-right printer shelf
-      R(202,204,78,24),       // office desk: only the physical tabletop/base
-      R(246,192,14,25),       // plant beside the office desk
-      R(49,228,76,64),        // lower-left filament rack
-      R(371,226,94,82),       // lower-right boxes and storage
-      R(386,151,52,28)        // upper-right box pile
+      R(26.5,189,31,64),      // coffee station at its current sprite position
+      R(107,126,38,18),       // left filament shelf base
+      R(199,127,112,18),      // central printer bench base
+      R(288.5,127,57,18),     // tool workbench base
+      R(363.5,127,85,18),     // upper-right printer shelf base
+      R(200.5,204,79,24),     // office desk, leaving the chair approachable
+      R(250,203,14,11),       // plant pot beside the office desk
+      R(49.5,260,75,65),      // lower-left filament rack
+      R(394.5,211,23,67),     // right tall box stack
+      R(372,211,18,20),       // open box beside that stack
+      R(382.5,258,43,46),     // separate lower piles, not the empty floor between them
+      R(314.5,258,15,31),
+      R(340,258,26,29)
     ];
   }
   footRect(x=this.player.x,y=this.player.y){
@@ -49,10 +52,16 @@ class NightScene extends Phaser.Scene{
   movePlayer(dx,dy){
     const room=this.room(),minY=room.oy+106*room.s,maxY=room.oy+244*room.s;
     const minX=room.ox+12*room.s,maxX=room.ox+(420-12)*room.s;
-    const nx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX);
-    if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
-    const ny=Phaser.Math.Clamp(this.player.y+dy,minY,maxY);
-    if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
+    dx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX)-this.player.x;
+    dy=Phaser.Math.Clamp(this.player.y+dy,minY,maxY)-this.player.y;
+    // Sample the whole move so a slow frame cannot jump across a thin footprint.
+    const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/(2*room.s)));
+    for(let i=0;i<steps;i++){
+      const nx=Phaser.Math.Clamp(this.player.x+dx/steps,minX,maxX);
+      if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
+      const ny=Phaser.Math.Clamp(this.player.y+dy/steps,minY,maxY);
+      if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
+    }
   }
   create(){
     if(G.betaResult){G.showBetaEnd();this.scene.pause();return;}
@@ -313,7 +322,7 @@ class NightScene extends Phaser.Scene{
     if(G.pActive&&G.pType&&G.pType.id!=='micro')targets.push({type:'breaker',visual:this.tZone,access:this.breakerAccess,label:tr('boardTitle')});
     targets.push({type:'shop',visual:this.shopZone,access:this.rp(203,212),label:tr('shopTitle')});
     targets.push({type:'inventory',visual:this.invZone,access:this.rp(93,223),label:tr('inventory')});
-    this.pObjs.forEach(po=>targets.push({type:'printer',po,visual:{x:po.px,y:po.py},access:{x:po.px,y:this.rp(0,126).y},label:'P'+(po.p.id+1)+' '+tr('interact')}));
+    this.pObjs.forEach(po=>targets.push({type:'printer',po,visual:{x:po.px,y:po.py},access:{x:po.px,y:this.rp(0,132).y},label:'P'+(po.p.id+1)+' '+tr('interact')}));
     return targets;
   }
   targetAt(x,y,click){

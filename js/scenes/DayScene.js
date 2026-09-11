@@ -16,16 +16,18 @@ class DayScene extends Phaser.Scene{
       return new Phaser.Geom.Rectangle(p.x-w*s/2,p.y-h*s,w*s,h*s);
     };
     return [
-      R(83,174,142,18),       // counter front: narrow contact strip instead of a solid block
-      R(153,147,18,44),       // short return of the L-shaped counter
-      R(33,139,34,15),        // stacked boxes
-      R(71,141,30,13),        // display/mannequin floor footprint
-      R(294,153,96,18),       // model display cabinet base
-      R(383,153,43,18),       // coffee station base
+      R(90,173,156,18),       // counter front, joined to the return below
+      R(154,158,28,42),       // L return: leave the rear passage open above y=116
+      R(23,109,22,20),        // tall box stack
+      R(47,109,22,14),        // low box stack
+      R(89,107,14,7),         // mannequin base, not the empty aisle below it
+      R(236,105,12,8),        // plant pot beside the model display
+      R(297,125,94,18),       // model display cabinet base
+      R(375,125,48,18),       // coffee station base
       R(370,250,68,30),       // lounge sofa footprint
       R(318,235,34,20),       // lounge table footprint
-      R(194,260,105,24),      // machine behind the front glass
-      R(230,218,36,22)        // active day printer stand
+      R(172,260,90,24),       // display table behind the front glass
+      R(230,216,30,20)        // active day printer stand
     ];
   }
   footRect(x=this.player.x,y=this.player.y){
@@ -39,10 +41,16 @@ class DayScene extends Phaser.Scene{
   movePlayer(dx,dy){
     const room=this.room(),minY=room.oy+102*room.s,maxY=room.oy+244*room.s;
     const minX=room.ox+12*room.s,maxX=room.ox+(DAY_ROOM_W-12)*room.s;
-    const nx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX);
-    if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
-    const ny=Phaser.Math.Clamp(this.player.y+dy,minY,maxY);
-    if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
+    dx=Phaser.Math.Clamp(this.player.x+dx,minX,maxX)-this.player.x;
+    dy=Phaser.Math.Clamp(this.player.y+dy,minY,maxY)-this.player.y;
+    // Sample the whole move so a slow frame cannot jump across a thin footprint.
+    const steps=Math.max(1,Math.ceil(Math.max(Math.abs(dx),Math.abs(dy))/(2*room.s)));
+    for(let i=0;i<steps;i++){
+      const nx=Phaser.Math.Clamp(this.player.x+dx/steps,minX,maxX);
+      if(!this.hitsSolid(nx,this.player.y))this.player.x=nx;
+      const ny=Phaser.Math.Clamp(this.player.y+dy/steps,minY,maxY);
+      if(!this.hitsSolid(this.player.x,ny))this.player.y=ny;
+    }
   }
   create(){
     this.W=this.scale.width;this.H=this.scale.height;
@@ -166,7 +174,7 @@ class DayScene extends Phaser.Scene{
   refreshPlayerSprite(){if(this.pSp||!this.player)return;this.pSp=createPlayerSprite(this,this.player,false);if(this.pSp){this.pSp.setScale(2.6);this.pGr.setVisible(false);}}
   setupKeys(){
     this.keys=this.input.keyboard.addKeys({w:'W',s:'S',a:'A',d:'D',up:'UP',dn:'DOWN',lt:'LEFT',rt:'RIGHT'});
-    this.input.keyboard.on('keydown-E',()=>{if(this.dlgOpen||G.block||this._actBusy)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
+    this.input.keyboard.on('keydown-E',e=>{if((e&&e.repeat)||this.dlgOpen||G.block||this._actBusy)return;if(this.nearClient)this.openCounter(this.nearClient);else if(this.near)this.interact(this.near);});
   }
   setupPointer(){
     this.input.on('pointerdown',p=>{
@@ -174,7 +182,7 @@ class DayScene extends Phaser.Scene{
       const x=p.worldX,y=p.worldY;
       const c=this.clientAt(x,y,78);
       if(c){this.openCounter(c);return;}
-      const it=this.interactiveAt(x,y,86);
+      const it=this.interactiveAt(x,y,28*this.room().s);
       if(it)this.interact(it);
     });
   }
@@ -614,7 +622,7 @@ class DayScene extends Phaser.Scene{
     this.ySortWorld();
     const cNear=this.nearestClient();
     this.nearClient=cNear;
-    let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'Click/E '+cNear.cl.n}:null,md=cNear?0:88;
+    let near=cNear?{x:cNear.ct.x,y:cNear.ct.y,type:'client',client:cNear,lbl:'Click/E '+cNear.cl.n}:null,md=cNear?0:28*this.room().s;
     this.IA.forEach(it=>{
       const d=Phaser.Math.Distance.Between(this.player.x,this.player.y,it.x,it.y);
       if(d<md){md=d;near=it;}

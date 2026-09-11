@@ -693,6 +693,91 @@ test('cancelled or storage-denied reset preserves the live minigame and existing
   assert.equal(h.G.block,true);h.clock.advance(250);assert.equal(mini.time,35750);
 });
 
+test('day counter has a closed L joint and an open rear and side approach',()=>{
+  for(const [w,h] of [[1366,768],[1920,1080]])for(const day of [1,2,3]){
+    const env=host(null,w,h),ds=env.start('day',day);
+    for(const [x,y] of [[154,152],[166,140],[90,169]]){
+      const p=ds.rp(x,y);assert.equal(ds.hitsSolid(p.x,p.y),true,'counter must block '+x+','+y);
+    }
+    for(const [x,y] of [[154,110],[120,150],[173,140],[90,181]]){
+      const p=ds.rp(x,y);assert.equal(ds.hitsSolid(p.x,p.y),false,'counter access must stay open '+x+','+y);
+    }
+  }
+});
+test('room solids match measured props instead of blocking their former positions',()=>{
+  const checks={
+    day:{solid:[[22,105],[48,105],[89,105],[236,102],[297,119],[375,119],[230,211]],free:[[35,135],[71,136],[294,140],[383,140],[250,210],[234,240]]},
+    night:{solid:[[27,179],[107,124],[200,125],[394,202],[372,202],[250,203],[49,240],[340,240]],free:[[27,115],[335,175],[385,136],[338,224],[49,178]]}
+  };
+  for(const [w,h] of [[1366,768],[1920,1080]])for(const phase of ['day','night']){
+    const env=host(null,w,h),scene=env.start(phase);
+    assert.equal(scene.hitsSolid(scene.player.x,scene.player.y),false,'spawn inside solid');
+    for(const kind of ['solid','free'])for(const [x,y] of checks[phase][kind]){
+      const p=scene.rp(x,y);assert.equal(scene.hitsSolid(p.x,p.y),kind==='solid',phase+' '+kind+' '+x+','+y);
+    }
+  }
+});
+test('large movement deltas stop at furniture instead of tunneling through it',()=>{
+  for(const [w,h] of [[1366,768],[1920,1080]])for(const phase of ['day','night']){
+    const env=host(null,w,h),scene=env.start(phase),s=scene.room().s;
+    const cases=phase==='day'
+      ?[{from:[90,200],delta:[0,-140],axis:'y',min:178,max:180},{from:[90,140],delta:[0,80],axis:'y',min:153,max:155},{from:[180,140],delta:[-100,0],axis:'x',min:172,max:174}]
+      :[{from:[202,230],delta:[0,-90],axis:'y',min:208.5,max:210.5},{from:[202,165],delta:[0,75],axis:'y',min:178,max:180},{from:[275,198],delta:[-145,0],axis:'x',min:260.5,max:262.5}];
+    for(const c of cases){
+      const p=scene.rp(...c.from);scene.player.setPosition(p.x,p.y);
+      scene.movePlayer(c.delta[0]*s,c.delta[1]*s);
+      const origin=c.axis==='x'?scene.room().ox:scene.room().oy,value=(scene.player[c.axis]-origin)/s;
+      assert.ok(value>=c.min-1e-7&&value<=c.max+1e-7,phase+' '+c.axis+' stopped at '+value);
+      assert.equal(scene.hitsSolid(scene.player.x,scene.player.y),false);
+    }
+  }
+});
+test('player can follow safe routes behind the day desk and around night workstations',()=>{
+  const routes={
+    day:[[184,110],[120,110],[120,150],[55,150],[120,150],[120,110],[184,110],[184,190],[90,190],[90,181]],
+    night:[[270,235],[270,139],[155,139],[55,139],[55,117],[55,139],[140,139],[140,169],[203,169],[270,169],[270,223],[93,223]]
+  };
+  for(const [w,h] of [[1366,768],[1920,1080]])for(const phase of ['day','night'])for(const day of [1,2,3]){
+    const env=host(null,w,h),scene=env.start(phase,day),step=scene.room().s;
+    for(const [x,y] of routes[phase]){
+      const target=scene.rp(x,y);
+      for(let i=0;i<500&&(Math.abs(scene.player.x-target.x)>1e-7||Math.abs(scene.player.y-target.y)>1e-7);i++){
+        scene.movePlayer(Math.max(-step,Math.min(step,target.x-scene.player.x)),Math.max(-step,Math.min(step,target.y-scene.player.y)));
+        assert.equal(scene.hitsSolid(scene.player.x,scene.player.y),false,'route entered a solid');
+      }
+      assert.ok(Math.abs(scene.player.x-target.x)<1e-7&&Math.abs(scene.player.y-target.y)<1e-7,phase+' route blocked at '+x+','+y);
+    }
+  }
+});
+test('day PC is reachable from behind the counter at both scales and ignores repeated E',()=>{
+  for(const [w,h] of [[1366,768],[1920,1080]]){
+    const env=host(null,w,h),ds=env.start('day');env.clock.jobs.clear();
+    const p=ds.rp(55,150);ds.player.setPosition(p.x,p.y);ds.update(0,0);
+    assert.equal(ds.near&&ds.near.type,'shop');ds.input.keyboard.emit('keydown-E',{repeat:false});
+    assert.equal(env.elements.get('shop').style.display,'block');env.G.cShop();
+    ds.input.keyboard.emit('keydown-E',{repeat:true});assert.equal(env.elements.get('shop').style.display,'none');
+    const pc=ds.IA.find(it=>it.type==='shop');ds.input.emit('pointerdown',{worldX:pc.x,worldY:pc.y});
+    assert.equal(env.elements.get('shop').style.display,'block');assert.equal(env.G.stab,'up');
+  }
+});
+
+test('movement slides along furniture and stays within room limits even with extreme deltas',()=>{
+  for(const [w,h] of [[1366,768],[1920,1080]])for(const phase of ['day','night']){
+    const env=host(null,w,h),scene=env.start(phase),r=scene.room();
+    const start=phase==='day'?[173,125]:[47,140],p=scene.rp(...start);
+    scene.player.setPosition(p.x,p.y);scene.movePlayer(-30*r.s,30*r.s);
+    assert.ok(Math.abs(scene.player.y-scene.rp(0,start[1]+30).y)<1e-7,'blocked axis must not prevent sliding');
+    assert.ok((scene.player.x-r.ox)/r.s>=(phase==='day'?172:45.5)-1e-7);
+    for(const [dx,dy] of [[50000,50000],[-50000,-50000]]){
+      scene.movePlayer(dx,dy);
+      assert.equal(scene.hitsSolid(scene.player.x,scene.player.y),false);
+      const x=(scene.player.x-r.ox)/r.s,y=(scene.player.y-r.oy)/r.s;
+      assert.ok(x>=12-1e-7&&x<=(phase==='day'?401:408)+1e-7);
+      assert.ok(y>=(phase==='day'?102:106)-1e-7&&y<=244+1e-7);
+    }
+  }
+});
+
 let failed=0;
 for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}
 console.log(`${tests.length-failed}/${tests.length} passed. Logic only; real rendering/audio/file:// QA remains mandatory.`);

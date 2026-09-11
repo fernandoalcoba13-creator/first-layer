@@ -19,7 +19,9 @@ Actualizado: 2026-09-11.
   y corregidos; seis pruebas adicionales de minijuegos. Puerta manual pendiente.
 - Ese bloque se subio como `0d23d65`. Continuacion local del 11/09: guardado
   manual con resultado veraz y seis pruebas de interrupciones/almacenamiento.
-  Sin nuevo push. Este bloque local queda respaldado antes de ajustar colisiones.
+  Respaldado en `c1d199c` tras la confirmacion manual, antes de ajustar colisiones.
+- Bloque de colisiones iniciado el 11/09: seis regresiones nuevas, 65/65 en verde.
+  Cambios locales sin push; su comprobacion visual especifica sigue pendiente.
 - Esto NO certifica que la beta este terminada.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
@@ -67,7 +69,8 @@ al pasar de turno ni se usa para completar automaticamente una mision.
 
 Click mantiene la interaccion directa sobre el dibujo; E usa cercania al
 punto de acceso. Ambos llaman la misma accion y solo eligen un objetivo.
-No se alteraron hitboxes generales ni posiciones de los sprites.
+En el bloque P1 no se alteraron hitboxes generales ni posiciones de los sprites.
+El ajuste posterior de hitboxes se documenta por separado mas abajo.
 
 La cola y los repuestos son condiciones de estado que deben mantenerse al
 cierre. Los hitos de aceptar, comprar, cargar/cobrar y reparar no vuelven a
@@ -152,6 +155,43 @@ cubre las dos acciones manuales. No implica validacion real de localStorage.
 
 ## Archivos modificados
 
+### Bloque de colisiones del 11/09
+
+Se inspeccionaron los PNG existentes sin modificarlos y se midieron sus
+componentes opacos. Las coordenadas siguientes son pixeles del arte fuente,
+no pixeles de pantalla. Las hitboxes son zonas de contacto, no mascaras de
+toda la silueta: el personaje puede acercarse por detras de una mesa alta.
+
+- Escritorio diurno: el PNG ocupa x=12..168, y=95..173. La union anterior
+  dejaba un hueco entre y=147 y y=156; ahora las dos zonas se solapan y queda
+  un paso trasero a y=110, por encima del retorno que comienza en y=116.
+- Cajas y maniqui diurnos terminan en y=109/107, no y=139/141. Se retiraron
+  sus bloqueos desplazados del pasillo y se ajusto el pie de la planta.
+- Exhibidor y cafetera diurnos terminan en y=125, no y=153. La mesa frontal
+  ocupa x=127..217; el banco de P1 coincide con sus 30 px de ancho dibujados.
+- Cafetera nocturna: componente x=11..42, y=125..189. Estanteria inferior
+  izquierda: x=12..87, y=195..260. Se corrigieron sus offsets antiguos.
+- Bancos nocturnos terminan en y=126/127. Los accesos de impresoras se
+  desplazaron a y=132 para quedar fuera del nuevo contacto; no se movieron
+  las impresoras ni sus puntos visuales de click.
+- Las cajas nocturnas derechas usan rectangulos separados, en vez de tapar
+  el suelo vacio entre pilas con un unico bloque de 94 x 82.
+- Day/Night prueban cada movimiento en pasos de hasta 2 px de arte fuente.
+  Evita atravesar muebles finos con un delta grande y conserva deslizamiento
+  por ejes. Los deltas se limitan al cuarto antes de calcular los pasos.
+- Alcance diurno de objetos proporcional a la escena (28 px de arte fuente),
+  para usar el PC desde detras del escritorio tambien en 1920x1080. E ignora
+  repeticion de tecla. Se conserva la prioridad de clientes existente.
+
+Los cinco primeros casos nuevos fallaron antes del parche de escenas; se
+agrego ademas cobertura de deslizamiento y limites. Las 59 pruebas anteriores
+siguen pasando. Cambios de juego: solo DayScene.js, NightScene.js y sus
+versiones de cache en index.html. Save, audio, sprites, posiciones visuales,
+escala, profundidad, misiones y economia no se modificaron en este bloque.
+Sofa y mesa del lounge quedan sin cambios, pendientes de validacion visual.
+
+### Historial acumulado
+
 | Archivo | Alcance |
 | --- | --- |
 | index.html | Acciones y texto base del final, aviso de save, versiones de cache |
@@ -179,7 +219,7 @@ node qa/beta-regression.cjs
 git diff --check
 ```
 
-Ultimo resultado: **59/59 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos + 6 de interrupciones/guardado).
+Ultimo resultado: **65/65 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos + 6 de interrupciones/guardado + 6 de colisiones).
 `git diff --check`: exit 0, sin errores de whitespace. Git solo avisa de la
 conversion habitual LF -> CRLF del repositorio en Windows.
 
@@ -238,7 +278,9 @@ Seis casos de interrupciones/guardado:
 
 ## Riesgos y siguiente fase
 
-- Validacion real file:// y de consola pendiente en ambos navegadores.
+- Fernando aprobo dia, noche y recarga antes de este bloque. No se especifico
+  navegador/resolucion ni se aporto un log de consola. La matriz completa
+  Chrome/Edge sigue pendiente, igual que la validacion del nuevo contacto.
 - Colisiones generales, escritorio, profundidad, layout, animaciones,
   escalas, resize y UI a 768 px siguen sin certificacion visual.
 - Deuda puede terminar negativa: penaliza decisiones, pero no bloquea
@@ -308,3 +350,36 @@ en 1366x768 y 1920x1080. Mantener F12 > Console visible y anotar primer error.
 
 Registrar navegador, resolucion, dia/fase, pasos y captura de cualquier fallo.
 Al aprobar esta puerta recien se decide el siguiente bloque.
+
+## Puerta manual del bloque de colisiones
+
+Recargar publish-repo/index.html para cargar Day v33 / Night v38.
+Probar en 1366x768 y 1920x1080 con F12 > Console abierto:
+
+1. Dia: entrar al escritorio por arriba del retorno derecho y recorrer su
+   parte trasera. La esquina de la L debe frenar el paso, no dejar cruzarla.
+2. Abrir PC/tienda desde detras con E y mediante click. Cerrar y mantener E:
+   una tecla sostenida no debe volver a abrir el panel por repeticion.
+3. Rodear cajas, maniqui, exhibidor, cafetera y banco de P1. No debe existir
+   un muro invisible donde antes estaban sus hitboxes. Revisar el contacto
+   contra el frente y los laterales de cada objeto, no solo un acceso.
+4. Noche: ir desde spawn al PC, inventario, impresoras y tablero. Rodear la
+   cafetera y pasar por los huecos entre las pilas derechas. Cargar/reparar P1
+   y, al desbloquearla, P2; resolver un corte con E y luego mediante click.
+5. Mantener movimiento diagonal contra las esquinas: debe deslizarse por el
+   eje libre sin cruzar el mueble ni quedar atrapado. Guardar/recargar cada
+   tipo de turno y confirmar capas, personajes y acciones sin errores nuevos.
+
+Las pruebas Node comprueban puntos de contacto, rutas con movePlayer y
+accesos usando Phaser simulado. No certifican oclusion de sprites, sensacion
+del control, canvas ni consola del navegador. Esperar esta validacion antes
+de seguir con presentacion y animaciones.
+
+## Aprobacion del bloque de colisiones - 2026-09-11
+
+Fernando confirmo "confirmo! seguimos" al solicitarle validar el acceso
+trasero del escritorio y el recorrido alrededor de muebles. El bloque queda
+aprobado para avanzar a animaciones de cafe y reparacion. No se aportaron
+logs de consola ni una matriz por navegador/resolucion; esa certificacion
+completa sigue pendiente. Regresion previa al respaldo: 65/65 casos de logica.
+No se hizo push, tag ni publicacion.
