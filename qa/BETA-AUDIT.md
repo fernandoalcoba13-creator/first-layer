@@ -1,6 +1,6 @@
 # First Layer: cierre de beta por bloques
 
-Actualizado: 2026-09-10.
+Actualizado: 2026-09-11.
 
 ## Estado actual
 
@@ -8,14 +8,18 @@ Actualizado: 2026-09-10.
 - Bloque 1: implementado anteriormente, validacion real en navegador pendiente.
 - Bloque P1: implementado y verificado con pruebas de logica, por pedido expreso
   de continuar. Los cinco P1 originales se confirmaron en el codigo.
-- La validacion manual NO se da por aprobada. Fernando confirmo el 10/09
-  que aun no probo el juego. No iniciar polish visual.
+- Fernando confirmo el 11/09 que dia, noche y recarga funcionan en Chrome/Edge.
+  Se aprueba esa puerta basica para iniciar colisiones. No indico navegador,
+  resolucion ni recorrido completo; no equivale a la QA final de seis turnos.
 - Push del bloque P1 confirmado el 10/09: `4e00937` en `origin/main`.
   El workflow existente publica GitHub Pages al recibir main.
   No se verifico el resultado del deploy automatico.
   Sin tag de beta, release ni cambios en Steam o itch.io.
 - Continuacion acotada: dos bugs de temporizacion de boquilla reproducidos
   y corregidos; seis pruebas adicionales de minijuegos. Puerta manual pendiente.
+- Ese bloque se subio como `0d23d65`. Continuacion local del 11/09: guardado
+  manual con resultado veraz y seis pruebas de interrupciones/almacenamiento.
+  Sin nuevo push. Este bloque local queda respaldado antes de ajustar colisiones.
 - Esto NO certifica que la beta este terminada.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
@@ -125,6 +129,27 @@ simulado. Dos regresiones fallaron antes del cambio y pasan con la correccion:
 Solo se modifico esta logica en js/g-methods.js y su cache en index.html.
 No se tocaron tiempos, dificultad, recompensas, assets, audio ni colisiones.
 
+## Continuacion: interrupciones y guardado manual
+
+Se revisaron menu, recarga, cierre de Night y reset durante minijuegos.
+Las protecciones existentes pasan las nuevas pruebas sin modificar escenas:
+menu/atajos no reemplazan un evento, shutdown cancela el intervalo activo
+y los callbacks de termicas no avanzan despues de terminar la noche.
+La recarga desde boquilla, cama o termicas restaura el checkpoint del turno,
+sin conservar la falla, el minijuego ni la pausa electrica de la sesion anterior.
+
+Bug confirmado antes de corregir: Q anunciaba exito aunque doSave devolviera
+false por almacenamiento denegado; Guardar no mostraba aviso de error.
+Ambas pruebas fallaron sobre `0d23d65`. Ahora boton y tecla llaman a
+G.manualSave, que informa el resultado real usando los textos ES/EN existentes.
+Restablecer acceso al storage permite guardar de nuevo sin reemplazar el
+checkpoint por el estado instantaneo. No se cambio doSave ni el formato v2.
+
+Alcance local: js/ui.js, su boton/version de cache en index.html y los dos
+archivos QA. No se cambiaron autosaves, escenas, assets ni balance.
+Los avisos de autosave siguen con su comportamiento anterior; esta correccion
+cubre las dos acciones manuales. No implica validacion real de localStorage.
+
 ## Archivos modificados
 
 | Archivo | Alcance |
@@ -135,7 +160,7 @@ No se tocaron tiempos, dificultad, recompensas, assets, audio ni colisiones.
 | js/scenes/NightScene.js | Interacciones/accesos, gate, recuperacion y final |
 | js/g-methods.js | Compras indispensables a deuda, compatibilidad de materiales y temporizador de boquilla |
 | js/pro-patch.js | Lista consumiendo betaObjectives |
-| js/ui.js | Final, menu sin borrar, confirmacion de reset, teclado del final |
+| js/ui.js | Final, menu sin borrar, confirmacion de reset, teclado del final y resultado de guardado manual |
 | js/i18n.js | ES/EN de final, credito y meta opcional |
 | js/audio.js | Solo proteccion de preferencia ante storage denegado |
 | js/draw.js | Solo seleccion/actualizacion de variante de objetos nocturnos |
@@ -154,7 +179,7 @@ node qa/beta-regression.cjs
 git diff --check
 ```
 
-Ultimo resultado: **53/53 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos).
+Ultimo resultado: **59/59 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos + 6 de interrupciones/guardado).
 `git diff --check`: exit 0, sin errores de whitespace. Git solo avisa de la
 conversion habitual LF -> CRLF del repositorio en Windows.
 
@@ -198,6 +223,18 @@ simulado. No verifican propagacion/foco del navegador ni teclas reservadas
 como ALT. El caso limite de boquilla prepara explicitamente el ultimo hold;
 los casos completos de boquilla y cama usan entradas y reloj, no el callback
 de victoria como atajo.
+
+Seis casos de interrupciones/guardado:
+- Menu, Escape y atajos globales no sustituyen un minijuego nocturno activo.
+- Guardar durante boquilla, cama y termicas recarga el checkpoint correcto,
+  con las referencias pedido/impresora y sin pausas/eventos de la sesion anterior.
+- Shutdown cancela timers de boquilla/cama e invalida acciones de termicas.
+- Q informa fallo y recuperacion del storage en ES/EN, sin sobrescribir el
+  checkpoint ni anunciar exito cuando la escritura fue rechazada.
+- El boton Guardar cumple el mismo contrato; se ejecuta su onclick real
+  extraido de index.html, no se simula un click de navegador.
+- Cancelar reset o fallar al borrar storage conserva save, intento y bloqueo;
+  no solicita reload. Se usa storage simulado, nunca el save de Fernando.
 
 ## Riesgos y siguiente fase
 
@@ -261,6 +298,9 @@ en 1366x768 y 1920x1080. Mantener F12 > Console visible y anotar primer error.
 12. Guardar/recargar durante dia y noche: conserva numero y tipo de turno,
     pedidos/fondos del INICIO de ese turno. Deuda adquirida antes del nuevo
     checkpoint se conserva.
+    Probar boton Guardar y tecla Q: ambos avisan que se guarda el checkpoint.
+    En un perfil de pruebas con almacenamiento bloqueado deben avisar error,
+    nunca exito. No cerrar esa pestaña hasta restablecer permisos y guardar.
 13. Cambiar idioma en menu a EN, continuar, revisar misiones/final; volver a
     ES. Revisar botones y textos sin superposiciones.
 14. En los seis turnos: comprobar sprites y capas visibles, PC, inventario,

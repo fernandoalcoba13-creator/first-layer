@@ -618,6 +618,81 @@ test('breaker keyboard sequences recover after errors and finish both long-outag
   }
 });
 
+test('menu and global shortcuts cannot dismiss or replace active night minigames',()=>{
+  for(const type of ['clog','bed','breaker']){
+    const h=host();loadedJob(h);const ns=h.start('night',type==='clog'?1:2);h.clock.jobs.clear();
+    if(type==='breaker'){ns.trigPwr('norm');ns.openBk();}
+    else{
+      ns.trigEv(type,true,0);h.run('openGameMenu()');h.key('Escape');
+      assert.equal(h.elements.get('evp').style.display,'block');
+      if(type==='clog')h.G.startNozzleMini();else h.G.startBedMini();
+    }
+    const mini=h.G._mini,sequence=h.G._bkOrd,saved=h.storage.get(h.SK);
+    h.run('openGameMenu()');for(const key of ['Escape','h','o','i','q'])h.key(key);
+    assert.equal(h.G.menuOpen,false);assert.equal(h.G.block,true);assert.equal(h.G._mini,mini);
+    assert.equal(h.G._bkOrd,sequence);assert.equal(h.storage.get(h.SK),saved);
+    assert.equal(h.elements.get(type==='breaker'?'bkg':'miniGame').style.display,type==='breaker'?'block':'flex');
+    assert.equal(h.elements.get('shop').style.display,'none');assert.equal(h.elements.get('sto').style.display,'none');
+  }
+});
+test('saving during each night minigame reloads a clean shift checkpoint',()=>{
+  for(const [day,type] of [[1,'clog'],[2,'bed'],[3,'breaker']]){
+    const h=host();const p=loadedJob(h);h.G.dayPrints=2;
+    const ns=h.start('night',day),savedBefore=JSON.parse(h.storage.get(h.SK));h.clock.jobs.clear();
+    if(type==='breaker'){ns.trigPwr('long');ns.openBk();}
+    else{ns.trigEv(type,true,0);if(type==='clog')h.G.startNozzleMini();else h.G.startBedMini();}
+    h.G.gold=123;p.progress=.67;assert.equal(h.doSave(h.G),true);
+    const saved=JSON.parse(h.storage.get(h.SK));assert.deepEqual(saved.checkpoint,savedBefore.checkpoint);
+    const restored=host(saved);assert.equal(restored.G.resumePhase,'night');restored.start('night',day);
+    assert.equal(restored.G.day,day);assert.equal(restored.G.block,false);assert.equal(restored.G.pActive,false);
+    assert.ok(!restored.G._mini);assert.equal(restored.G.gold,savedBefore.checkpoint.gold);
+    assert.equal(restored.G.printers[0].order,restored.G.orders[0]);
+    assert.equal(restored.G.printers[0].progress,0);assert.equal(restored.G.printers[0]._pau,false);
+    assert.equal(restored.G.printers[0]._ev,null);assert.deepEqual(restored.messages,[]);
+  }
+});
+test('night shutdown retires minigame timers and pending breaker actions',()=>{
+  for(const type of ['clog','bed','breaker']){
+    const h=host();loadedJob(h);const ns=h.start('night',type==='clog'?1:2);h.clock.jobs.clear();
+    if(type==='breaker'){
+      ns.trigPwr('norm');ns.openBk();h.elements.set('bk0',h.context.document.createElement('button'));
+      h.G._bk(0);assert.equal(h.G._bkBusy,true);
+    }else{ns.trigEv(type,true,0);if(type==='clog')h.G.startNozzleMini();else h.G.startBedMini();}
+    const mini=h.G._mini;
+    ns.events.emit('shutdown');h.G.phase='day';
+    if(mini){assert.equal(h.clock.jobs.has(mini.tick),false);assert.equal(h.G._mini,null);}
+    h.clock.advance(40000);
+    assert.equal(h.G.nFixes,0);assert.equal(h.G.breakerFixes,0);
+    if(type==='breaker')assert.equal(h.G._bkNext,0,'retired action must not advance a round');
+    assert.deepEqual(h.messages,[]);
+  }
+});
+for(const input of ['keyboard','button'])test('manual save via '+input+' reports storage failure honestly and recovers',()=>{
+  const buttonHandler=html.match(/<button\b[^>]*\bid="btnSave"[^>]*\bonclick="([^"]+)"/)[1];
+  for(const lang of ['es','en']){
+    const options={},h=host(null,1366,768,options);h.start('day');h.G.lang=lang;
+    const previous=h.storage.get(h.SK),notices=[];h.context.showNotif=(...args)=>notices.push(args);
+    const save=()=>input==='keyboard'?h.key('q'):h.run(buttonHandler);
+    options.denyStorage=true;save();
+    assert.equal(h.G.saveUnavailable,true);assert.equal(h.storage.get(h.SK),previous);
+    assert.deepEqual(notices,[[h.run("tr('storageUnavailable')"),'error']]);
+    options.denyStorage=false;notices.length=0;h.G.gold=99;save();
+    assert.equal(h.G.saveUnavailable,false);
+    assert.deepEqual(notices,[[h.run("tr('savedManual')"),'success']]);
+    assert.deepEqual(JSON.parse(h.storage.get(h.SK)).checkpoint,JSON.parse(previous).checkpoint);
+  }
+});
+test('cancelled or storage-denied reset preserves the live minigame and existing save',()=>{
+  const options={},h=host(null,1366,768,options);loadedJob(h);const ns=h.start('night');h.clock.jobs.clear();
+  ns.trigEv('clog',true,0);h.G.startNozzleMini();const mini=h.G._mini,saved=h.storage.get(h.SK);
+  let reloads=0;h.context.location.reload=()=>reloads++;
+  h.context.confirm=()=>false;h.G.confirmReset();
+  assert.equal(reloads,0);assert.equal(h.storage.get(h.SK),saved);assert.equal(h.G._mini,mini);
+  options.denyStorage=true;h.context.confirm=()=>true;h.G.confirmReset();
+  assert.equal(reloads,0);assert.equal(h.storage.get(h.SK),saved);assert.equal(h.G._mini,mini);
+  assert.equal(h.G.block,true);h.clock.advance(250);assert.equal(mini.time,35750);
+});
+
 let failed=0;
 for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}
 console.log(`${tests.length-failed}/${tests.length} passed. Logic only; real rendering/audio/file:// QA remains mandatory.`);

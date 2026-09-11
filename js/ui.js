@@ -402,7 +402,7 @@ document.addEventListener('keydown',e=>{
   if(!G.block&&k==='i'){G.showInventory();e.preventDefault();return;}
   if(!G.block&&k==='o'){G.openShop('stk');e.preventDefault();return;}
   if(k==='m'){G.tomarMate();e.preventDefault();return;}
-  if(k==='q'){doSave(G);showNotif(tr('savedManual'),'success');e.preventDefault();return;}
+  if(k==='q'){G.manualSave();e.preventDefault();return;}
   if(k==='h'){openGameMenu();e.preventDefault();}
 });
 document.addEventListener('keyup',e=>{
@@ -455,6 +455,11 @@ G.continueToNight=function(){
   const cb=G._dayCloseCb;
   G._dayCloseCb=null;
   if(cb)cb();
+};
+G.manualSave=function(){
+  const saved=doSave(G);
+  showNotif(tr(saved?'savedManual':'storageUnavailable'),saved?'success':'error');
+  return saved;
 };
 window.resetGame=()=>{try{localStorage.removeItem(SK);location.reload();}catch(e){showNotif(tr('storageUnavailable'),'error');}};
 G.confirmReset=function(){
