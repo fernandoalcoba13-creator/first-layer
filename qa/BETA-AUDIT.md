@@ -1,6 +1,6 @@
 # First Layer: cierre de beta por bloques
 
-Actualizado: 2026-09-11.
+Actualizado: 2026-09-12.
 
 ## Estado actual
 
@@ -25,8 +25,14 @@ Actualizado: 2026-09-11.
   Respaldado en `21b6a58`, sin push; la matriz final Chrome/Edge sigue pendiente.
 - Bloque de animaciones del 11/09: cafe/reparacion ajustados sobre los mismos
   sprites. Tras reportar bloqueo al tomar cafe se corrigio su limpieza;
-  doce pruebas nuevas, 77/77 de logica/geometria. Cambios locales sin
-  push; pendiente la puerta visual de este bloque antes de seguir con polish.
+  doce pruebas nuevas, 77/77 de logica/geometria. Fernando confirmo reparado
+  el cafe y autorizo continuar. Respaldo `b2e9b19`, sin push. La matriz visual
+  completa de animaciones sigue pendiente; la confirmacion no la sustituye.
+- Bloque acotado de audio: reintentos por teclado/puntero, reproduccion unica,
+  recuperacion de SFX suspendidos y boton ES/EN. Suite de audio 12/12 y
+  regresion general 77/77. Fernando confirmo ON/OFF, paso dia/noche y recarga
+  sin problemas el 12/09; se autoriza el siguiente bloque de UI. No se aporto
+  matriz por navegador/resolucion ni logs. Sin cambios de pistas ni assets.
 - Esto NO certifica que la beta este terminada.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
@@ -488,3 +494,80 @@ el arreglo del cafe. Se registra resuelto el bloqueo reportado y autorizada
 la continuacion a UI/audio. No se infiere de esa respuesta una matriz completa
 de navegadores/resoluciones ni la aprobacion del resto de efectos visuales.
 Se respalda el bloque de acciones antes de continuar; no se publica ni etiqueta.
+
+## Bloque de audio - 2026-09-12
+
+Respaldo previo: `b2e9b19` (animaciones y correccion del bloqueo de cafe).
+Alcance: `js/audio.js`, sincronizacion del boton en `js/i18n.js` y caches v22
+de ambos scripts en index. Day v33 / Night v38 / draw v30 no cambian.
+No se modifican escenas, colisiones, sprites, atlas, economia ni formato de save.
+
+Problemas comprobados por lectura y pruebas de contratos de API:
+- El unico reintento de musica usaba pointerdown con once:true. Un gesto en
+  el menu podia agotarlo antes de iniciar el turno; teclado no reintentaba.
+- Un AudioContext de SFX suspendido no recibia resume al volver a interactuar.
+- Cambiar ES/EN no actualizaba el boton de musica hasta otra accion de audio.
+- Llamadas repetidas no distinguian una reproduccion pendiente de una activa.
+
+Correcciones acotadas:
+- Reintentar musica al interactuar, solo si esta habilitada y pausada, sin
+  llamadas duplicadas mientras play esta pendiente. No consumir ni bloquear
+  inputs del juego; ignorar repeticion de tecla.
+- Pausar la pista anterior al cambiar de turno, respetar OFF en transiciones
+  y resultados tardios, y no reiniciar tras stop por un gesto posterior.
+- Manejar rechazo de play/resume y fallos de construccion sin promesas sin
+  atender. Un resultado viejo no invalida una solicitud mas reciente.
+- Reanudar el contexto existente de SFX al interactuar, sin crear contextos
+  adicionales. El boton sigue controlando musica, no silencia los SFX.
+- Boton ES/EN con nombre accesible, estado aria-pressed y tooltip traducido.
+  ON/OFF indica preferencia, no garantiza permiso de reproduccion del navegador.
+
+Se conserva day-theme.mp3: dia volumen .38; mezcla nocturna provisional .22
+y playbackRate .82. No se agrega ni reemplaza una pista. La musica nocturna
+definitiva sigue pendiente del asset correspondiente.
+
+Verificacion automatizada:
+- `node qa/audio-regression.cjs`: 12/12. Carga audio/i18n reales en Node VM,
+  con HTMLAudio, AudioContext, DOM y storage simulados. Antes del parche 4/12;
+  algunos casos nuevos son defensivos, no fallos observados en navegador.
+- `node qa/beta-regression.cjs`: 77/77. Sintaxis, orden de scripts, referencias
+  de assets, escenas y flujos con Phaser simulado, save/checkpoints, colisiones,
+  minijuegos y acciones siguen pasando.
+- Sin cambios de claves de guardado. La preferencia de musica conserva
+  first_layer_music; su storage bloqueado no altera G ni el checkpoint.
+
+Estas suites NO comprueban reproduccion audible, decodificacion, renderer,
+politicas reales de autoplay, foco de pestaña ni consola de Chrome/Edge.
+La restriccion previa de file:// sigue vigente; no se intento eludirla.
+Contratos consultados:
+- https://developer.mozilla.org/en-US/docs/Web/API/HTMLMediaElement/play
+- https://developer.mozilla.org/en-US/docs/Web/API/AudioContext/resume
+
+### Puerta manual de audio
+
+Recargar publish-repo/index.html sin borrar la partida principal. Comprobar
+audio v22 / i18n v22 en Chrome/Edge, 1366x768 y 1920x1080, con consola abierta:
+
+1. Iniciar/continuar dia usando teclado y tambien click. Si el navegador
+   deniega autoplay, una nueva interaccion debe permitir reintentar sin error.
+2. Apagar musica, cambiar dia/noche y recargar: OFF se conserva. Encenderla
+   reproduce la pista del turno actual; pulsaciones repetidas no la duplican.
+3. Pasar dia -> noche y noche -> dia: no deben sonar ambas pistas juntas.
+   Abrir/cerrar paneles y minijuegos, tomar cafe y caminar: control normal.
+4. Cambiar ES/EN: el boton cambia Musica/Music sin alterar ON/OFF ni comenzar
+   otra reproduccion. Comprobar tambien tooltip y foco de teclado.
+5. Cambiar de pestaña y volver a interactuar: comprobar SFX y musica, sin
+   errores nuevos de consola. No forzar ni eludir permisos del navegador.
+6. Guardar/recargar dia y noche: mismo checkpoint de inicio de turno, ambas
+   escenas y assets visibles, movimiento e interacciones sin regresiones.
+
+Pendiente aprobacion de esta puerta antes del siguiente bloque de UI/balance.
+No hubo push, tag, release ni recorrido completo certificado de la beta.
+
+### Aprobacion del bloque de audio - 2026-09-12
+
+Ante la pregunta por musica ON/OFF, paso de dia a noche y recarga del guardado,
+Fernando respondio "Si, funciona sin problemas". Se aprueba esa prueba basica
+y se respalda el bloque antes de continuar con textos de UI. La respuesta no
+certifica cada caso de la puerta manual, resoluciones, navegadores ni seis
+turnos completos. No se publica ni etiqueta como release.

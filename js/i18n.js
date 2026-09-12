@@ -282,6 +282,7 @@ function setLang(lang){
 }
 function applyLang(){
   document.documentElement.lang=G.lang;
+  if(typeof BGM!=='undefined')BGM._syncBtn();
   const set=(id,txt)=>{const el=document.getElementById(id);if(el)el.textContent=txt;};
   set('proTitle','📋 '+tr('currentShift'));
   set('proText',tr('proText'));
