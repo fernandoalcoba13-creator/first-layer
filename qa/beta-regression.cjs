@@ -467,6 +467,40 @@ test('denied storage cannot crash music, scenes, final or reset',()=>{
   assert.equal(h.doSave(h.G),false);finishThirdNight(h);
   assert.ok(h.elements.get('beSaveWarning').textContent);h.G.confirmReset();assert.deepEqual(h.messages,[]);
 });
+test('clean night layers and interactive anchors match the measured artwork in every night and resolution',()=>{
+  const spec=JSON.parse(fs.readFileSync(path.join(root,'qa/night-room-art.json'),'utf8'));
+  for(const [width,height] of [[1366,768],[1920,1080]]){
+    for(const day of [1,2,3]){
+      for(const count of [1,2,3]){
+        const h=host(null,width,height),ns=h.sceneMap.Night;
+        if(count>1)h.G.upg['unlock'+count]=true;
+        ns.textures.exists=key=>key.startsWith('night_room_');
+        const image=(x,y,key)=>({x,y,active:true,texture:{key},
+          setOrigin(){return this;},setScale(s){this.scale=s;return this;},setDepth(){return this;},
+          setVisible(){return this;},setTint(){return this;},setAlpha(){return this;},
+          setTexture(key){this.texture={key};return this;}
+        });
+        ns.add=new Proxy(ns.add,{get:(target,key)=>key==='image'?image:target[key]});
+        h.start('night',day);
+        const variant=h.run('NIGHT_ROOM_OBJECT_VARIANTS['+count+']');
+        assert.equal(variant.src,spec.outputs[count-1]);
+        assert.equal(ns.nightObjectsLayer.texture.key,variant.key);
+        assert.equal(ns.pObjs.length,count);
+        assert.equal(ns.nightRoomLayers.filter(layer=>layer===ns.nightObjectsLayer).length,1);
+        const room=ns.room();
+        ns.pObjs.forEach((po,index)=>{
+          const [x,y]=spec.printers[index].anchor;
+          assert.ok(Math.abs(po.px-(room.ox+x*room.s))<1e-8);
+          assert.ok(Math.abs(po.py-(room.oy+y*room.s))<1e-8);
+          assert.equal(po.ct.x,po.px);assert.equal(po.ct.y,po.py);
+        });
+        ns.ensureUnlockedPrinterVisuals();
+        assert.equal(ns.pObjs.length,count);assert.equal(ns.nightObjectsLayer.texture.key,variant.key);
+        assert.deepEqual(h.messages,[]);
+      }
+    }
+  }
+});
 test('unlocking P2 refreshes the existing clean object layer without replacing an asset',()=>{
   const h=host(),ns=h.start('night',3);let texture=null;
   ns.textures.exists=key=>key===h.run('NIGHT_ROOM_OBJECT_VARIANTS[2].key');

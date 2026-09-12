@@ -1,0 +1,16 @@
+{
+  "source": "assets/environment/workshop-v2/objects.png",
+  "sourceSHA256": "f66ba581065e06ec08435b438ce452bf92bd6d234fa9004d49edcf19e613f99a",
+  "size": [420, 270],
+  "benchSample": [201, 97, 26, 14],
+  "printers": [
+    {"bounds": [144, 77, 26, 34], "anchor": [157, 111]},
+    {"bounds": [174, 77, 26, 34], "anchor": [187, 111]},
+    {"bounds": [228, 77, 26, 34], "anchor": [241, 111]}
+  ],
+  "outputs": [
+    "assets/environment/workshop-v2/objects-p1-clean.png",
+    "assets/environment/workshop-v2/objects-p2-clean.png",
+    "assets/environment/workshop-v2/objects-p3-clean.png"
+  ]
+}

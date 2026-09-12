@@ -12,9 +12,9 @@ class NightScene extends Phaser.Scene{
     return {x:r.ox+x*r.s,y:r.oy+y*r.s,s:r.s};
   }
   printerSlots(){
-    // These anchors match the visual centers and support line of Mati's room.
+    // Measured 26x34 baked frames; see qa/night-room-art.json for the exact bounds.
     // The first three sit on the central bench; the fourth uses the storage rack.
-    return [[155,107],[190,107],[230,107],[350,107]].map(p=>this.rp(p[0],p[1]));
+    return [[157,111],[187,111],[241,111],[350,107]].map(p=>this.rp(p[0],p[1]));
   }
   fitPrinterSprite(sp){
     if(!sp)return null;

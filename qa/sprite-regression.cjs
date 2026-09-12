@@ -3,6 +3,7 @@ const assert=require('node:assert/strict');
 const fs=require('node:fs');
 const path=require('node:path');
 const vm=require('node:vm');
+const crypto=require('node:crypto');
 const root=path.resolve(__dirname,'..');
 
 function host(){
@@ -55,10 +56,13 @@ function host(){
 const tests=[];const test=(name,fn)=>tests.push([name,fn]);
 test('all printer animations use only frames present in their source PNGs',()=>{
   const h=host();h.load();h.setupPrinterAnims(h.scene);
-  assert.equal(h.animations.size,6);
-  assert.equal(h.animations.get('printer_working_0').frames.length,6);
-  assert.equal(h.animations.get('printer_working_1').frames.length,8);
+  assert.equal(h.animations.size,9);
+  assert.equal(h.animations.get('printer_working_0').frames.length,30);
+  assert.equal(h.animations.get('printer_working_1').frames.length,32);
   assert.equal(h.animations.get('printer_working_2').frames.length,7);
+  assert.equal(h.animations.get('printer_fail_0').frames.length,6);
+  assert.equal(h.animations.get('printer_out_filament_0').frames.length,6);
+  assert.equal(h.animations.get('printer_out_filament_1').frames.length,8);
   assert.equal(h.warnings.length,0);
 });
 test('loading sheets out of order does not permanently register idle fallback frames',()=>{
@@ -69,14 +73,14 @@ test('loading sheets out of order does not permanently register idle fallback fr
   h.loadPrinterAssetsAsync(h.scene,()=>ready++);
   while(h.requests.length)h.complete(h.requests.pop());
   assert.equal(ready,2);assert.equal(h.G._printerAssetCallbacks,null);
-  assert.equal(h.animations.get('printer_working_0').frames.length,6);
+  assert.equal(h.animations.get('printer_working_0').frames.length,30);
 });
 test('failed sheet load releases callbacks and can retry without duplicating animations',()=>{
   const h=host();let ready=0;h.loadPrinterAssetsAsync(h.scene,()=>ready++);
   while(h.requests.length){const img=h.requests.shift();h.complete(img,img.source.includes('lvl1_working'));}
   assert.equal(ready,1);assert.equal(h.G._printerAssetCallbacks,null);
   assert.ok(!h.animations.has('printer_working_0'));
-  h.load();assert.equal(h.animations.get('printer_working_0').frames.length,6);
+  h.load();assert.equal(h.animations.get('printer_working_0').frames.length,30);
 });
 test('models retain their identity through idle, print, failure and missing filament',()=>{
   const h=host();h.load();
@@ -85,10 +89,11 @@ test('models retain their identity through idle, print, failure and missing fila
     h.setPrinterSpriteState(sp,p);assert.equal(sp.anims.currentAnim.key,'printer_working_'+id);
     const base=['maquina3d','printer_standard','printer_enclosed'][id];
     p.broken=true;h.setPrinterSpriteState(sp,p);assert.equal(sp.tint,0xff8585);
-    if(id===0){assert.equal(sp.texture.key,base);assert.equal(sp.anims.isPlaying,false);}
-    else assert.equal(sp.anims.currentAnim.key,'printer_fail_'+id);
+    assert.equal(sp.anims.currentAnim.key,'printer_fail_'+id);
+    assert.equal(sp.anims.isPlaying,true);
     p.broken=false;p._ev={id:'run'};h.setPrinterSpriteState(sp,p);assert.equal(sp.tint,0xffd166);
-    if(id<2)assert.equal(sp.texture.key,base);
+    assert.equal(sp.anims.currentAnim.key,'printer_out_filament_'+id);
+    assert.equal(sp.anims.isPlaying,true);
     p._ev=null;p.busy=false;h.setPrinterSpriteState(sp,p);
     assert.equal(sp.texture.key,base);assert.equal(sp.tint,null);assert.equal(sp.anims.isPlaying,false);
   }
@@ -118,14 +123,70 @@ test('missing upgraded art uses the initial model without requesting missing ani
   const sp=h.sprite();h.setPrinterSpriteState(sp,{id:1,busy:true});
   assert.equal(sp.anims.currentAnim.key,'printer_working_0');
 });
-test('an idle or failed model clears a prior pause before starting the next job',()=>{
+test('a failed model clears a prior pause before starting the next job',()=>{
   const h=host();h.load();const sp=h.sprite(),p={id:0,busy:true,_pau:false};
   h.setPrinterSpriteState(sp,p);sp.anims.step();
   p._pau=true;h.setPrinterSpriteState(sp,p);assert.equal(sp.anims.isPaused,true);
   p.broken=true;h.setPrinterSpriteState(sp,p);
-  assert.equal(sp.anims.isPaused,false);assert.equal(sp.anims.isPlaying,false);
+  assert.equal(sp.anims.isPaused,false);assert.equal(sp.anims.isPlaying,true);
+  assert.equal(sp.anims.currentAnim.key,'printer_fail_0');
   p.broken=false;p._pau=false;h.setPrinterSpriteState(sp,p);
-  assert.equal(sp.plays,2);assert.equal(sp.frame.name,0);
+  assert.equal(sp.plays,3);assert.equal(sp.frame.name,0);
+});
+test('new sheets preserve the measured export dimensions, frame duration and file contents',()=>{
+  const h=host();h.load();
+  const manifest=JSON.parse(fs.readFileSync(path.join(__dirname,'printer-sheets.json'),'utf8'));
+  for(const sheet of manifest.sheets){
+    const bytes=fs.readFileSync(path.join(root,sheet.path));
+    assert.equal(crypto.createHash('sha256').update(bytes).digest('hex'),sheet.pngSHA256.toLowerCase());
+    assert.equal(bytes.readUInt32BE(16),sheet.frames*26);
+    assert.equal(bytes.readUInt32BE(20),34);
+    assert.equal(bytes[25],6,'RGBA export retains transparency');
+    const anim=h.animations.get(sheet.animation);
+    assert.equal(anim.frames.length,sheet.frames);assert.equal(anim.frameRate,1000/sheet.durationMs);
+    assert.equal(anim.repeat,-1);
+    assert.deepEqual(Array.from(anim.frames,f=>f.frame),Array.from({length:sheet.frames},(_,i)=>i));
+  }
+});
+test('full work cycles visit every frame and wrap without restarting or changing geometry',()=>{
+  const h=host();h.load();
+  for(const id of [0,1]){
+    const p={id,busy:true,progress:.63,order:{time:120,pay:100}},sp=h.sprite();
+    const saved=JSON.stringify(p),geometry=JSON.stringify([sp.x,sp.y,sp.scaleX,sp.scaleY,sp.originX,sp.originY,sp.depth]);
+    h.setPrinterSpriteState(sp,p);const start=sp.frame.name,seen=new Set(),count=id===0?30:32;
+    for(let i=0;i<count;i++){seen.add(sp.frame.name);sp.anims.step();h.setPrinterSpriteState(sp,p);}
+    assert.equal(seen.size,count);assert.equal(sp.frame.name,start);assert.equal(sp.plays,1);
+    assert.equal(JSON.stringify(p),saved);
+    assert.equal(JSON.stringify([sp.x,sp.y,sp.scaleX,sp.scaleY,sp.originX,sp.originY,sp.depth]),geometry);
+  }
+});
+test('missing new fault art retains the same static printer and retries safely',()=>{
+  const h=host();h.loadPrinterAssetsAsync(h.scene,()=>{});
+  while(h.requests.length){const img=h.requests.shift();h.complete(img,/printer_lvl[12]_(broken|filament)/.test(img.source));}
+  for(const id of [0,1]){
+    const sp=h.sprite(),p={id,busy:true,_pau:true};
+    h.setPrinterSpriteState(sp,p);assert.equal(sp.anims.isPaused,true);
+    p._ev={id:'run'};h.setPrinterSpriteState(sp,p);
+    assert.equal(sp.texture.key,id===0?'maquina3d':'printer_standard');
+    assert.equal(sp.tint,0xffd166);assert.equal(sp.anims.isPlaying,false);assert.equal(sp.anims.isPaused,false);
+    p._ev=null;p._pau=false;h.setPrinterSpriteState(sp,p);
+    assert.equal(sp.anims.currentAnim.key,'printer_working_'+id);assert.equal(sp.anims.isPlaying,true);
+  }
+  h.load();assert.equal(h.animations.size,9);assert.equal(h.G._printerAssetCallbacks,null);
+});
+test('repaired and refilled printers resume work across repeated event cycles without touching saved progress',()=>{
+  const h=host();h.load();
+  for(const id of [0,1]){
+    const sp=h.sprite(),p={id,busy:true,broken:false,_pau:false,progress:.42};
+    for(let i=0;i<8;i++){
+      p._ev={id:i%2?'run':'clog'};p._pau=true;
+      h.setPrinterSpriteState(sp,p);assert.equal(sp.anims.currentAnim.key,'printer_'+(i%2?'out_filament':'fail')+'_'+id);
+      sp.anims.step();p._ev=null;p._pau=false;h.setPrinterSpriteState(sp,p);
+      assert.equal(sp.anims.currentAnim.key,'printer_working_'+id);assert.equal(sp.anims.isPaused,false);
+      assert.equal(p.progress,.42);
+    }
+    p.busy=false;h.setPrinterSpriteState(sp,p);assert.equal(sp.anims.isPlaying,false);assert.equal(sp.tint,null);
+  }
 });
 test('walking resumes after idle even though Phaser keeps the stopped animation reference',()=>{
   const h=host();h.load();const sp=h.sprite();

@@ -43,9 +43,14 @@ Actualizado: 2026-09-12.
 
 Fernando postergo balance y recorridos finales para mejorar UI y animaciones
 con spritesheets del Escritorio. Respaldo del bloque anterior: `95268e2`.
-Primera pasada visual local, aun sin aprobacion de rendering: 82/82 pruebas
-generales, 9/9 de sprites y 12/12 de audio. No hay push ni tag. No se declara
-terminado el rediseño completo ni se reemplaza la QA real con estas pruebas.
+Fernando confirmo el 12/09 que la primera pasada visual se ve y funciona
+bien al probar dia/noche, paneles y recarga. Respaldada en `d61b534`.
+La confirmacion no identifica navegador ni resolucion y no certifica toda
+la matriz final. Segunda pasada local: cinco PNG de animaciones originales,
+83/83 pruebas generales, 13/13 de sprites y 12/12 de audio tras corregir
+la superposicion reportada en noche. Tres capas limpias verificadas pixel
+por pixel. Pendiente revision en navegador de la correccion. No hay push
+ni tag ni se declara terminado todo el upgrade.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
 scripts y QA del estado anterior. El commit de base conserva los assets.
@@ -741,3 +746,131 @@ Despues de aprobar: exportar los estados Aseprite faltantes, ampliar piezas
 por pedido con arte real, y revisar feedback de seleccion/completado. No
 acumular mas retoques de escena antes de validar esta pasada. Balance y
 los dos recorridos finales permanecen pospuestos por pedido de Fernando.
+
+## Upgrade visual 02 - 2026-09-12
+
+Puerta del bloque anterior aprobada por Fernando: "Si, se ve y funciona
+bien" en respuesta a la consulta de dia/noche, paneles y recarga. Commit
+de respaldo `d61b534` antes de agregar assets. Sin push ni tag.
+
+### Exportacion e integracion
+
+- Se localizaron los .aseprite de trabajo, rotura y filamento en la copia
+  original del proyecto `../tmp-new-sprites/a pasar`. No se modificaron
+  esos archivos ni los sprites del Escritorio.
+- Exportador de desarrollo: LibreSprite 1.2-dev de la distribucion oficial
+  v1.2 Windows x86_64, https://github.com/LibreSprite/LibreSprite/releases/tag/v1.2.
+  Portatil extraido en `../tmp-sprite-export/libresprite`, fuera del repo.
+  No se agrega al juego, no se cambia Phaser ni se instala un build system.
+- Exportacion batch horizontal RGBA, sin trim, scale, filtros ni dibujos
+  nuevos. JSON de salida confirma frames 26x34 y duracion uniforme 100 ms.
+  Comando y hashes de fuentes/PNGs en `qa/printer-sheets.json`.
+- La comparacion de control reprodujo exactamente el idle de P1 y la tira
+  de rotura existente de P2. Los PNG cortos de trabajo no son identicos a
+  los ciclos completos; se conservan sin sobrescribirlos. Se seleccionan
+  los nuevos exports mediante las rutas y claves existentes de animacion.
+
+| Secuencia nueva | Cuadros | Frecuencia base |
+| --- | --- | --- |
+| P1 trabajando | 30 | 10 fps |
+| P1 rota | 6 | 10 fps |
+| P1 sin filamento | 6 | 10 fps |
+| P2 trabajando | 32 | 10 fps |
+| P2 sin filamento | 8 | 10 fps |
+
+La cadencia visual de trabajo sigue el multiplicador acotado existente.
+Se conservan las animaciones ya conectadas de rotura P2 y modelo cerrado,
+su progresion/desbloqueo y los tintes de alerta. No se cambian piezas
+impresas por tipo de pedido: el benchy sigue siendo el arte disponible.
+
+Alcance de produccion: cinco PNG nuevos, configuracion de hojas/frames en
+draw.js y cache draw v32. Sin cambios de UI, escenas, colisiones, escalas,
+origen, profundidad, economia, eventos, input o save. Si una hoja falla
+al cargar, se conserva el mismo modelo estatico con tinte y puede reintentar.
+
+### Comprobaciones del bloque
+
+- `node qa/beta-regression.cjs`: 82/82, incluidos arranque simulado de
+  Day/Night de los tres dias a ambos tamaños y checkpoints compatibles.
+- `node qa/sprite-regression.cjs`: 13/13. Nuevas comprobaciones de hashes,
+  frames completos, duracion, vuelta del ciclo, descarga fallida y repeticion
+  de falla/recarga/reparacion sin tocar geometria ni progreso guardado.
+- `node qa/audio-regression.cjs`: 12/12, sin cambios de pistas o controles.
+- PNG decodificados con System.Drawing: cero frames vacios, base en fila
+  33 para todos los cuadros. Hashes de fuentes originales sin cambios.
+- `git diff --check`: sin errores de whitespace.
+- No se ejecuto renderer Phaser, consola real ni apertura file://. No se
+  sorteo el bloqueo previo de navegador; las pruebas siguen siendo de
+  contratos/logica y archivos. No certifican aspecto o fluidez en Chrome/Edge.
+
+Puerta manual antes de otro bloque:
+1. Recargar index.html sin borrar el save, verificar dia y noche, control,
+   assets y consola. Guardar/recargar debe conservar el checkpoint del turno.
+2. P1: imprimir, abrir/cerrar inventario, resolver rotura y falta de filamento.
+   Debe conservar modelo y posicion, mostrar el evento y volver a trabajar.
+3. Cuando P2 este desbloqueada, repetir trabajo/pausa/filamento. Verificar
+   que el ciclo no corte la impresora ni la superponga con el fondo.
+
+No se acumulan mas cambios de presentacion hasta validar esta pasada.
+
+## Correccion de superposicion nocturna - 2026-09-12
+
+Fernando reporto que P1 se superponia con la impresora dibujada en el
+escenario. Autorizo explicitamente corregir las capas PNG por pixeles
+con un script. Se prioriza esta regresion visual antes de otro upgrade.
+Respaldo adicional de scripts, UI, QA y nuevas animaciones en
+`../before-night-printer-overlap-20260912.zip`; originales en Git intactos.
+
+### Causa y correccion
+
+- La variante objects-p1 previa no retiraba todo el armazon del fondo.
+  Los cambios de tamaño o posicion del sprite vivo no eliminaban ese dibujo.
+- El archivo Aseprite de objetos tiene una sola capa Flattened; no se
+  pueden ocultar impresoras individuales al exportar. Se midieron las
+  posiciones mediante coincidencias con los sprites originales del Escritorio.
+- Marcos de 26x34 en [144,77], [174,77] y [228,77]. P1/P2 coinciden con
+  todos los pixeles opacos del sprite entregado. Las bases terminan en y=111.
+- Anclajes nocturnos de los tres puestos: [157,111], [187,111], [241,111].
+  P1 se desplaza +2,+4 pixeles de escena; no aumenta su escala. El cuarto
+  puesto, ajeno a la beta, mantiene su anclaje previo.
+- `qa/night-room-art.py` genera objects-p1-clean, objects-p2-clean y
+  objects-p3-clean. Quita cada marco completo y reconstruye la superficie
+  con pixeles de la franja intacta del mismo banco [201,97,26,14].
+  No interpola, recolorea, reescala ni usa generacion de imagen.
+- La herramienta exige el SHA256 original de objects.png y verifica que
+  cada salida solo modifica los puestos correspondientes. P1: 420 pixeles;
+  P1+P2: 840; tres puestos: 1266. Cero cambios fuera de esos rectangulos.
+- Se conservan objects.png y las variantes antiguas. El runtime carga las
+  nuevas claves v3 como PNG normales, sin copiar imagenes a canvas ni
+  introducir el problema previo de subida de textura bajo file://.
+- Cache draw v33 y Night v40. Dia, misiones, timers, estados guardados,
+  audio, colisiones, tamaños y animaciones permanecen sin cambios.
+
+### Verificacion
+
+- `node qa/beta-regression.cjs`: 83/83. El nuevo caso combina noches 1/2/3,
+  resoluciones 1366x768/1920x1080 y uno/dos/tres puestos. Comprueba la
+  textura limpia elegida, anclajes, numero de objetos y refresco sin duplicados.
+  Los tres puestos se fuerzan solo en el host de QA, no en la progresion real.
+- `node qa/sprite-regression.cjs`: 13/13. `node qa/audio-regression.cjs`: 12/12.
+- `python qa/night-room-art.py`: tres PNG decodificados y comparados con
+  el resultado esperado, canal alpha limpio sobre el banco, superficie
+  completa bajo cada maquina y conservacion de todos los pixeles restantes.
+- Comparativa offline inspeccionada en
+  `../tmp-sprite-export/night-printer-preview.png`: montaje de PNGs con
+  uno/dos/tres sprites, no captura de Phaser ni certificacion de browser.
+- Sigue pendiente la puerta real de index.html, Day/Night, consola,
+  guardado/recarga y animacion en Chrome/Edge. No se sorteo la restriccion
+  previa de file://. No hay push, tag ni declaracion de beta lista.
+
+### Siguiente mejora, despues de validar
+
+1. Distinguir mejor la impresora seleccionada y su estado: imprimiendo,
+   pausada, requiere material, requiere reparacion, pedido listo para cobrar.
+2. Variar la pieza visible segun el pedido con arte disponible y crecimiento
+   coherente con el progreso real, sin inventar porcentajes o cambiar costes.
+3. Pulir feedback de resultados de minijuegos y cobro con la UI/audio existente.
+
+Se mantiene un bloque acotado por validacion; esta lista no significa que
+esas mejoras ya esten implementadas. La prioridad es un ciclo de impresion
+claro y consistente antes de ampliar contenido o reabrir el balance.

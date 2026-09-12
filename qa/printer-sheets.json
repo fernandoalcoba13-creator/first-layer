@@ -1,0 +1,54 @@
+{
+  "exporter": "LibreSprite 1.2-dev, official v1.2 Windows x86_64 release",
+  "sourceDirectory": "../tmp-new-sprites/a pasar",
+  "options": "--batch SOURCE --sheet-type horizontal --format json-array --sheet OUTPUT.png --data OUTPUT.json",
+  "frameWidth": 26,
+  "frameHeight": 34,
+  "sheets": [
+    {
+      "path": "assets/printers/animations/printer_lvl1_working.png",
+      "source": "maquina3d-3working.aseprite",
+      "sourceSHA256": "DF04E6B9E80A484C24FE218DB65141A56E69B8EDA39D3003411F5FA92CBAB343",
+      "pngSHA256": "A067274861C1BFC1330ED635D52FBF83273B36E9854ABBAA3400FBF27466DAAD",
+      "animation": "printer_working_0",
+      "frames": 30,
+      "durationMs": 100
+    },
+    {
+      "path": "assets/printers/animations/printer_lvl1_broken.png",
+      "source": "maquina3d-3broken.aseprite",
+      "sourceSHA256": "BD78FE781EE54468E75B68D60119365AF43C37CFDED0F37BA0BDF5CF6344A166",
+      "pngSHA256": "48D608D781682F0BF26EA4EDF88DFCBD224FD7246DC0F9C8027A53ED3F3D845B",
+      "animation": "printer_fail_0",
+      "frames": 6,
+      "durationMs": 100
+    },
+    {
+      "path": "assets/printers/animations/printer_lvl1_filament.png",
+      "source": "maquina3d-3filament.aseprite",
+      "sourceSHA256": "3C53285B22EB56545984921677A7BACD1BCEB603651A0870F988EA89902A0374",
+      "pngSHA256": "E2474905B06FE39F9381DAAAFA727BEC1BAC44E2AC557F7A5758962205D65588",
+      "animation": "printer_out_filament_0",
+      "frames": 6,
+      "durationMs": 100
+    },
+    {
+      "path": "assets/printers/animations/printer_lvl2_working.png",
+      "source": "Maquina3d-2working.aseprite",
+      "sourceSHA256": "AA24A043C7BAD7F7AB774B2FFE18DCC58DDE9F0D1F68E761E505DA6A5B48CEA8",
+      "pngSHA256": "12FE6A189D2573AEC1C9077E79470226A7093E5B1BBFC2F8369DCB7C10110E7B",
+      "animation": "printer_working_1",
+      "frames": 32,
+      "durationMs": 100
+    },
+    {
+      "path": "assets/printers/animations/printer_lvl2_filament.png",
+      "source": "Maquina3d-2filament.aseprite",
+      "sourceSHA256": "96F2F0FB2F6F864F6A0469454DAFFC8EFFF0FF8AA08490B736EB2688A9F0C375",
+      "pngSHA256": "DC9B5AD0788BB12A46ED862D37A03AEA0460924F077ACADD2EBFF8BF58D5C99E",
+      "animation": "printer_out_filament_1",
+      "frames": 8,
+      "durationMs": 100
+    }
+  ]
+}
