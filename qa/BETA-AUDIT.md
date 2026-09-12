@@ -21,7 +21,12 @@ Actualizado: 2026-09-11.
   manual con resultado veraz y seis pruebas de interrupciones/almacenamiento.
   Respaldado en `c1d199c` tras la confirmacion manual, antes de ajustar colisiones.
 - Bloque de colisiones iniciado el 11/09: seis regresiones nuevas, 65/65 en verde.
-  Cambios locales sin push; su comprobacion visual especifica sigue pendiente.
+  Fernando aprobo el acceso al escritorio y recorrido alrededor de muebles.
+  Respaldado en `21b6a58`, sin push; la matriz final Chrome/Edge sigue pendiente.
+- Bloque de animaciones del 11/09: cafe/reparacion ajustados sobre los mismos
+  sprites. Tras reportar bloqueo al tomar cafe se corrigio su limpieza;
+  doce pruebas nuevas, 77/77 de logica/geometria. Cambios locales sin
+  push; pendiente la puerta visual de este bloque antes de seguir con polish.
 - Esto NO certifica que la beta este terminada.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
@@ -219,7 +224,7 @@ node qa/beta-regression.cjs
 git diff --check
 ```
 
-Ultimo resultado: **65/65 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos + 6 de interrupciones/guardado + 6 de colisiones).
+Ultimo resultado: **77/77 pruebas aprobadas** (23 anteriores + 24 P1 + 6 de minijuegos + 6 de interrupciones/guardado + 6 de colisiones + 12 de acciones).
 `git diff --check`: exit 0, sin errores de whitespace. Git solo avisa de la
 conversion habitual LF -> CRLF del repositorio en Windows.
 
@@ -280,9 +285,10 @@ Seis casos de interrupciones/guardado:
 
 - Fernando aprobo dia, noche y recarga antes de este bloque. No se especifico
   navegador/resolucion ni se aporto un log de consola. La matriz completa
-  Chrome/Edge sigue pendiente, igual que la validacion del nuevo contacto.
-- Colisiones generales, escritorio, profundidad, layout, animaciones,
-  escalas, resize y UI a 768 px siguen sin certificacion visual.
+  Chrome/Edge sigue pendiente. Luego aprobo el bloque de colisiones sin
+  detallar navegador/resolucion; no equivale a dos campañas completas.
+- Profundidad, layout, animaciones, escalas, resize y UI a 768 px siguen sin
+  certificacion visual completa. Cafe/reparacion tienen una nueva puerta manual.
 - Deuda puede terminar negativa: penaliza decisiones, pero no bloquea
   los objetivos. Su presentacion y recargo requieren aprobacion de Fernando;
   el balance final queda para la fase posterior.
@@ -294,7 +300,7 @@ Seis casos de interrupciones/guardado:
 - Phaser y fuentes mantienen dependencias remotas previas. Esta revision
   no convierte el juego en una distribucion offline.
 - Musica nocturna provisional, textos generales y game feel sin cambios.
-- No iniciar polish, QA completo ni publicacion antes de aprobar este bloque.
+- No ampliar el polish ni publicar antes de aprobar las nuevas animaciones.
 
 ## Checklist manual exacto
 
@@ -383,3 +389,102 @@ aprobado para avanzar a animaciones de cafe y reparacion. No se aportaron
 logs de consola ni una matriz por navegador/resolucion; esa certificacion
 completa sigue pendiente. Regresion previa al respaldo: 65/65 casos de logica.
 No se hizo push, tag ni publicacion.
+
+## Bloque de animaciones - 2026-09-11
+
+Respaldo previo: `21b6a58` (colisiones aprobadas). Alcance de produccion:
+`js/draw.js` y su cache `v29` en index; Day v33 / Night v38 sin cambios.
+No se modificaron sprites, atlas, audio, colisiones, economia ni formato de save.
+
+Problemas comprobados en el codigo anterior:
+- El sprite se creaba en y=24 y el update lo llevaba a y=0: salto inicial.
+- Boca desplazada horizontalmente y taza girando sobre su centro. Mano y taza
+  tenian tweens independientes, asi que la inclinacion perdia el contacto.
+- La llave se movia separada de la mano y las chispas nacian cerca de los pies.
+- Las acciones terminadas dejaban listeners de shutdown y timers pendientes;
+  callbacks de particulas podian ejecutarse despues de interrumpir la accion.
+- Los anclajes del fallback procedural no coincidian con su cara/manos reales.
+
+Cambios:
+- Baseline y=0 desde la creacion; el gesto no inclina ni deforma todo el cuerpo.
+- Anclajes medidos en los frames 50x50 existentes, considerando origin y escala
+  diurna 2.6 / nocturna 2.45. Boca frontal en (25,17), mano cerca de y=32.
+- Taza con pivote en el borde, mano solidaria al objeto y antebrazo procedural.
+  Sube, hace dos sorbos y baja; restaura la direccion previa.
+- Llave con pivote en el agarre y particulas en su punta. Mantiene el
+  comportamiento previo de orientarse lateralmente hacia la impresora cercana.
+- Limpieza idempotente de timers, listeners, tweens y efectos tanto al terminar
+  como en shutdown. Timeout de seguridad si se corta una cadena de tweens.
+
+Pruebas: 75/75. Los diez casos nuevos comprueban baseline, anclajes, pivotes,
+chispas, 14 acciones alternadas, bloqueo de duplicados, interrupcion, timeout,
+fallback, consumo/energia, reparacion unica y checkpoint durante ambas acciones.
+La suite con el draw anterior ejecutado SOLO EN MEMORIA reprodujo seis fallos
+(67/73 antes de agregar los dos casos finales). No se revirtio ningun archivo.
+Se ajusto una prueba para medir la chispa al crearse, antes del siguiente tick
+del tween en el mismo timestamp; no se altero produccion para ese ajuste.
+
+El host nuevo simula tiempos y posiciones de tweens. NO renderiza Phaser,
+no reproduce easing real, propagacion del navegador ni orden de shutdown
+de sus plugins. Estas siguen siendo animaciones procedurales sobre caminatas,
+no frames nuevos dibujados por Mati. La integracion visual del brazo y la mano,
+oclusion, suavidad y consola necesitan la prueba real.
+
+### Puerta manual de animaciones
+
+Recargar publish-repo/index.html (draw v30), sin borrar el save principal.
+Usar un perfil de prueba en Chrome/Edge, 1366x768 y 1920x1080:
+
+1. Dia: caminar/parar y tomar cafe o infusion. Ver que no salta la altura del
+   personaje, que la taza llega a la boca y la mano acompaña los dos sorbos.
+   Repetir mirando izquierda/derecha; al terminar vuelve el control normal.
+2. Noche: tomar una bebida y reparar una impresora (boquilla/cama o reparacion
+   normal). La llave acompaña la mano; las particulas no aparecen en los pies.
+   Confirmar que se cobra una sola vez y que la impresora retoma segun su estado.
+3. Probar durante un corte: reparar no debe devolver energia a la impresora;
+   se mantiene pausada hasta resolver termicas. Revisar la luz de emergencia.
+4. Repetir acciones y abrir/cerrar menu. No deben quedar taza/llave flotando,
+   aparecer efectos atrasados ni quedar el personaje bloqueado. Revisar F12.
+5. Guardar/recargar dia y noche: mismo checkpoint de inicio de turno, sin taza
+   ni accion persistida. Confirmar ambos escenarios y assets visibles.
+
+Sin push, tag ni release. Esperar aprobacion de este bloque antes de UI/audio.
+
+### Correccion del bloqueo tras el cafe
+
+Fernando reporto que al terminar el cafe el personaje quedaba trabado.
+La puerta visual NO se aprobo: las 75 pruebas anteriores no detectaron
+el contrato incorrecto de destruccion en el simulador de acciones.
+
+En draw v29 se llamaba rig.destroy(true) estando el rig dentro del jugador.
+En Phaser 3.60, el argumento es fromScene, no destroyChildren. El evento
+destroy llega a Container.remove(child, destroyChild), por lo que true
+puede reentrar en destroy y abortar finish antes de liberar _actBusy.
+Referencias de la version que carga index:
+- https://github.com/phaserjs/phaser/blob/v3.60.0/src/gameobjects/GameObject.js
+- https://github.com/phaserjs/phaser/blob/v3.60.0/src/gameobjects/container/Container.js
+
+Correccion acotada en draw v30: usar destroy() y liberar primero el bloqueo
+propio de la accion, sin tocar G.block ni overlays. No cambia el movimiento,
+los sprites, las colisiones, el costo del cafe ni el checkpoint.
+
+El simulador ahora rechaza destroy(true) para efectos dentro de otro container
+y destruye sus hijos sin confundir ese parametro. Antes del parche: 69/77;
+despues: 77/77. Dos casos nuevos comprueban consumo desde inventario, cierre
+del panel y movimiento con el update real de cada escena, y liberacion de
+_actBusy antes de limpiar efectos sin desbloquear otro overlay.
+Son pruebas de logica con el contrato de Phaser comprobado en su fuente,
+NO una ejecucion del renderer o del navegador ni una prueba completa del motor.
+
+Revalidacion requerida: recargar draw v30, tomar cafe desde el inventario,
+esperar que baje la taza y caminar con WASD/flechas, en dia y noche. Probar
+reparacion, consola y recarga del checkpoint. Recargar vuelve al inicio del
+turno guardado; no borrar el save ni usar Reset. No hubo push.
+
+### Confirmacion del usuario y siguiente bloque
+
+El 11/09 Fernando confirmo "listo reparado, ahora segui el plan" tras probar
+el arreglo del cafe. Se registra resuelto el bloqueo reportado y autorizada
+la continuacion a UI/audio. No se infiere de esa respuesta una matriz completa
+de navegadores/resoluciones ni la aprobacion del resto de efectos visuales.
+Se respalda el bloque de acciones antes de continuar; no se publica ni etiqueta.

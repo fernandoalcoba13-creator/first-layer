@@ -778,6 +778,249 @@ test('movement slides along furniture and stays within room limits even with ext
   }
 });
 
+// Deterministic action timing/geometry only. No renderer, easing or Phaser lifecycle emulation.
+function actionHarness(phase='day',scale=2.6,sprite=true){
+  const h=host(),scene=h.start(phase),nodes=[],tweens=new Map();
+  h.clock.jobs.clear();
+  function node(type,x=0,y=0){
+    const n={type,x,y,angle:0,scaleX:1,scaleY:1,alpha:1,originX:.5,originY:1,
+      active:true,visible:true,depth:0,list:[],texture:{key:'player_down'},frame:{name:0},
+      anims:{stop(){},resume(){}},
+      play(key){this.anims.currentAnim={key};return this;},
+      add(items){for(const c of [items].flat()){this.list.push(c);c.parentContainer=this;}return this;},
+      setPosition(x,y){this.x=x;this.y=y;return this;},
+      setScale(x,y=x){this.scaleX=x;this.scaleY=y;return this;},
+      setAngle(a){this.angle=a;return this;},setAlpha(a){this.alpha=a;return this;},
+      setOrigin(x,y=x){this.originX=x;this.originY=y;return this;},
+      setDepth(d){this.depth=d;return this;},
+      setTexture(key,frame){assert.ok(this.active,'do not restore a destroyed sprite');this.texture={key};this.frame={name:frame};return this;},
+      destroy(fromScene=false){
+        // Phaser's flag means scene shutdown, not recursive child destruction.
+        assert.ok(!fromScene||!this.parentContainer,'attached effect must use destroy(), not destroy(true)');
+        this.active=false;if(this.type==='container')for(const c of [...this.list])c.destroy();
+        if(this.parentContainer)this.parentContainer.list=this.parentContainer.list.filter(c=>c!==this);},
+      clear(){return this;},fillStyle(){return this;},fillRect(){return this;},
+      lineStyle(){return this;},lineBetween(){return this;}
+    };
+    nodes.push(n);return n;
+  }
+  scene.add={
+    graphics:()=>node('graphics'),container:(x,y)=>node('container',x,y),
+    sprite:(x,y)=>node('sprite',x,y),
+    rectangle:(x,y)=>node('particle',x,y),circle:(x,y)=>node('particle',x,y)
+  };
+  scene.time.delayedCall=(ms,fn)=>{const id=h.clock.add(fn,ms);return {remove:()=>h.clock.jobs.delete(id)};};
+  scene.tweens={
+    add(cfg){
+      const targets=[cfg.targets].flat(),duration=cfg.duration||1,hold=cfg.hold||0;
+      const cycle=duration*(cfg.yoyo?2:1)+hold,total=cycle*((cfg.repeat||0)+1);
+      const began=h.clock.now,props=['x','y','angle','alpha'].filter(k=>typeof cfg[k]==='number');
+      const initial=targets.map(t=>Object.fromEntries(props.map(k=>[k,t[k]])));
+      let tick,done;
+      const tween={stop(){h.clock.jobs.delete(tick);h.clock.jobs.delete(done);tweens.delete(tween);},remove(){this.stop();}};
+      function sample(end=false){
+        const t=end?cycle:((h.clock.now-began)%cycle);
+        let f=t<=duration?t/duration:cfg.yoyo?(t<=duration+hold?1:1-(t-duration-hold)/duration):1;
+        if(end)f=cfg.yoyo?0:1;
+        targets.forEach((target,i)=>{for(const k of props)target[k]=initial[i][k]+(cfg[k]-initial[i][k])*f;});
+        if(cfg.onUpdate)cfg.onUpdate(tween);
+      }
+      tick=h.clock.add(()=>sample(),10,true);
+      done=h.clock.add(()=>{sample(true);tween.stop();if(cfg.onComplete)cfg.onComplete();},total);
+      tweens.set(tween,targets);return tween;
+    },
+    killTweensOf(target){for(const [t,targets] of tweens)if(targets.includes(target))t.stop();}
+  };
+  scene.player=node('container',600,500);
+  scene.pSp=sprite?node('sprite').setScale(scale):null;
+  scene.pGr=sprite?null:node('graphics');
+  scene.player.add(scene.pSp||scene.pGr);scene.pDir='left';
+  scene.scene.isActive=()=>true;
+  const other=h.sceneMap[phase==='day'?'Night':'Day'];other.scene.isActive=()=>false;
+  scene.pObjs=[{px:scene.player.x+40,py:scene.player.y-20}];
+  h.context.actionScene=scene;
+  function world(n,x=0,y=0){
+    const a=n.angle*Math.PI/180,px=x*n.scaleX,py=y*n.scaleY;
+    const p={x:n.x+px*Math.cos(a)-py*Math.sin(a),y:n.y+px*Math.sin(a)+py*Math.cos(a)};
+    return n.parentContainer?world(n.parentContainer,p.x,p.y):p;
+  }
+  return {...h,scene,nodes,tweens,node,world,play:kind=>h.run("playPlayerAction(actionScene,'"+kind+"')")};
+}
+
+test('player sprite starts at its movement baseline without a 24px jump',()=>{
+  const a=actionHarness();a.scene.textures.exists=()=>true;a.scene.anims.exists=()=>true;
+  const sp=a.run('createPlayerSprite(actionScene,actionScene.player,false)');
+  assert.equal(sp.y,0);assert.equal(sp.originY,1);
+});
+
+test('action anchors follow sprite origins/scales and the actual procedural fallback',()=>{
+  for(const scale of [2.6,2.45]){
+    const a=actionHarness('day',scale);a.scene.pDir='down';
+    a.scene.pSp.setPosition(3,-2);
+    const anchor=a.run('playerActionAnchors(actionScene,1)');
+    assert.equal(anchor.mouthX,3);assert.equal(anchor.mouthY,-2-33*scale);
+    assert.equal(anchor.handX,3+8*scale);
+    a.scene.pSp.setOrigin(0,0);
+    const shifted=a.run('playerActionAnchors(actionScene,-1)');
+    assert.equal(shifted.mouthX,3+25*scale);assert.equal(shifted.mouthY,-2+17*scale);
+  }
+  const a=actionHarness('day',1,false),fallback=a.run('playerActionAnchors(actionScene,-1)');
+  assert.equal(fallback.mouthY,-9);assert.equal(fallback.handY,9);
+});
+
+test('cup rim stays at the mouth during every sip and its hand shares the pivot',()=>{
+  for(const [phase,scale] of [['day',2.6],['night',2.45]])for(const side of ['left','right']){
+    const a=actionHarness(phase,scale);a.scene.pDir=side;
+    const prop=a.play('drink'),rig=prop.parentContainer;
+    assert.notEqual(rig,a.scene.player,'cup and hand need their own pivot');
+    assert.equal(rig.list.length,2);
+    const mouth=a.world(a.scene.pSp,0,-33);
+    a.clock.advance(280);
+    for(let i=0;i<35;i++){
+      a.clock.advance(20);
+      const rim=a.world(prop,.5,-7);
+      assert.ok(Math.hypot(rim.x-mouth.x,rim.y-mouth.y)<1e-7,'rim drifts away when tilting');
+      assert.equal(a.scene.pSp.angle,0);assert.equal(a.scene.pSp.y,0);
+    }
+    a.clock.advance(1000);
+    assert.equal(a.scene.pDir,side);assert.equal(a.scene._actBusy,false);
+  }
+});
+
+test('repair keeps the grip connected and emits sparks at the moving tool, not the feet',()=>{
+  const a=actionHarness('night',2.45),prop=a.play('repair'),rig=prop.parentContainer;
+  assert.notEqual(rig,a.scene.player);
+  const hand=rig.list.find(n=>n!==prop),unit=2.45*.6;
+  let tip;
+  const rectangle=a.scene.add.rectangle;
+  a.scene.add.rectangle=(x,y)=>{tip=a.world(prop,0,-12);return rectangle(x,y);};
+  // Compare at creation, before another tween update at the same timestamp.
+  a.clock.advance(300);
+  const spark=a.nodes.find(n=>n.type==='particle');
+  assert.ok(spark,'repair emits feedback');
+  assert.ok(Math.hypot(spark.x-tip.x,spark.y-tip.y)<1e-7);
+  const grip=a.world(prop,0,4),wrist=a.world(hand);
+  assert.ok(Math.hypot(grip.x-wrist.x,grip.y-wrist.y)<1e-7);
+  assert.ok(spark.y<a.scene.player.y-10*unit);
+  assert.equal(a.scene.pSp.x,0);assert.equal(a.scene.pSp.y,0);
+});
+
+test('finished actions remove their timers, effects and shutdown listeners across repeats',()=>{
+  const a=actionHarness(),before=a.scene.events.listenerCount('shutdown');
+  for(let i=0;i<14;i++){
+    const action=i%2?'repair':'drink',prop=a.play(action);
+    assert.ok(prop);assert.equal(a.play(action),null);
+    a.clock.advance(2000);
+    assert.equal(a.scene._actBusy,false);
+    assert.equal(a.scene.events.listenerCount('shutdown'),before);
+    assert.equal(a.clock.jobs.size,0);assert.equal(a.tweens.size,0);
+    assert.equal(a.scene.player.list.length,1);
+    assert.ok(a.nodes.filter(n=>n.type==='particle').every(n=>!n.active));
+  }
+});
+
+test('shutdown cancels pending effects and does not restore destroyed player objects',()=>{
+  for(const kind of ['drink','repair']){
+    const a=actionHarness();a.play(kind);a.clock.advance(100);
+    a.scene.player.destroy(true);a.scene.events.emit('shutdown');
+    const count=a.nodes.length;
+    a.clock.advance(2200);
+    assert.equal(a.nodes.length,count,'no effects may be created after shutdown');
+    assert.equal(a.scene._actBusy,false);assert.equal(a.clock.jobs.size,0);
+    assert.equal(a.tweens.size,0);
+  }
+});
+
+test('action timeout releases input if tweens stop, including missing sprite fallback',()=>{
+  for(const kind of ['drink','repair'])for(const sprite of [true,false]){
+    const a=actionHarness('day',2.6,sprite);a.scene.player.scaleX=sprite?1:-1;
+    a.scene.tweens.add=()=>({stop(){},remove(){}});
+    a.play(kind);a.clock.advance(2000);
+    assert.equal(a.scene._actBusy,false);assert.equal(a.scene.player.list.length,1);
+    assert.equal(a.clock.jobs.size,0);
+    assert.ok(a.nodes.filter(n=>n.type==='particle').every(n=>!n.active));
+  }
+});
+
+test('drink feedback changes no checkpoint or economy beyond the existing energy reward',()=>{
+  for(const phase of ['day','night']){
+    const a=actionHarness(phase,phase==='day'?2.6:2.45);
+    a.G.energy=40;a.G.gold=321;
+    const checkpoint=JSON.stringify(a.G._checkpoint),save=a.storage.get(a.SK);
+    assert.ok(a.G._checkpoint);
+    a.run("startTurbo(30000,25,'Cafe')");
+    assert.equal(a.scene._actBusy,true);assert.equal(a.G.energy,65);
+    a.clock.advance(2000);
+    assert.equal(a.G.gold,321);assert.equal(a.G.energy,65);
+    assert.equal(JSON.stringify(a.G._checkpoint),checkpoint);assert.equal(a.storage.get(a.SK),save);
+    assert.equal(a.scene._actBusy,false);
+  }
+});
+
+test('successful repair triggers one action without repeating costs or clearing blackout pause',()=>{
+  const a=actionHarness('night',2.45),p=loadedJob(a);
+  a.G.gold=250;a.G.stk.parts=3;a.G.pActive=true;a.G.upsLeft=0;
+  const ev={printer:p,g:25,pts:1,ti:'Test repair'};
+  p._ev=ev;p._pau=true;a.scene.aEv=ev;a.scene.juice=()=>{};
+  const fixes=a.G.stats.fix;
+  a.G.nFix();assert.equal(a.scene._actBusy,true);
+  assert.equal(a.G.gold,225);assert.equal(a.G.stk.parts,2);
+  assert.equal(p._pau,true);assert.equal(a.G.stats.fix,fixes+1);
+  a.G.nFix();a.clock.advance(2000);
+  assert.equal(a.G.gold,225);assert.equal(a.G.stk.parts,2);
+  assert.equal(a.G.stats.fix,fixes+1);assert.equal(a.scene._actBusy,false);
+});
+
+test('saving during either player action reloads the same shift without an animation lock',()=>{
+  for(const phase of ['day','night'])for(const kind of ['drink','repair']){
+    const a=actionHarness(phase);if(phase==='night')loadedJob(a);
+    a.setSaveCheckpoint(a.G,phase);
+    const checkpoint=JSON.stringify(a.G._checkpoint);
+    a.play(kind);a.clock.advance(100);a.doSave(a.G);
+    assert.equal(JSON.stringify(a.G._checkpoint),checkpoint);
+    const restored=host(JSON.parse(a.storage.get(a.SK)));
+    assert.equal(restored.G.resumePhase,phase);
+    const scene=restored.start(phase);
+    assert.equal(scene._actBusy,false);assert.equal(restored.G.phase,phase);
+  }
+});
+
+test('using coffee from inventory returns keyboard movement in both scenes',()=>{
+  for(const phase of ['day','night']){
+    const a=actionHarness(phase,phase==='day'?2.6:2.45),scene=a.scene;
+    scene.pObjs=[];
+    const start=scene.rp(270,200);scene.player.setPosition(start.x,start.y);
+    a.G.energy=40;a.G.cons.coffee=2;a.G.showInventory('cons');
+    assert.equal(a.G.block,true);
+    a.G.useConsumable('coffee');
+    assert.equal(a.elements.get('sto').style.display,'none');assert.equal(a.G.block,false);
+    assert.equal(scene._actBusy,true);assert.equal(a.G.cons.coffee,1);
+    scene.keys.d.isDown=true;scene.update(0,16);
+    assert.equal(scene.player.x,start.x);
+    a.clock.advance(2000);scene.update(2000,16);
+    assert.equal(scene._actBusy,false);assert.ok(scene.player.x>start.x);
+    assert.equal(a.G.cons.coffee,1);
+  }
+});
+
+test('action input is released before effect cleanup and cannot unlock another overlay',()=>{
+  for(const kind of ['drink','repair']){
+    const a=actionHarness(),prop=a.play(kind),rig=prop.parentContainer;
+    const destroy=rig.destroy;
+    rig.destroy=function(fromScene){
+      assert.equal(a.scene._actBusy,false,'visual cleanup must not own the input release');
+      assert.notEqual(fromScene,true);
+      return destroy.call(this,fromScene);
+    };
+    a.G.block=true;a.elements.get('shop').style.display='block';
+    a.clock.advance(2000);
+    assert.equal(a.scene._actBusy,false);assert.equal(a.G.block,true);
+    assert.equal(a.elements.get('shop').style.display,'block');
+    assert.equal(a.play(kind)!==null,true);
+    a.clock.advance(2000);
+  }
+});
+
 let failed=0;
 for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}
 console.log(`${tests.length-failed}/${tests.length} passed. Logic only; real rendering/audio/file:// QA remains mandatory.`);

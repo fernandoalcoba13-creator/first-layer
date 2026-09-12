@@ -267,7 +267,7 @@ function loadPlayerAssetsAsync(scene,onReady){
 function createPlayerSprite(scene,parent,night){
   if(!scene.textures.exists(PLAYER_DOWN))return null;
   setupPlayerAnims(scene);
-  const sp=scene.add.sprite(0,24,PLAYER_DOWN,0).setOrigin(.5,1).setScale(2.1).setDepth(6);
+  const sp=scene.add.sprite(0,0,PLAYER_DOWN,0).setOrigin(.5,1).setScale(2.1).setDepth(6);
   parent.add(sp);return sp;
 }
 function setPlayerSpriteState(sp,vx,vy,lastDir){
@@ -398,97 +398,133 @@ function setPlayerActionIdle(scene,dir){
 }
 function playerActionAnchors(scene,side){
   const sp=scene.pSp&&scene.pSp.visible?scene.pSp:null;
-  if(!sp)return {handX:side*10,handY:-18,mouthX:side*6,mouthY:-46,toolY:-23};
+  if(!sp)return {handX:side*13,handY:9,mouthX:0,mouthY:-9,
+    shoulderX:side*11,shoulderY:-3,toolX:side*22,toolY:-8,unit:1};
   const sx=Math.abs(sp.scaleX||1),sy=Math.abs(sp.scaleY||1);
-  // Los frames del jugador son de 50 px. La mano estÃ¡ cerca de y=31 y la boca
-  // cerca de y=17; convertir esos puntos a coordenadas del container evita que
-  // los props queden en el pecho al cambiar la escala de la escena.
+  const ox=typeof sp.originX==='number'?sp.originX:.5;
+  const oy=typeof sp.originY==='number'?sp.originY:1;
+  const x=px=>sp.x+(px-50*ox)*sx,y=py=>sp.y+(py-50*oy)*sy;
+  const lateral=scene.pDir==='left'||scene.pDir==='right';
+  // Source pixels in Mati's 50x50 idle frames, relative to the actual origin.
   return {
-    handX:side*5.5*sx,
-    handY:sp.y-(50-31)*sy,
-    mouthX:side*2.5*sx,
-    mouthY:sp.y-(50-17)*sy,
-    toolY:sp.y-(50-29)*sy
+    handX:x(25+side*(lateral?-5:8)),handY:y(32),
+    mouthX:x(25),mouthY:y(17),
+    shoulderX:x(25+side*(lateral?-4:6)),shoulderY:y(25),
+    toolX:x(25+side*10),toolY:y(29),unit:sy*.6
   };
 }
 function playPlayerAction(scene,kind){
-  if(!scene||!scene.player||!scene.add)return null;
+  if(!scene||!scene.player||!scene.add||!['drink','repair'].includes(kind))return null;
+  if(scene._actBusy)return null;
   const cont=scene.player,body=scene.pSp||scene.pGr;
-  if(scene._actBusy)return null;                            // no encimar dos acciones
   scene._actBusy=true;
   const facing=playerActionFacing(scene,kind),dir=facing.side;
-  const anchor=playerActionAnchors(scene,dir);
   scene.pDir=facing.dir;
   setPlayerActionIdle(scene,facing.dir);
+  const parentScaleX=cont.scaleX;
+  if(!scene.pSp)cont.scaleX=1;
+  if(body)body.y=0;
+  const anchor=playerActionAnchors(scene,dir),unit=anchor.unit;
+  const arm=scene.add.graphics(),rig=scene.add.container(0,0);
   const prop=scene.add.graphics(),hand=scene.add.graphics();
-  hand.fillStyle(0xe8c090,1).fillRect(-3,-3,6,6);
-  cont.add([hand,prop]);
-  const base={x:body?body.x:0,y:body?body.y:0,angle:body?body.angle:0,
-    scaleX:body?body.scaleX:1,scaleY:body?body.scaleY:1};
-  const particles=[];
+  cont.add([arm,rig]);rig.add([prop,hand]);
+  const skin=scene.pSp?0xeec39a:0xd4a870;
+  hand.fillStyle(skin,1).fillRect(-2*unit,-2*unit,4*unit,4*unit);
+  const timers=[],particles=[];
   let ended=false;
   const finish=()=>{
-    if(ended)return;                                        // idempotente: puede llegar por tween o por red de seguridad
+    if(ended)return;
     ended=true;
-    scene._actBusy=false;
-    // Matar los tweens antes de resetear: si no, uno a medio camino vuelve a torcer al personaje.
-    if(scene.tweens){if(body)scene.tweens.killTweensOf(body);scene.tweens.killTweensOf(prop);scene.tweens.killTweensOf(hand);}
-    if(prop&&prop.destroy)prop.destroy();
-    if(hand&&hand.destroy)hand.destroy();
+    const ownsAction=scene._playerActionEnd===finish;
+    // Release only this action's input lock before cleaning visual objects.
+    if(ownsAction){scene._playerActionEnd=null;scene._actBusy=false;}
+    timers.forEach(t=>{if(t&&t.remove)t.remove(false);});
+    if(scene.events)scene.events.off('shutdown',finish);
+    if(scene.tweens){
+      [rig,prop,hand,...particles].forEach(p=>scene.tweens.killTweensOf(p));
+    }
     particles.forEach(p=>{if(p&&p.active)p.destroy();});
-    if(body){body.setPosition(base.x,base.y).setAngle(base.angle).setScale(base.scaleX,base.scaleY).setAlpha(1);}
-    scene.pDir=facing.restore;
-    setPlayerActionIdle(scene,facing.restore);
+    // destroy(true) signals scene shutdown and can re-enter parent removal.
+    rig.destroy();arm.destroy();
+    if(ownsAction&&cont.active&&scene.player===cont){
+      if(!scene.pSp)cont.scaleX=parentScaleX;
+      scene.pDir=facing.restore;
+      if(body&&body.active)setPlayerActionIdle(scene,facing.restore);
+    }
   };
-  // Red de seguridad: si la cadena de tweens se corta (cambio de escena, pausa, lo que sea),
-  // igual se limpia el objeto y se libera la acción. Si no, no volvería a dispararse nunca.
-  scene.time.delayedCall(kind==='drink'?1700:1900,finish);
+  scene._playerActionEnd=finish;
+  const later=(delay,fn)=>{
+    timers.push(scene.time.delayedCall(delay,()=>{if(!ended&&cont.active)fn();}));
+  };
+  const point=(x,y)=>{
+    const a=rig.angle*Math.PI/180;
+    return {x:rig.x+x*Math.cos(a)-y*Math.sin(a),y:rig.y+x*Math.sin(a)+y*Math.cos(a)};
+  };
+  const updateArm=()=>{
+    if(ended)return;
+    const wrist=point(hand.x,hand.y);
+    const ex=(anchor.shoulderX+wrist.x)/2+dir*2*unit;
+    const ey=(anchor.shoulderY+wrist.y)/2+4*unit;
+    arm.clear().lineStyle(3*unit,skin,1);
+    arm.lineBetween(anchor.shoulderX,anchor.shoulderY,ex,ey);
+    arm.lineBetween(ex,ey,wrist.x,wrist.y);
+  };
+  const tween=config=>scene.tweens.add(Object.assign({
+    targets:rig,ease:'Sine.easeInOut',onUpdate:updateArm
+  },config));
+  later(kind==='drink'?1700:1900,finish);
   if(scene.events)scene.events.once('shutdown',finish);
 
   if(kind==='drink'){
     drawMug(prop,true);
-    const cupStartX=anchor.handX+dir*5,cupStartY=anchor.handY+4;
-    const cupMouthX=anchor.mouthX,cupMouthY=anchor.mouthY+9;
-    prop.setPosition(cupStartX,cupStartY).setScale(1.45);
-    hand.setPosition(anchor.handX,anchor.handY+5);
-    // la taza sube a la cara, se queda un toque y baja
-    scene.tweens.add({targets:prop,x:cupMouthX,y:cupMouthY,duration:280,ease:'Sine.easeOut'});
-    scene.tweens.add({targets:hand,x:cupMouthX+dir*7,y:cupMouthY+7,duration:280,ease:'Sine.easeOut',
+    // Pivot at the rim: tilting the cup cannot pull it away from the mouth.
+    prop.setScale(dir*unit,unit).setPosition(-.5*dir*unit,7*unit);
+    hand.setPosition(dir*7*unit,8*unit);
+    const start={x:anchor.handX-dir*7*unit,y:anchor.handY-8*unit};
+    rig.setPosition(start.x,start.y);updateArm();
+    tween({x:anchor.mouthX,y:anchor.mouthY,duration:280,
       onComplete:()=>{
-        if(body)scene.tweens.add({targets:body,y:base.y+2,angle:dir*-3,duration:120,yoyo:true,repeat:2,hold:90});
-        scene.tweens.add({targets:prop,angle:dir*-30,duration:130,yoyo:true,repeat:2,hold:100,
+        if(ended)return;
+        tween({angle:dir*-14,duration:130,yoyo:true,repeat:1,hold:180,
           onComplete:()=>{
-            scene.tweens.add({targets:prop,x:cupStartX,y:cupStartY,alpha:0,duration:220,onComplete:finish});
-            scene.tweens.add({targets:hand,x:anchor.handX,y:anchor.handY+5,alpha:0,duration:220});
+            if(ended)return;
+            tween({x:start.x,y:start.y,angle:0,duration:220,onComplete:finish});
           }});
       }});
-    // vapor
-    for(let i=0;i<6;i++){
-      scene.time.delayedCall(170+i*145,()=>{
-        if(!cont.active)return;
-        const s=scene.add.circle(cont.x+cupMouthX+Phaser.Math.Between(-2,2),cont.y+anchor.mouthY-3,Phaser.Math.Between(1,2),0xffffff,.65).setDepth(cont.depth+1);
-        particles.push(s);
-        scene.tweens.add({targets:s,x:s.x+Phaser.Math.Between(-5,5),y:s.y-20,alpha:0,duration:620,onComplete:()=>s.destroy()});
+    for(let i=0;i<5;i++){
+      later(330+i*145,()=>{
+        const p=point(0,-2*unit);
+        const steam=scene.add.rectangle(cont.x+p.x,cont.y+p.y,unit,2*unit,0xffffff,.45).setDepth(cont.depth+1);
+        particles.push(steam);
+        scene.tweens.add({targets:steam,x:steam.x+dir*4*unit,y:steam.y-12*unit,
+          alpha:0,duration:420,onComplete:()=>{if(steam.active)steam.destroy();}});
       });
     }
     return prop;
   }
 
-  // reparar: la llave gira de un lado al otro y saltan chispas
   drawWrench(prop);
-  prop.setPosition(dir*17,anchor.toolY).setScale(1.35).setAngle(dir*-30);
-  hand.setPosition(anchor.handX,anchor.handY);
-  scene.tweens.add({targets:prop,angle:dir*28,duration:150,yoyo:true,repeat:4,ease:'Sine.easeInOut',
-    onComplete:()=>scene.tweens.add({targets:prop,alpha:0,duration:180,onComplete:finish})});
-  // El bamboleo va por ángulo: la Y del sprite la reescribe el rebote de caminar en cada frame.
-  scene.tweens.add({targets:hand,x:dir*14,y:anchor.toolY,duration:150,yoyo:true,repeat:4,ease:'Sine.easeInOut'});
-  if(body)scene.tweens.add({targets:body,x:base.x+dir*2,angle:dir*2,duration:150,yoyo:true,repeat:4,ease:'Sine.easeInOut'});
-  for(let i=0;i<8;i++){
-    scene.time.delayedCall(100+i*105,()=>{
-      if(!cont.active)return;
-      const sp=scene.add.rectangle(cont.x+dir*20+Phaser.Math.Between(-4,4),cont.y-20+Phaser.Math.Between(-4,4),3,3,i%2?0xffb347:0x5bc8fa,.95).setDepth(cont.depth+1);
-      particles.push(sp);
-      scene.tweens.add({targets:sp,x:sp.x+dir*Phaser.Math.Between(4,14),y:sp.y+Phaser.Math.Between(6,16),alpha:0,duration:420,onComplete:()=>sp.destroy()});
+  // The wrench and fingers share a grip; the arm follows that grip.
+  prop.setScale(unit).setPosition(0,-4*unit);
+  hand.setPosition(0,0);
+  rig.setPosition(anchor.handX,anchor.handY).setAngle(dir*-25);updateArm();
+  tween({x:anchor.toolX,y:anchor.toolY,duration:180,
+    onComplete:()=>{
+      if(ended)return;
+      tween({angle:dir*25,duration:150,yoyo:true,repeat:3,
+        onComplete:()=>{
+          if(ended)return;
+          tween({x:anchor.handX,y:anchor.handY,angle:0,duration:180,onComplete:finish});
+        }});
+    }});
+  for(let i=0;i<5;i++){
+    later(300+i*220,()=>{
+      const tip=point(0,-16*unit);
+      const spark=scene.add.rectangle(cont.x+tip.x,cont.y+tip.y,2*unit,2*unit,
+        i%2?0xffb347:0x5bc8fa,.85).setDepth(cont.depth+1);
+      particles.push(spark);
+      scene.tweens.add({targets:spark,x:spark.x+dir*8*unit,y:spark.y+7*unit,
+        alpha:0,duration:260,onComplete:()=>{if(spark.active)spark.destroy();}});
     });
   }
   return prop;
