@@ -39,6 +39,14 @@ Actualizado: 2026-09-12.
   no cambia gameplay, assets, escenas, economia, colisiones ni formato de save.
 - Esto NO certifica que la beta este terminada.
 
+### Prioridad actual: upgrade visual solicitado
+
+Fernando postergo balance y recorridos finales para mejorar UI y animaciones
+con spritesheets del Escritorio. Respaldo del bloque anterior: `95268e2`.
+Primera pasada visual local, aun sin aprobacion de rendering: 82/82 pruebas
+generales, 9/9 de sprites y 12/12 de audio. No hay push ni tag. No se declara
+terminado el rediseño completo ni se reemplaza la QA real con estas pruebas.
+
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
 scripts y QA del estado anterior. El commit de base conserva los assets.
 Este commit versiona las correcciones, no certifica aprobacion manual.
@@ -626,3 +634,110 @@ Recargar publish-repo/index.html (i18n v23) sin borrar el save. Chrome/Edge,
 Pendiente aprobacion de este bloque antes de cambiar balance. No se hizo push,
 tag ni release. Los dos recorridos reales completos consecutivos siguen
 siendo requisito para beta-v0.1.0; las pruebas automatizadas no los sustituyen.
+
+## Upgrade visual 01 - 2026-09-12
+
+Pedido nuevo: posponer balance, mejorar UI y aprovechar spritesheets del
+Escritorio. Se respalda primero el estado previo en `95268e2`. Alcance de
+esta pasada: estilos, seleccion/carga de animaciones y sincronizacion visual
+con la pausa existente. No cambia gameplay, economia, misiones, progreso,
+posiciones, escalas, origins, profundidad ni colisiones del mundo.
+
+### Inventario revisado
+
+- Carpetas C:/Users/Fernando/Desktop/sprites nuevos y SPRITE BOQUILLA:
+  objetos, termicas, cama y boquilla. No se escribio sobre los originales.
+- Se revisaron tambien exports existentes en assets/printers y la copia
+  previa tmp-new-sprites/a pasar del proyecto. No se agregaron PNG duplicados.
+- Termica - Correcto y breaker-success: mismos 168x42 pixeles, diferencia
+  de metadatos del archivo. La integracion existente se conserva.
+- maquina3d-3.png del Escritorio y lvl1 existente: ambos 26x34, 38 pixeles
+  diferentes. No se sustituyo silenciosamente la version actual.
+- No se encontro CLI de Aseprite en PATH ni en ubicaciones habituales.
+  No se inventaron exports de los .aseprite que faltan como PNG.
+
+| Modelo | Sprites disponibles usados | Animacion de trabajo |
+| --- | --- | --- |
+| P1 inicial, maquina3d-3 | maquina3d_lvl1 y lvl1_working | 6 frames, 8 fps |
+| P2, maquina3d-2 | variants/printer_variant_2 y variant_2_broken | 8 frames, 10 fps |
+| Cerrada, futura P3/P4 | maquina3d, BROKENMACHINE, MACHINEFILAMENT | frames 1-7, 10 fps |
+
+El tercer modelo no se desbloquea antes ni se agrega a la beta por este cambio.
+Cada spritesheet usa celdas 26x34. Se validan indices contra Texture.has;
+las secuencias se registran una sola vez y solo con la textura disponible.
+Las variantes tienen offset de inicio y cadencia visual distintos sin usar
+Math.random ni cambiar la simulacion. Se conserva el benchy existente:
+todavia no hay una coleccion de piezas impresas distinta por tipo de pedido.
+
+### Animaciones y correcciones
+
+- P1 ya no se transforma en una impresora cerrada al romperse o quedarse
+  sin filamento. Donde falta arte de falla especifico conserva su modelo
+  y usa tinte rojo/ambar. P2 tiene su propia tira de falla de ocho frames.
+- Falta exportar como PNG los .aseprite de falla/filamento de P1 y filamento
+  de P2 para animar esos estados completamente; no se afirma que ya esten.
+- Una impresora rota tiene prioridad visual sobre busy. Una impresora
+  pausada conserva el frame actual y reanuda sin reiniciar cada update.
+- Al abrir overlays se sincroniza solo el sprite antes del return de
+  Day/Night.update; no avanzan timers, energia, jobs ni input. Pausar la
+  escena desde el menu sigue siendo responsabilidad del flujo existente.
+- Se corrige el loader que podia crear animaciones incompletas si solo
+  habia llegado la textura base. Errores de carga liberan callbacks y
+  permiten reintento sin volver a crear animaciones existentes.
+- Caminar -> idle -> caminar reinicia la secuencia si estaba detenida.
+  Se usa resume antes de stop cuando estaba pausada: Phaser conserva
+  isPaused despues de stop; el host de pruebas refleja ese contrato.
+
+Contrato consultado: fuente oficial de Phaser 3.60 AnimationState.js,
+metodos play, pause, resume, stop, propiedad isPaused y timeScale:
+https://github.com/phaserjs/phaser/blob/v3.60.0/src/animations/AnimationState.js
+
+### UI
+
+- Paleta de paneles gris verdosa con texto claro, verde para exito,
+  cian para informacion, ambar para foco/acciones y rojo para errores.
+  Conserva fuente pixel, marcos y sprites originales.
+- HUD y tareas con mayor contraste; contador de energia en dos lineas
+  para no comprimir etiqueta, cantidad y porcentaje en 130px.
+- Se retiran vignette y scanlines decorativas sobre la escena.
+- Menus, dialogos, inventario y tienda tienen limites verticales y scroll.
+  Tienda adapta columnas; textos largos y acciones tienen espacio para wrap.
+- Filas de tareas y estadisticas mas simples, foco visible, entradas breves
+  por opacidad y preferencias de movimiento reducido para efectos decorativos.
+  No se desactivan spritesheets de minijuegos al reducir movimiento.
+- ProPanel permite scroll y recibe pointer events dentro del propio panel;
+  no se modifican colliders ni posiciones de las estaciones.
+
+Caches: styles v20, draw v31, Day v34, Night v39. Audio v22, i18n v23,
+UI v23 y orden de scripts sin cambios.
+
+### Verificacion y pendientes
+
+- node qa/beta-regression.cjs: 82/82; incluye el nuevo caso de pausa visual
+  integrada en ambas escenas sin avance de simulacion.
+- node qa/sprite-regression.cjs: 9/9; valida PNG reales, frames, cargas
+  desordenadas/fallidas, identidad de modelos, pausa, geometria y caminata.
+- node qa/audio-regression.cjs: 12/12; audio sin cambios.
+- Las pruebas NO ejecutan renderer, layout CSS ni consola real. No se
+  encontro un parser CSS instalado; no se certifica CSS por un mock DOM.
+- La restriccion previa de file:// no se eludio con otro navegador/servidor.
+  No se obtuvieron screenshots ni se certifica aspecto por resolucion.
+
+Puerta manual antes de otra pasada visual:
+1. Recargar index y abrir dia/noche en Chrome/Edge a 1366x768 y 1920x1080.
+   Confirmar las capas, el personaje, HUD y ausencia de errores nuevos.
+2. P1: cargar trabajo, abrir/cerrar inventario, provocar/reparar una falla
+   y probar corte de luz. Debe conservar modelo, posicion y control.
+3. Cuando el flujo desbloquee P2, comprobar su modelo y tira de trabajo;
+   sin otra impresora superpuesta y con el avance normal del pedido.
+4. Caminar, parar, volver a caminar y tomar cafe: debe animar y recuperar
+   control. Guardar/recargar conserva el checkpoint de inicio del turno.
+5. ES/EN, tienda, inventario, menu, cierre y minijuegos: revisar overflow,
+   botones alcanzables, foco, scroll y ausencia de clicks sobre el mundo.
+6. Revisar tambien una ventana estrecha/corta; reduced motion no debe
+   ocultar resultados ni impedir termicas/cama/boquilla.
+
+Despues de aprobar: exportar los estados Aseprite faltantes, ampliar piezas
+por pedido con arte real, y revisar feedback de seleccion/completado. No
+acumular mas retoques de escena antes de validar esta pasada. Balance y
+los dos recorridos finales permanecen pospuestos por pedido de Fernando.

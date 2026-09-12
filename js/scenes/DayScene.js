@@ -537,7 +537,7 @@ class DayScene extends Phaser.Scene{
     const pg=this.pGfx&&this.pGfx[i],p=G.printers&&G.printers[i];if(!pg||!p)return;
     if(i>0){this.hideDayPrinter(pg.g,pg.sp,pg.lt,pg.bench,pg.job,pg.benchy);return;}
     const c=p.order?p.order.pr.c:0x5bc8fa;
-    const activeDay=p.busy&&p.id===0&&!p._pau;
+    const activeDay=p.busy&&p.id===0;
     if(pg.sp){
       pg.sp.setVisible(true);
       setPrinterSpriteState(pg.sp,{...p,busy:activeDay});
@@ -585,7 +585,11 @@ class DayScene extends Phaser.Scene{
     this.time.delayedCall(1000,()=>{this.fastCloseDay=false;if(G.phase==='day'&&!G.block)this.endDay();});
   }
   update(_t,dt){
-    if(G.phase!=='day'||G.block)return;
+    if(G.phase!=='day')return;
+    if(G.block||G.menuOpen){
+      (this.pGfx||[]).forEach((pg,i)=>{if(pg.sp&&G.printers[i])setPrinterSpriteState(pg.sp,G.printers[i]);});
+      return;
+    }
     this.timer=Math.max(0,this.timer-dt);
     if(this.timer<=0){
       if(this.dayObjectiveReady()){this.endDay();return;}

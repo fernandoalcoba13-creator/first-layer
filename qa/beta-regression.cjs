@@ -1084,6 +1084,20 @@ test('translated UI survives save/reload without altering either shift checkpoin
   }
 });
 
+test('blocked scene updates freeze visuals without advancing clocks, jobs or input',()=>{
+  for(const phase of ['day','night']){
+    const h=host();loadedJob(h);const scene=h.start(phase),calls=[];
+    const p=h.G.printers[0],sp={};
+    if(phase==='day')scene.pGfx=[{sp}];else scene.pObjs=[{spr:sp}];
+    h.context.setPrinterSpriteState=(sprite,printer)=>calls.push({sprite,printer});
+    const before=JSON.stringify({timer:scene.timer,progress:p.progress,energy:h.G.energy,x:scene.player.x,y:scene.player.y});
+    h.G.block=true;scene.update(0,1500);
+    assert.equal(calls.length,1);assert.equal(calls[0].sprite,sp);assert.equal(calls[0].printer,p);
+    assert.equal(JSON.stringify({timer:scene.timer,progress:p.progress,energy:h.G.energy,x:scene.player.x,y:scene.player.y}),before);
+    assert.equal(h.G.block,true);
+  }
+});
+
 let failed=0;
 for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}
 console.log(`${tests.length-failed}/${tests.length} passed. Logic only; real rendering/audio/file:// QA remains mandatory.`);

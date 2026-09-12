@@ -8,6 +8,20 @@ const PRINTER_WORKING_SHEET='assets/printers/maquina3d_lvl1_working.png';
 const PRINTER_SHEET_DATA='data:image/png;base64,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';
 const PRINTER_BROKEN_ASSET='maquina3d_broken';
 const PRINTER_FILAMENT_ASSET='maquina3d_filament';
+const PRINTER_MODELS=[
+  {base:PRINTER_ASSET,working:[PRINTER_WORKING_ASSET,0,5,8]},
+  {base:'printer_standard',working:['printer_standard',0,7,10],fail:['printer_standard_broken',0,7,7]},
+  {base:'printer_enclosed',working:['printer_enclosed',1,7,10],fail:[PRINTER_BROKEN_ASSET,8,20,7],out_filament:[PRINTER_FILAMENT_ASSET,8,20,7]}
+];
+const PRINTER_SHEETS=[
+  [PRINTER_ASSET,PRINTER_SHEET],
+  [PRINTER_WORKING_ASSET,PRINTER_WORKING_SHEET],
+  ['printer_standard','assets/printers/variants/printer_variant_2.png'],
+  ['printer_standard_broken','assets/printers/variants/printer_variant_2_broken.png'],
+  ['printer_enclosed','assets/printers/maquina3d.png'],
+  [PRINTER_BROKEN_ASSET,'assets/printers/BROKENMACHINE.png'],
+  [PRINTER_FILAMENT_ASSET,'assets/printers/MACHINEFILAMENT.png']
+];
 const PLAYER_DOWN='player_walk_s';
 const PLAYER_LEFT='player_walk_a';
 const PLAYER_RIGHT='player_walk_d';
@@ -220,33 +234,29 @@ function addRoomWindowMood(scene,night){
   return g;
 }
 function setupPrinterAnims(scene){
-  if(!scene.textures.exists(PRINTER_ASSET)||scene.anims.exists('printer_idle'))return;
-  const fr=n=>({key:PRINTER_ASSET,frame:n});
-  const wk=n=>({key:scene.textures.exists(PRINTER_WORKING_ASSET)?PRINTER_WORKING_ASSET:PRINTER_ASSET,frame:n});
-  const fail=n=>({key:scene.textures.exists(PRINTER_BROKEN_ASSET)?PRINTER_BROKEN_ASSET:PRINTER_ASSET,frame:n});
-  const out=n=>({key:scene.textures.exists(PRINTER_FILAMENT_ASSET)?PRINTER_FILAMENT_ASSET:PRINTER_ASSET,frame:n});
-  scene.anims.create({key:'printer_idle',frames:[fr(0)],frameRate:1,repeat:-1});
-  scene.anims.create({key:'printer_working',frames:[0,1,2,3,4,5].map(wk),frameRate:8,repeat:-1});
-  scene.anims.create({key:'printer_fail',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(fail),frameRate:7,repeat:-1});
-  scene.anims.create({key:'printer_out_filament',frames:[8,9,10,11,12,13,14,15,16,17,18,19,20].map(out),frameRate:7,repeat:-1});
+  PRINTER_MODELS.forEach((model,id)=>{
+    ['working','fail','out_filament'].forEach(state=>{
+      const sheet=model[state],key='printer_'+state+'_'+id;
+      if(!sheet||scene.anims.exists(key)||!scene.textures.exists(sheet[0]))return;
+      const texture=scene.textures.get(sheet[0]),frames=[];
+      for(let n=sheet[1];n<=sheet[2];n++)if(texture.has(n))frames.push({key:sheet[0],frame:n});
+      if(frames.length)scene.anims.create({key,frames,frameRate:sheet[3],repeat:-1});
+    });
+  });
 }
 function loadPrinterAssetsAsync(scene,onReady){
-  if(scene.textures.exists(PRINTER_ASSET)){setupPrinterAnims(scene);if(onReady)onReady();return;}
   if(G._printerAssetCallbacks){G._printerAssetCallbacks.push(onReady);return;}
+  const pending=PRINTER_SHEETS.filter(sheet=>!scene.textures.exists(sheet[0]));
+  if(!pending.length){setupPrinterAnims(scene);if(onReady)onReady();return;}
   G._printerAssetCallbacks=[onReady];
-  const img=new Image();
-  img.onload=()=>{
-    if(!scene.textures.exists(PRINTER_ASSET)){
-      scene.textures.addSpriteSheet(PRINTER_ASSET,img,{frameWidth:26,frameHeight:34});
-    }
-    let left=3;
-    const done=()=>{left--;if(left<=0){setupPrinterAnims(scene);(G._printerAssetCallbacks||[]).forEach(cb=>{if(cb)cb();});G._printerAssetCallbacks=null;}};
-    addSheetFromImage(scene,PRINTER_WORKING_ASSET,PRINTER_WORKING_SHEET,26,34,done);
-    addSheetFromImage(scene,PRINTER_BROKEN_ASSET,'assets/printers/BROKENMACHINE.png',26,34,done);
-    addSheetFromImage(scene,PRINTER_FILAMENT_ASSET,'assets/printers/MACHINEFILAMENT.png',26,34,done);
+  let left=pending.length;
+  const done=()=>{
+    if(--left>0)return;
+    setupPrinterAnims(scene);
+    const callbacks=G._printerAssetCallbacks||[];G._printerAssetCallbacks=null;
+    callbacks.forEach(cb=>{if(cb)cb();});
   };
-  img.onerror=()=>console.warn('Printer sprite failed to load, using procedural fallback.');
-  img.src=PRINTER_SHEET;
+  pending.forEach(sheet=>addSheetFromImage(scene,sheet[0],sheet[1],26,34,done));
 }
 function setupPlayerAnims(scene){
   if(!scene.textures.exists(PLAYER_DOWN)||scene.anims.exists('player_walk_down'))return;
@@ -280,11 +290,11 @@ function setPlayerSpriteState(sp,vx,vy,lastDir){
   const moving=!!(vx||vy),key='player_walk_'+dir;
   const idleTex={down:PLAYER_DOWN,left:PLAYER_LEFT,right:PLAYER_RIGHT,up:PLAYER_UP}[dir]||PLAYER_DOWN;
   if(!moving){
-    if(sp.anims)sp.anims.stop();
+    if(sp.anims){if(sp.anims.isPaused)sp.anims.resume();sp.anims.stop();}
     if(sp.texture.key!==idleTex||sp.frame.name!==0)sp.setTexture(idleTex,0);
     return dir;
   }
-  if(sp.anims&&(!sp.anims.currentAnim||sp.anims.currentAnim.key!==key))sp.play(key,true);
+  if(sp.anims&&(!sp.anims.currentAnim||sp.anims.currentAnim.key!==key||(!sp.anims.isPlaying&&!sp.anims.isPaused)))sp.play(key,true);
   else if(sp.anims)sp.anims.resume();
   return dir;
 }
@@ -322,17 +332,31 @@ function createPrinterSprite(scene,x,y){
 }
 function setPrinterSpriteState(sp,p){
   if(!sp)return;
-  sp.clearTint();
-  let key=null;
-  if(p&&p._ev&&p._ev.id==='run')key='printer_out_filament';
-  else if(p&&p._ev)key='printer_fail';
-  else if(p&&p.busy&&!p._pau)key='printer_working';
-  else if(p&&p.broken)key='printer_fail';
-  if(key==='printer_fail')sp.setTint(0xff6b6b);
-  if(key==='printer_out_filament')sp.setTint(0xffd166);
-  if(!key){if(sp.anims)sp.anims.stop();sp.setTexture(PRINTER_ASSET,0);return;}
-  if(sp.anims&&sp.anims.currentAnim&&sp.anims.currentAnim.key===key&&sp.anims.isPlaying)return;
-  sp.play(key,true);
+  const scene=sp.scene;
+  let id=Math.max(0,Math.min(2,Math.floor(p&&p.id||0)));
+  if(!scene.textures.exists(PRINTER_MODELS[id].base))id=0;
+  const model=PRINTER_MODELS[id];
+  const state=p&&p.broken?'fail':p&&p._ev?(p._ev.id==='run'?'out_filament':'fail'):p&&p.busy?'working':'idle';
+  const tint=state==='fail'?0xff8585:state==='out_filament'?0xffd166:null;
+  if(sp._printerTint!==tint){if(tint===null)sp.clearTint();else sp.setTint(tint);sp._printerTint=tint;}
+  const key='printer_'+state+'_'+id,anims=sp.anims;
+  // Missing fault art must keep this model, never replace it with a different machine.
+  if(!scene.anims.exists(key)){
+    if(anims){if(anims.isPaused)anims.resume();if(anims.isPlaying)anims.stop();}
+    if(sp.texture.key!==model.base||String(sp.frame.name)!=='0')sp.setTexture(model.base,0);
+    return;
+  }
+  const same=anims.currentAnim&&anims.currentAnim.key===key;
+  if(!same||(!anims.isPlaying&&!anims.isPaused)){
+    const frames=scene.anims.get(key).frames.length;
+    sp.play({key,startFrame:(Math.max(0,p&&p.id||0)*2)%frames},true);
+  }
+  const paused=state==='working'&&(p._pau||G.block||G.menuOpen||G.phase==='transition');
+  if(paused){if(!anims.isPaused)anims.pause();}
+  else if(anims.isPaused)anims.resume();
+  // Visual cadence only: never changes job progress, costs, or saved state.
+  const speed=Number(G.sMult)||1;
+  anims.timeScale=state==='working'?Math.max(.7,Math.min(1.5,speed))*(id===1?1.05:1):1;
 }
 function drawPlayer(g,light,tired){
   g.clear();

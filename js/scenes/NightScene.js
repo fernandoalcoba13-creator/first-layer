@@ -582,7 +582,11 @@ class NightScene extends Phaser.Scene{
     sLog('💡 Luz restablecida. Las impresoras retoman.');
   }
   update(_t,dt){
-    if(G.phase!=='night'||G.block||G.menuOpen)return;
+    if(G.phase!=='night')return;
+    if(G.block||G.menuOpen){
+      (this.pObjs||[]).forEach((po,i)=>{if(po.spr&&G.printers[i])setPrinterSpriteState(po.spr,G.printers[i]);});
+      return;
+    }
     if(G.pActive){
       G.pTimer-=dt;
       document.getElementById('ptf').style.width=(Math.max(0,G.pTimer/G.pMax)*100)+'%';
