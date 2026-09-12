@@ -1021,6 +1021,69 @@ test('action input is released before effect cleanup and cannot unlock another o
   }
 });
 
+test('persistent panel labels follow ES and EN in both directions',()=>{
+  const h=host();
+  const expected={
+    en:{shopTitle:'🔧 SHOP',stoContinue:'▶ CONTINUE',deK:'SHIFT CLOSED',energyLabel:'🧉 ENERGY',mhot:'⚡ TURBO ACTIVE'},
+    es:{shopTitle:'🔧 TIENDA',stoContinue:'▶ CONTINUAR',deK:'CIERRE DE TURNO',energyLabel:'🧉 ENERGÍA',mhot:'⚡ TURBO ACTIVO'}
+  };
+  for(const lang of ['en','es','en']){
+    h.run(`setLang('${lang}')`);
+    for(const [id,text] of Object.entries(expected[lang])){
+      assert.ok(h.elements.has(id),`missing panel label ${id}`);
+      assert.equal(h.elements.get(id).textContent,text,id);
+    }
+  }
+});
+
+test('shop close control has a translated name without changing close actions',()=>{
+  const h=host(),button=h.elements.get('shopClose');
+  assert.ok(button,'shop close control needs a stable id');
+  const attributes=new Map();button.setAttribute=(k,v)=>attributes.set(k,v);
+  for(const [lang,label] of [['en','Close'],['es','Cerrar']]){
+    h.run(`setLang('${lang}')`);
+    assert.equal(attributes.get('aria-label'),label);assert.equal(button.title,label);
+  }
+  for(const [id,action] of [['shopClose','G.cShop()'],['stoContinue','G.cSto()']]){
+    const tag=html.match(new RegExp('<button\\b[^>]*\\bid="'+id+'"[^>]*>'));
+    assert.ok(tag,id);assert.ok(tag[0].includes('onclick="'+action+'"'),id+' action unchanged');
+  }
+});
+
+test('language changes keep inventory and shop help aligned with their keyboard actions',()=>{
+  const h=host(),help=Array.from({length:7},()=>({textContent:''}));
+  h.start('day');
+  const query=h.context.document.querySelectorAll;
+  h.context.document.querySelectorAll=selector=>selector==='#keyHelp span'?help:query(selector);
+  for(const [lang,lastTwo] of [['en',['I inventory','O shop']],['es',['I inventario','O tienda']]]){
+    h.run(`setLang('${lang}')`);
+    assert.deepEqual(help.slice(-2).map(el=>el.textContent),lastTwo);
+    h.key('i');assert.equal(h.run("isShown('sto')"),true);assert.equal(h.G.block,true);
+    h.key('Escape');assert.equal(h.G.block,false);
+    h.key('o');assert.equal(h.run("isShown('shop')"),true);assert.equal(h.G.block,true);
+    h.key('Escape');assert.equal(h.G.block,false);
+  }
+});
+
+test('translated UI survives save/reload without altering either shift checkpoint',()=>{
+  for(const phase of ['day','night']){
+    const h=host();
+    if(phase==='night'){loadedJob(h);h.G.dayPrints=2;}
+    h.start(phase,2);h.setSaveCheckpoint(h.G,phase);
+    const checkpoint=JSON.stringify(h.G._checkpoint);
+    const before=JSON.stringify({gold:h.G.gold,orders:h.G.orders,stock:h.G.stk});
+    h.run("setLang('en')");
+    assert.equal(JSON.stringify(h.G._checkpoint),checkpoint);
+    assert.equal(JSON.stringify({gold:h.G.gold,orders:h.G.orders,stock:h.G.stk}),before);
+    assert.equal(h.G.block,false);assert.equal(h.G.phase,phase);
+    const restored=host(JSON.parse(h.storage.get(h.SK)));
+    assert.equal(restored.G.lang,'en');assert.equal(restored.G.resumePhase,phase);assert.equal(restored.G.day,2);
+    assert.ok(restored.elements.has('stoContinue'));
+    assert.equal(restored.elements.get('stoContinue').textContent,'▶ CONTINUE');
+    restored.start(phase,2);assert.equal(restored.G.block,false);
+  }
+});
+
 let failed=0;
 for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}
 console.log(`${tests.length-failed}/${tests.length} passed. Logic only; real rendering/audio/file:// QA remains mandatory.`);

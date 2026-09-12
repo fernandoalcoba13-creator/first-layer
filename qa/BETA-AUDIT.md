@@ -33,6 +33,10 @@ Actualizado: 2026-09-12.
   regresion general 77/77. Fernando confirmo ON/OFF, paso dia/noche y recarga
   sin problemas el 12/09; se autoriza el siguiente bloque de UI. No se aporto
   matriz por navegador/resolucion ni logs. Sin cambios de pistas ni assets.
+- Audio respaldado en `51ce5a8`, sin push. Bloque de textos UI: cinco etiquetas
+  persistentes ES/EN y nombre accesible del cierre de tienda. 81/81 pruebas
+  generales y 12/12 de audio. Pendiente comprobacion visual de estos textos;
+  no cambia gameplay, assets, escenas, economia, colisiones ni formato de save.
 - Esto NO certifica que la beta este terminada.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
@@ -571,3 +575,54 @@ Fernando respondio "Si, funciona sin problemas". Se aprueba esa prueba basica
 y se respalda el bloque antes de continuar con textos de UI. La respuesta no
 certifica cada caso de la puerta manual, resoluciones, navegadores ni seis
 turnos completos. No se publica ni etiqueta como release.
+
+## Bloque de textos UI - 2026-09-12
+
+Respaldo previo: `51ce5a8` (audio aprobado). Produccion limitada a index.html
+y js/i18n.js, cache v23. Se preservan orden de scripts, clases CSS, handlers
+onclick y rutas. No hay cambios en escenas, acciones, timers ni listeners.
+
+Problema comprobado: applyLang no alcanzaba textos fijos del HTML. Con EN
+seleccionado quedaban TIENDA, Continuar del inventario/historia, CIERRE DE
+TURNO, ENERGIA y TURBO ACTIVO en español. Se agregan IDs a los nodos y se
+actualizan desde applyLang, reutilizando shopTitle y continue. El simbolo
+de cerrar tienda conserva su accion y ahora tiene aria-label/title ES/EN.
+
+Se descarto una sospecha inicial sobre keyMate/keyRepair: aunque los nombres
+internos son viejos, sus valores ya indican I inventario / O tienda y sus
+traducciones correctas. No se renombraron ni cambiaron esos atajos. Tampoco
+se modificaron los campos Maker/Taller: ya actualizan G al escribir.
+
+Verificacion:
+- `node qa/beta-regression.cjs`: 81/81, cuatro casos adicionales de textos
+  bidireccionales, etiqueta de cierre, I/O/Escape y persistencia del idioma
+  sin cambiar el checkpoint diurno/nocturno, dinero, pedidos o stock.
+- `node qa/audio-regression.cjs`: 12/12; BGM y SFX sin cambios.
+- Los 77 casos previos siguieron pasando durante el bloque. Se corrigieron
+  dos supuestos de las pruebas nuevas, no de produccion: un panel visible
+  puede usar display:block, y una noche valida necesita pedidos suficientes.
+- La suite comprueba sintaxis, referencias locales de assets y arranque de
+  Day/Night en dias 1-3 con Phaser simulado. No renderiza ni certifica consola
+  del navegador, apertura file://, tamaño de texto, foco nativo o escucha.
+
+Este bloque NO completa toda la localizacion. Quedan por revisar textos
+dinamicos de eventos/ayudas de escenas, descripciones de mejoras/empleados
+y la matriz visual de ES/EN. Se evita una reescritura general del catalogo.
+
+### Puerta manual de textos UI
+
+Recargar publish-repo/index.html (i18n v23) sin borrar el save. Chrome/Edge,
+1366x768 y 1920x1080, con consola abierta:
+
+1. En menu elegir EN y continuar. Revisar SHOP, ENERGY, TURBO ACTIVE al
+   activarlo, CONTINUE en inventario y SHIFT CLOSED al cerrar el dia.
+2. Abrir inventario con I, tienda con O, cerrar mediante boton y Escape.
+   Ver que vuelve el control y que el cierre de tienda muestra Close al hover.
+3. Volver a ES: los cinco textos y tooltip regresan a español. Revisar que
+   no se recorten ni se superpongan a otros controles en ambas resoluciones.
+4. Guardar/recargar dia y noche: conserva idioma y checkpoint de inicio de
+   turno; comprobar escenas, movimiento, interacciones, assets y consola.
+
+Pendiente aprobacion de este bloque antes de cambiar balance. No se hizo push,
+tag ni release. Los dos recorridos reales completos consecutivos siguen
+siendo requisito para beta-v0.1.0; las pruebas automatizadas no los sustituyen.

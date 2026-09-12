@@ -18,6 +18,7 @@ const TXT={
     repNormNote:'el taller funciona en equilibrio.',
     repGoodNote:'los clientes pagan más, esperan más y llegan más seguido.',
     save:'Guardar',menu:'Menu',currentShift:'TURNO ACTUAL',
+    shiftClosed:'CIERRE DE TURNO',energyLabel:'ENERGÍA',turboActive:'TURBO ACTIVO',
     proText:'Atende clientes, compra stock barato y prepara la noche.',
     proTip:'TIP: si hay urgentes, priorizalos antes del cierre.',
     day:'DIA',night:'NOCHE',scale:'ESCALA',
@@ -130,6 +131,7 @@ const TXT={
     repNormNote:'the shop runs in balance.',
     repGoodNote:'clients pay more, wait longer, and arrive more often.',
     save:'Save',menu:'Menu',currentShift:'CURRENT SHIFT',
+    shiftClosed:'SHIFT CLOSED',energyLabel:'ENERGY',turboActive:'TURBO ACTIVE',
     proText:'Serve clients, buy cheap stock, and prepare the night shift.',
     proTip:'TIP: prioritize urgent jobs before closing.',
     day:'DAY',night:'NIGHT',scale:'SCALE',
@@ -289,6 +291,13 @@ function applyLang(){
   set('proTip',tr('proTip'));
   set('btnSave','💾 '+tr('save'));
   set('btnMenu','? '+tr('menu'));
+  set('shopTitle','🔧 '+tr('shopTitle'));
+  set('stoContinue','▶ '+tr('continue'));
+  set('deK',tr('shiftClosed'));
+  set('energyLabel','🧉 '+tr('energyLabel'));
+  set('mhot','⚡ '+tr('turboActive'));
+  const shopClose=document.getElementById('shopClose');
+  if(shopClose){shopClose.setAttribute('aria-label',tr('close'));shopClose.title=tr('close');}
   set('tsDay','☀️ '+tr('day'));
   set('tsNight','🌙 '+tr('night'));
   set('tsScale','📈 '+tr('scale'));
