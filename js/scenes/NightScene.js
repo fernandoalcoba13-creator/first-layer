@@ -110,7 +110,7 @@ class NightScene extends Phaser.Scene{
       if(!prepareOrderMaterial(o)){o.waitingMaterial=true;showNotif(trf('missingOrder',{mat:o.material,units:o.units})+' - '+o.pr.n,'error');return;}
       p.busy=true;p.order=o;p.progress=0;p._ev=null;p._pau=false;p.broken=false;
     });
-    if(this.pObjs)this.pObjs.forEach(po=>po.lb.setText('P'+(po.p.id+1)+'\n'+(po.p.order?po.p.order.pr.e+po.p.order.pr.n.slice(0,8):'💤')));
+    this.refreshPrinterLabels();
   }
   assignOrderToPrinter(p,o){
     if(!p||!o||p.busy||p.broken||p.locked||!G.orders.includes(o))return false;
@@ -129,7 +129,7 @@ class NightScene extends Phaser.Scene{
   }
   refreshPrinterLabels(){
     if(!this.pObjs)return;
-    this.pObjs.forEach(po=>po.lb.setText('P'+(po.p.id+1)+'\n'+(po.p.order?po.p.order.pr.e+po.p.order.pr.n.slice(0,8):'LIBRE')));
+    this.pObjs.forEach(po=>updatePrinterLabel(po.lb,po.p,this.near===po));
   }
   openPrinterQueue(po){
     const p=po&&po.p;if(!p)return;
@@ -204,7 +204,8 @@ class NightScene extends Phaser.Scene{
       const pbB=this.add.rectangle(0,-16,70,5,0x070510).setOrigin(.5).setDepth(4);
       const pbF=this.add.rectangle(-35,-16,0,5,p.order?p.order.pr.c:0x5bc8fa).setOrigin(0,.5).setDepth(4);
       ct.add(pbB);ct.add(pbF);
-      const lb=this.add.text(0,30,'P'+(i+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'💤'),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
+      const lb=createPrinterLabel(this,0,30,this.room().s);
+      updatePrinterLabel(lb,p,false);
       ct.add(lb);
       const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
       this.pObjs.push({p,ct,pg,spr,job,benchy,pbF,lb,wn,arm,px,py});
@@ -285,7 +286,8 @@ class NightScene extends Phaser.Scene{
       const pbB=this.add.rectangle(0,-16,70,5,0x070510).setOrigin(.5).setDepth(4);
       const pbF=this.add.rectangle(-35,-16,0,5,p.order?p.order.pr.c:0x5bc8fa).setOrigin(0,.5).setDepth(4);
       ct.add(pbB);ct.add(pbF);
-      const lb=this.add.text(0,30,'P'+(p.id+1)+'\n'+(p.order?p.order.pr.e+p.order.pr.n.slice(0,8):'LIBRE'),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P',align:'center'}).setOrigin(.5,0);
+      const lb=createPrinterLabel(this,0,30,this.room().s);
+      updatePrinterLabel(lb,p,false);
       ct.add(lb);
       const wn=this.add.text(0,-22,'',{fontSize:'16px'}).setOrigin(.5).setDepth(5);ct.add(wn);
       this.pObjs.push({p,ct,pg,spr,pbF,lb,wn,arm,px,py});
@@ -585,6 +587,7 @@ class NightScene extends Phaser.Scene{
     if(G.phase!=='night')return;
     if(G.block||G.menuOpen){
       (this.pObjs||[]).forEach((po,i)=>{if(po.spr&&G.printers[i])setPrinterSpriteState(po.spr,G.printers[i]);});
+      this.refreshPrinterLabels();
       return;
     }
     if(G.pActive){
@@ -645,6 +648,7 @@ class NightScene extends Phaser.Scene{
     });
     const target=this.targetAt(this.player.x,this.player.y,false);
     this.near=target&&target.po||null;
+    this.refreshPrinterLabels();
     if(target&&!G.block){
       this.iLbl.setVisible(true).setText('Click/E '+target.label).setPosition(target.visual.x,target.visual.y-44);
       sHint('Click / [E] '+target.label);

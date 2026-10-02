@@ -47,10 +47,12 @@ Fernando confirmo el 12/09 que la primera pasada visual se ve y funciona
 bien al probar dia/noche, paneles y recarga. Respaldada en `d61b534`.
 La confirmacion no identifica navegador ni resolucion y no certifica toda
 la matriz final. Segunda pasada local: cinco PNG de animaciones originales,
-83/83 pruebas generales, 13/13 de sprites y 12/12 de audio tras corregir
-la superposicion reportada en noche. Tres capas limpias verificadas pixel
-por pixel. Pendiente revision en navegador de la correccion. No hay push
-ni tag ni se declara terminado todo el upgrade.
+Tras la correccion de superposicion, Fernando respondio "genial, segui
+mejorando el juego". El bloque de sprites y capas queda respaldado en
+`d5e2a93`; la respuesta no certifica la matriz completa de navegador.
+Bloque actual de etiquetas: 84/84 pruebas generales, 19/19 de sprites/UI
+y 12/12 de audio. Tres capas limpias siguen verificadas pixel por pixel.
+Pendiente revision visual de las etiquetas. No hay push ni tag.
 
 Antes de este bloque se genero `../before-p1-20260909.zip` con index, CSS,
 scripts y QA del estado anterior. El commit de base conserva los assets.
@@ -874,3 +876,74 @@ Respaldo adicional de scripts, UI, QA y nuevas animaciones en
 Se mantiene un bloque acotado por validacion; esta lista no significa que
 esas mejoras ya esten implementadas. La prioridad es un ciclo de impresion
 claro y consistente antes de ampliar contenido o reabrir el balance.
+
+## Feedback de impresoras - 2026-09-12
+
+Respaldo previo: `d5e2a93`, sin push. Se mejoran las etiquetas existentes,
+no se agregan interacciones, paneles, timers ni un sistema de produccion nuevo.
+
+- P1/P2 muestran identificador, porcentaje real y un estado corto ES/EN:
+  libre, imprimiendo, pausa, reparar, recarga, sin luz, reservado para noche.
+  El estado bloqueado tambien tiene traduccion aunque esos puestos se ocultan.
+- Falla y falta de filamento tienen prioridad sobre pausa. Un corte con
+  UPS activa no se presenta como una maquina sin energia. El porcentaje
+  se trunca, limita a 0..100 y no aparece en maquinas libres o reservadas.
+- El tercer trabajo introductorio de Dia 1, con la duracion de reserva
+  existente de 999999 ms, dice NOCHE. No se altera ese tiempo ni su progreso.
+- No hay estado ficticio de "listo para cobrar": ambos turnos cobran
+  automaticamente. La etiqueta vuelve a LIBRE/IDLE sin conservar el nombre
+  del trabajo cobrado; el aviso de ingreso existente sigue funcionando.
+- Fondo oscuro, contraste calculado >=4.5:1 en estados normales y resaltados,
+  tamaño estable y fuente fija de 8 px. El ancho sigue el espacio del puesto
+  hasta un maximo de 72 px; si no cabe el texto se muestra solo el identificador.
+- Se resalta la etiqueta de la impresora cercana segun el selector existente;
+  el resaltado se retira al abrir overlays. No se cambia prioridad de E/click.
+- Se comparte un descriptor visual entre escenas. Solo se reconstruye la
+  textura de texto cuando cambia su contenido, color o resaltado.
+- Sin cambios de assets, geometria del mundo, colliders, animaciones,
+  economia, misiones, audio o formato de save. Cache: draw v34, i18n v24,
+  Day v35, Night v41. Mismo orden de scripts clasicos.
+
+API contrastada con Phaser 3.60.0 TextStyle.js (fixedWidth/fixedHeight,
+setBackgroundColor):
+https://github.com/phaserjs/phaser/blob/v3.60.0/src/gameobjects/text/TextStyle.js
+
+Verificacion:
+- `node qa/beta-regression.cjs`: 84/84; incluye etiquetas de ambos turnos,
+  pausa sin avanzar el trabajo y vuelta a libre despues del cobro automatico.
+- `node qa/sprite-regression.cjs`: 19/19; estados, prioridades, truncado,
+  reserva, ES/EN, presupuesto de texto, contraste y cache sin mutaciones de G.
+- `node qa/audio-regression.cjs`: 12/12. `python qa/night-room-art.py`:
+  tres capas correctas, sin cambios fuera de los puestos.
+- No se ejecuto renderer ni consola real de Chrome/Edge. El presupuesto de
+  texto y contraste son comprobaciones numericas, no certificacion de layout.
+
+Puerta manual: recargar index, abrir dia y noche, acercarse a P1, imprimir,
+abrir/cerrar inventario, reparar/recargar y comprobar el cobro. Verificar
+que los estados se leen y no se pisan con P2. Guardar/recargar conserva el
+checkpoint de inicio del turno. Revisar consola y ES/EN antes de otra pasada.
+
+## Estimacion para cerrar la beta de tres dias
+
+Estimacion de trabajo concentrado para una beta WEB, manteniendo el alcance
+actual y si no aparecen bloqueos mayores: 12 a 20 horas. No es una fecha
+garantizada ni una medicion porcentual de completitud.
+
+| Pendiente imprescindible | Estimacion |
+| --- | --- |
+| Dos campañas completas consecutivas y matriz Chrome/Edge, save, minijuegos, resize y consola | 4-6 h |
+| Corregir incidencias encontradas y balance minimo de los tres dias; repetir casos afectados | 6-10 h |
+| Preparar/verificar paquete web, dependencias, instrucciones de guardado y cierre de release | 2-4 h |
+
+El nucleo de seis turnos y el final estan implementados y tienen regresiones
+automaticas. No se sustituye el recorrido real por esos tests. Se etiqueta
+`beta-v0.1.0` solamente despues de dos campañas reales sin bloqueos y sin
+pendientes criticos. Los cambios nuevos de etiquetas aun requieren su puerta.
+
+Fuera de esa estimacion: nuevos sistemas, nuevas colecciones de piezas,
+musica original, arte adicional, empaquetado/validacion de un ejecutable
+Steam e integracion Steamworks. La musica nocturna sigue provisional;
+Phaser y Press Start 2P siguen remotos. La URL `STEAM_PAGE_URL` esta vacia
+en js/ui.js, por lo que el boton final de wishlist aun no esta conectado.
+La pagina Proximamente de Steam puede continuar por separado; no se ha
+publicado ni modificado nada en Steam desde este bloque.

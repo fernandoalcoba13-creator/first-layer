@@ -1,5 +1,8 @@
 const TXT={
   es:{
+    printerState_idle:'LIBRE',printerState_printing:'IMPRIME',printerState_paused:'PAUSA',
+    printerState_repair:'REPARAR',printerState_refill:'RECARGA',printerState_power:'SIN LUZ',
+    printerState_night:'NOCHE',printerState_locked:'BLOQ.',
     buyOnCredit:'COMPRAR A DEUDA',
     creditConfirm:'No hay ingresos disponibles para esta compra indispensable. Comprar a deuda cuesta ${cost} (incluye 10% de recargo). Tu caja quedara en ${balance}; los proximos cobros pagan la deuda. ¿Confirmar?',
     creditUsed:'Compra indispensable a deuda. Saldo: ${balance}.',
@@ -113,6 +116,9 @@ const TXT={
     bedProgress:'Nivelada',bedControls:'Flechas o clic.',bedPerfect:'PERFECTO',bedGood:'BIEN',bedMiss:'FALLO',bedEarly:'FUERA',bedCombo:'Combo'
   },
   en:{
+    printerState_idle:'IDLE',printerState_printing:'PRINT',printerState_paused:'PAUSED',
+    printerState_repair:'REPAIR',printerState_refill:'REFILL',printerState_power:'OUTAGE',
+    printerState_night:'NIGHT',printerState_locked:'LOCKED',
     buyOnCredit:'BUY ON CREDIT',
     creditConfirm:'No income is available for this essential purchase. Credit costs ${cost} (includes a 10% fee). Your balance will be ${balance}; future cashouts repay the debt. Confirm?',
     creditUsed:'Essential purchase on credit. Balance: ${balance}.',

@@ -119,7 +119,8 @@ class DayScene extends Phaser.Scene{
       const pg=this.add.graphics();pg.setPosition(px,py);pg.setVisible(!sp);drawPrinter(pg,false,false,0,0x5bc8fa);
       const jb=this.add.graphics();jb.setPosition(px,py).setDepth(py+1);
       const bn=createBenchySprite(this,px,py-22,1.45);if(bn)bn.setDepth(py+1);
-      const lt=this.add.text(px,py+42,'P'+(i+1),{fontSize:'8px',color:'#2a2050',fontFamily:'Press Start 2P'}).setOrigin(.5,0);
+      const lt=createPrinterLabel(this,px,py+42,i===0?printerScale:3.5);
+      updatePrinterLabel(lt,G.printers[i],false);
       if(i>0)this.hideDayPrinter(pg,sp,lt,bg,jb,bn);
       this.pGfx.push({g:pg,sp,lt,px,py,bench:bg,job:jb,benchy:bn});
     }
@@ -517,11 +518,14 @@ class DayScene extends Phaser.Scene{
       const prog=activeDay&&!p.broken?p.progress:0;
       if(!updateBenchySprite(pg.benchy,prog,c)&&pg.job)drawPrintObject(pg.job,prog,c,1.15);
       else if(pg.job)pg.job.clear();
-      if(p.locked)pg.lt.setText('🔒').setColor('#222244');
-      else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
-      else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
-      else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
-      else pg.lt.setText('LIBRE').setColor('#2a2050');
+    });
+    this.refreshPrinterLabels();
+  }
+  refreshPrinterLabels(){
+    (this.pGfx||[]).forEach((pg,i)=>{
+      if(i>0||!G.printers[i])return;
+      const selected=this.near&&(this.near.type==='printers'||(this.near.type==='printer'&&this.near.pid===i));
+      updatePrinterLabel(pg.lt,G.printers[i],selected);
     });
   }
   // El benchy carga async: cuando llega la textura se crean los sprites que faltaban.
@@ -549,11 +553,7 @@ class DayScene extends Phaser.Scene{
     const prog=activeDay&&!p.broken?p.progress:0;
     if(updateBenchySprite(pg.benchy,prog,c)){if(pg.job)pg.job.clear();}
     else if(pg.job){pg.job.setVisible(true);drawPrintObject(pg.job,prog,c,1.15);}
-    if(p.locked)pg.lt.setText('🔒').setColor('#222244');
-    else if(p.broken)pg.lt.setText('⚠️ROTA').setColor('#ff4d6a');
-    else if(activeDay)pg.lt.setText('IMPRIME\n'+Math.round(p.progress*100)+'%').setColor('#4dff91');
-    else if(p.busy)pg.lt.setText('LISTA\nNOCHE').setColor('#5bc8fa');
-    else pg.lt.setText('LIBRE').setColor('#2a2050');
+    this.refreshPrinterLabels();
   }
   refreshPrinterSprites(){
     if(!this.pGfx)return;
@@ -588,6 +588,7 @@ class DayScene extends Phaser.Scene{
     if(G.phase!=='day')return;
     if(G.block||G.menuOpen){
       (this.pGfx||[]).forEach((pg,i)=>{if(pg.sp&&G.printers[i])setPrinterSpriteState(pg.sp,G.printers[i]);});
+      this.refreshPrinterLabels();
       return;
     }
     this.timer=Math.max(0,this.timer-dt);

@@ -17,11 +17,12 @@ function host(){
       for(const f of config.frames)assert.ok(textures.get(f.key)?.has(f.frame),config.key+' references a missing frame');
       animations.set(config.key,config);
     }}};
-  const G={phase:'night',block:false,menuOpen:false,sMult:1};
+  const G={phase:'night',lang:'es',block:false,menuOpen:false,sMult:1};
   const context={G,console:{warn:m=>warnings.push(m)},Image:class{set src(src){this.source=src;requests.push(this);}}};
   vm.createContext(context);
+  vm.runInContext(fs.readFileSync(path.join(root,'js/i18n.js'),'utf8'),context);
   vm.runInContext(fs.readFileSync(path.join(root,'js/draw.js'),'utf8'),context);
-  const api=vm.runInContext('({PRINTER_SHEETS,setupPrinterAnims,loadPrinterAssetsAsync,setPrinterSpriteState,setPlayerSpriteState})',context);
+  const api=vm.runInContext('({PRINTER_SHEETS,setupPrinterAnims,loadPrinterAssetsAsync,setPrinterSpriteState,setPlayerSpriteState,printerStatus,createPrinterLabel,updatePrinterLabel,tr})',context);
   function complete(img,fail=false){
     if(fail){img.onerror();return;}
     const bytes=fs.readFileSync(path.join(root,img.source));
@@ -50,7 +51,16 @@ function host(){
     };
     return sp;
   }
-  return {...api,G,scene,textures,animations,requests,warnings,complete,load,sprite};
+  function label(scale=3){
+    const labelScene={add:{text(x,y,text,style){return {x,y,text,style,updates:0,
+      setOrigin(x,y){this.originX=x;this.originY=y;return this;},
+      setText(value){this.text=value;this.updates++;return this;},
+      setColor(value){this.style.color=value;return this;},
+      setBackgroundColor(value){this.style.backgroundColor=value;return this;}
+    };}}};
+    return api.createPrinterLabel(labelScene,100,200,scale);
+  }
+  return {...api,G,scene,textures,animations,requests,warnings,complete,load,sprite,label};
 }
 
 const tests=[];const test=(name,fn)=>tests.push([name,fn]);
@@ -195,6 +205,78 @@ test('walking resumes after idle even though Phaser keeps the stopped animation 
   h.setPlayerSpriteState(sp,0,1,'down');h.setPlayerSpriteState(sp,0,0,'down');
   assert.equal(sp.anims.isPlaying,false);
   h.setPlayerSpriteState(sp,0,1,'down');assert.equal(sp.anims.isPlaying,true);assert.equal(sp.plays,2);
+});
+test('printer status describes the actual blocker and never invents a manual cashout',()=>{
+  const h=host(),p={id:0,busy:true,progress:.9999};
+  assert.equal(h.printerStatus(p).state,'printing');assert.equal(h.printerStatus(p).percent,99);
+  h.G.block=true;assert.equal(h.printerStatus(p).state,'paused');
+  p._ev={id:'run'};assert.equal(h.printerStatus(p).state,'refill');
+  p.broken=true;assert.equal(h.printerStatus(p).state,'repair');
+  p.locked=true;assert.equal(h.printerStatus(p).state,'locked');
+  p.locked=false;p.broken=false;p._ev=null;p._pau=true;h.G.pActive=true;
+  assert.equal(h.printerStatus(p).state,'power');
+  h.G.upsLeft=20;assert.equal(h.printerStatus(p).state,'paused');
+  h.G.block=false;p._pau=false;assert.equal(h.printerStatus(p).state,'printing');
+  p.busy=false;p.order=null;p.progress=0;
+  assert.equal(h.printerStatus(p).state,'idle');assert.equal(h.printerStatus(p).percent,null);
+});
+test('day-one reserved job is identified as night work without changing its progress or timing',()=>{
+  const h=host(),p={id:0,busy:true,progress:.12,_dayPrintMs:999999};
+  h.G.phase='day';h.G.day=1;const before=JSON.stringify(p);
+  assert.equal(h.printerStatus(p).state,'night');assert.equal(h.printerStatus(p).percent,null);
+  h.G.phase='night';assert.equal(h.printerStatus(p).state,'printing');assert.equal(h.printerStatus(p).percent,12);
+  assert.equal(JSON.stringify(p),before);
+  h.G.phase='day';p._dayPrintMs=24000;assert.equal(h.printerStatus(p).state,'printing');
+});
+test('progress labels use bounded completed percentages and hide stale idle progress',()=>{
+  const h=host();
+  for(const [progress,percent] of [[-.5,0],[0,0],[.427,42],[.999,99],[1,100],[1.1,100],[NaN,0],[Infinity,0]]){
+    const p={id:0,busy:true,progress};assert.equal(h.printerStatus(p).percent,percent);
+    p.busy=false;assert.equal(h.printerStatus(p).percent,null);
+  }
+});
+test('status labels translate in both directions, keep fixed bounds and fit their text budget',()=>{
+  const h=host();
+  const states=[{}, {busy:true}, {busy:true,_pau:true}, {broken:true}, {_ev:{id:'run'}},
+    {busy:true,_pau:true,power:true}, {locked:true}, {busy:true,_dayPrintMs:999999,night:true}];
+  for(const scale of [.8,1,2.55,3.57]){
+    const label=h.label(scale),bounds=JSON.stringify([label.x,label.y,label.style.fixedWidth,label.style.fixedHeight,label.style.fontSize]);
+    for(const lang of ['es','en','es'])for(const state of states){
+      h.G.lang=lang;h.G.pActive=!!state.power;h.G.phase=state.night?'day':'night';h.G.day=1;
+      const p={id:0,progress:.99,...state};h.updatePrinterLabel(label,p,false);
+      if(label._printerCompact)assert.equal(label.text,'P1');
+      else assert.ok(label.text.endsWith(h.tr(h.printerStatus(p).key)));
+      for(const line of label.text.split('\n'))assert.ok(line.length*8+8<=label.style.fixedWidth,'text exceeds conservative monospaced budget');
+      assert.equal(JSON.stringify([label.x,label.y,label.style.fixedWidth,label.style.fixedHeight,label.style.fontSize]),bounds);
+    }
+  }
+});
+test('stable state labels do not redraw each frame or change game state when highlighted',()=>{
+  const h=host(),label=h.label(),p={id:1,busy:true,progress:.421,order:{time:45,pay:90}};
+  const saved=JSON.stringify([h.G,p]);
+  for(let i=0;i<300;i++)h.updatePrinterLabel(label,p,false);
+  assert.equal(label.updates,1);
+  h.updatePrinterLabel(label,p,true);assert.equal(label.updates,2);assert.equal(label.style.backgroundColor,'#294c40');
+  assert.equal(JSON.stringify([h.G,p]),saved);
+  h.G.block=true;h.updatePrinterLabel(label,p,true);
+  assert.equal(label.style.backgroundColor,'#141a1c');assert.match(label.text,/PAUSA$/);
+  h.G.block=false;p.progress=.429;h.updatePrinterLabel(label,p,false);const updates=label.updates;
+  p.progress=.4299;h.updatePrinterLabel(label,p,false);assert.equal(label.updates,updates);
+  p.progress=.43;h.updatePrinterLabel(label,p,false);assert.equal(label.updates,updates+1);
+});
+test('every status colour remains readable against normal and selected label backgrounds',()=>{
+  const h=host(),label=h.label();
+  const luminance=hex=>{
+    const rgb=[1,3,5].map(i=>parseInt(hex.slice(i,i+2),16)/255).map(c=>c<=.04045?c/12.92:((c+.055)/1.055)**2.4);
+    return rgb[0]*.2126+rgb[1]*.7152+rgb[2]*.0722;
+  };
+  for(const state of [{},{busy:true},{busy:true,_pau:true},{broken:true},{_ev:{id:'run'}},{locked:true}]){
+    for(const selected of [false,true]){
+      h.updatePrinterLabel(label,{id:0,...state},selected);
+      const contrast=(luminance(label.style.color)+.05)/(luminance(label.style.backgroundColor)+.05);
+      assert.ok(contrast>=4.5,'insufficient label contrast: '+contrast);
+    }
+  }
 });
 let failed=0;
 for(const [name,fn] of tests){try{fn();console.log('PASS '+name);}catch(e){failed++;console.error('FAIL '+name+'\n'+e.stack);}}

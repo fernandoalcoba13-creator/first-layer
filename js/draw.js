@@ -362,6 +362,38 @@ function setPrinterSpriteState(sp,p){
   const speed=Number(G.sMult)||1;
   anims.timeScale=state==='working'?Math.max(.7,Math.min(1.5,speed))*(id===1?1.05:1):1;
 }
+function printerStatus(p){
+  p=p||{};
+  let state='idle',color='#bbd7c9';
+  if(p.locked){state='locked';color='#aebbb6';}
+  else if(p.broken||(p._ev&&p._ev.id!=='run')){state='repair';color='#ffaaaa';}
+  else if(p._ev){state='refill';color='#f2ca75';}
+  else if(p._pau&&G.pActive&&!G.upsLeft){state='power';color='#f2ca75';}
+  else if(p.busy&&(p._pau||G.block||G.menuOpen||G.phase==='transition')){state='paused';color='#f2ca75';}
+  else if(p.busy&&G.phase==='day'&&(p.id>0||(G.day===1&&p._dayPrintMs===999999))){state='night';color='#b7cafa';}
+  else if(p.busy){state='printing';color='#82d5ed';}
+  const progress=Number(p.progress);
+  const percent=p.busy&&!p.locked&&state!=='night'?Math.floor(Math.max(0,Math.min(1,Number.isFinite(progress)?progress:0))*100):null;
+  return {state,key:'printerState_'+state,color,percent};
+}
+function createPrinterLabel(scene,x,y,scale){
+  const width=Math.max(24,Math.min(72,Math.floor(26*scale)));
+  const label=scene.add.text(x,y,'',{fontSize:'8px',fontFamily:'Press Start 2P',align:'center',
+    color:'#bbd7c9',backgroundColor:'#141a1c',padding:{x:4,y:4},fixedWidth:width,fixedHeight:28}).setOrigin(.5,0);
+  label._printerCompact=width<64;
+  return label;
+}
+function updatePrinterLabel(label,p,selected){
+  if(!label||!p)return;
+  const status=printerStatus(p),id='P'+(p.id+1);
+  const text=label._printerCompact?id:id+(status.percent===null?'':' '+status.percent+'%')+'\n'+tr(status.key);
+  const bg=selected&&!G.block&&!G.menuOpen?'#294c40':'#141a1c';
+  // Text.setText and style changes rebuild a canvas texture; update only on a visible change.
+  const signature=text+'|'+status.color+'|'+bg;
+  if(label._printerLabelSignature===signature)return;
+  label.setText(text).setColor(status.color).setBackgroundColor(bg);
+  label._printerLabelSignature=signature;
+}
 function drawPlayer(g,light,tired){
   g.clear();
   g.fillStyle(0x000000,.3);g.fillEllipse(0,20,28,8);

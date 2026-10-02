@@ -501,6 +501,20 @@ test('clean night layers and interactive anchors match the measured artwork in e
     }
   }
 });
+test('printer labels follow day and night state, overlays and automatic payment without stale job text',()=>{
+  const h=host(),ds=h.start('day');
+  assert.match(ds.pGfx[0].lt.text,/LIBRE$/);
+  const p=loadedJob(h,20);p.progress=.427;ds.updatePrinterVisual(0);
+  assert.equal(ds.pGfx[0].lt.text,'P1 42%\nIMPRIME');
+  h.G.block=true;const saved=JSON.stringify(p);ds.update(0,500);
+  assert.equal(ds.pGfx[0].lt.text,'P1 42%\nPAUSA');assert.equal(JSON.stringify(p),saved);
+  h.G.block=false;const ns=h.start('night',2);ns.refreshPrinterLabels();
+  assert.equal(ns.pObjs[0].lb.text,'P1 42%\nIMPRIME');
+  p._ev={id:'run'};p._pau=true;ns.refreshPrinterLabels();assert.match(ns.pObjs[0].lb.text,/RECARGA$/);
+  p._ev=null;p._pau=false;h.G.lang='en';ns.refreshPrinterLabels();assert.match(ns.pObjs[0].lb.text,/PRINT$/);
+  ns.forcedFails=[];p.progress=1;ns.completePrint(p);ns.refreshPrinterLabels();
+  assert.equal(p.order,null);assert.equal(ns.pObjs[0].lb.text,'P1\nIDLE');
+});
 test('unlocking P2 refreshes the existing clean object layer without replacing an asset',()=>{
   const h=host(),ns=h.start('night',3);let texture=null;
   ns.textures.exists=key=>key===h.run('NIGHT_ROOM_OBJECT_VARIANTS[2].key');
