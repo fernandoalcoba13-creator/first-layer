@@ -448,7 +448,12 @@ test('final labels localize and show recorded statistics, never accepted orders 
     h.G.lang=lang;h.G.showBetaEnd();
     assert.equal(h.elements.get('beTitle').textContent,lang==='es'?'FIN DE LA BETA':'END OF THE BETA');
     assert.ok(!h.elements.get('beTease').textContent.includes('900'));
-    assert.equal(h.elements.get('beWishlist').style.display,'none');
+    assert.equal(h.elements.get('beWishlist').style.display,'');
+    const opened=[];h.context.open=(...args)=>opened.push(args);
+    h.G.showBetaEnd();assert.equal(opened.length,0);
+    h.G.betaWishlist();
+    assert.deepEqual(opened,[['https://store.steampowered.com/app/5180630/','_blank','noopener']]);
+    assert.equal(h.G.phase,'complete');
   }
 });
 test('null and malformed save fields do not crash scenes or lose valid order references',()=>{

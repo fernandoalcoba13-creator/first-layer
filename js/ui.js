@@ -467,16 +467,16 @@ G.confirmReset=function(){
 };
 
 // ═══ FIN DE LA BETA — cartel de conversión a Steam ═══
-// Fernando: cuando publiques la página de Steam, pegá su URL acá (ej: 'https://store.steampowered.com/app/XXXXXX/').
-// Dejala en '' hasta entonces: el botón mostrará "próximamente" y no navega a ningún lado.
-const STEAM_PAGE_URL='';
+// Steam store page opened only when the player clicks the wishlist button.
+// Keep the completed run visible while Steam opens in another tab.
+const STEAM_PAGE_URL='https://store.steampowered.com/app/5180630/';
 G.showBetaEnd=function(){
   const el=document.getElementById('betaEnd');
   if(!el){setGameMenu(true);return;}
   const set=(id,txt)=>{const n=document.getElementById(id);if(n)n.textContent=txt;};
   G.phase='complete';G.menuOpen=false;G.block=true;
   document.getElementById('titleScreen').style.display='none';
-  set('beK','FIRST LAYER');
+  set('beK',tr('betaThanksK'));
   set('beTitle',tr('betaEndTitle'));
   set('beMood',tr('betaEndSub'));
   const stats=G.betaResult;
